@@ -1,0 +1,20 @@
+name: Job Scraper Cron
+
+on:
+  schedule:
+    # Runs every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  scrape-jobs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Vercel Function
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://job-search-automation-matthews-projects-fc20f25d.vercel.app/api/cron
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
