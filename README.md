@@ -88,3 +88,4 @@ Web UI to:
 - Triage with buttons: "Apply with Master" / "Custom Build" / "Pass"
 - Track application status
 - See company health trends
+# Deployment trigger
