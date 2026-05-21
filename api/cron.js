@@ -1,32 +1,46 @@
-import { runJobScraper } from '../src/scraper.js';
-
 export const config = {
-  maxDuration: 300, // 5 minutes
+  maxDuration: 300,
 };
 
 export default async function handler(req, res) {
-  // Verify this is from Vercel Cron
-  const authHeader = req.headers.authorization;
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  console.log('=== CRON FUNCTION TRIGGERED ===');
+  console.log('Headers:', req.headers);
+  console.log('Environment check:', {
+    hasCronSecret: !!process.env.CRON_SECRET,
+    hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    hasSupabaseKey: !!process.env.SUPABASE_KEY
+  });
   
-  try {
-    const result = await runJobScraper();
-    
-    res.status(200).json({
-      success: true,
-      timestamp: new Date().toISOString(),
-      ...result
-    });
-  } catch (error) {
-    console.error('Cron job failed:', error);
-    
-    res.status(500).json({
-      success: false,
-      error: error.message,
+  // Verify auth
+  const authHeader = req.headers.authorization;
+  const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
+  
+  console.log('Auth check:', {
+    receivedAuth: authHeader ? 'present' : 'missing',
+    expectedAuth: expectedAuth ? 'present' : 'missing',
+    matches: authHeader === expectedAuth
+  });
+  
+  if (authHeader !== expectedAuth) {
+    console.log('AUTH FAILED');
+    return res.status(401).json({ 
+      error: 'Unauthorized',
       timestamp: new Date().toISOString()
     });
   }
+  
+  console.log('AUTH SUCCESS - Hello from job scraper!');
+  
+  res.status(200).json({
+    success: true,
+    message: 'Hello from job scraper! All systems operational.',
+    timestamp: new Date().toISOString(),
+    env_check: {
+      hasCronSecret: !!process.env.CRON_SECRET,
+      hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_KEY
+    }
+  });
 }
-// Force deploy
