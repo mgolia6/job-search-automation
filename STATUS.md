@@ -1,15 +1,15 @@
 # JOB SEARCH AUTOMATION — STATUS & ACTION ITEMS
 
-**Last Updated:** May 21, 2026, 8:50pm ET  
-**Status:** 95% complete — ONE action item blocking full automation
+**Last Updated:** May 22, 2026, 7:15am ET  
+**Status:** LIVE — Scraper running, config fixed
 
 ---
 
-## ✅ WHAT'S BUILT AND DEPLOYED
+## ✅ WHAT'S DEPLOYED
 
 ### **GitHub Repo**
 - **URL:** https://github.com/mgolia6/job-search-automation
-- **Status:** Live, all code pushed
+- **Status:** Live, latest commits pushed 5/22
 
 ### **Supabase Database**
 - **Project:** `job-search-pipeline`
@@ -18,7 +18,7 @@
 
 ### **Vercel Deployment**
 - **URL:** https://job-search-automation-matthews-projects-fc20f25d.vercel.app
-- **Status:** Live, function deployed
+- **Status:** Live, auto-deploys on GitHub push
 - **Environment Variables:** All set ✅
 
 ### **GitHub Actions**
@@ -28,27 +28,29 @@
 
 ---
 
-## 🚨 ONE BLOCKING ISSUE
+## 🔧 FIXED THIS SESSION (5/22/2026)
 
-**Vercel Firewall Blocking GitHub Actions**
+**Search Config Updated:**
+- `minBaseSalary`: Lowered from $180K → $100K
+- Reason: Most Enterprise AE JDs show OTE ranges, not base. Base ranges vary wildly. 
+- Real filter: `minOTE: 200000` (unchanged)
 
-**Fix (2 minutes on laptop):**
-1. Go to: https://vercel.com/matthews-projects-fc20f25d/job-search-automation/settings/security
-2. Find **"Firewall"** or **"Attack Challenge Mode"**
-3. **Disable it** OR add `github.com` to allowlist
+**Why no emails before:**
+Scraper was running successfully but filtering out nearly every job because of the $180K base floor. Example: Qualtrics #38 has $109.5K–$207.5K base — scraper would have skipped it.
 
-**Once fixed:** Automation starts immediately, emails arrive every 30 min when jobs are found.
+**Firewall Status:**
+Attack Challenge Mode is **NOT active** on Vercel. Not the issue.
 
 ---
 
-## 📋 WHAT IT DOES (Once Firewall Fixed)
+## 📋 WHAT IT DOES
 
 Every 30 minutes:
 1. Searches Indeed for Enterprise/Strategic AE roles
-2. Filters: Remote, $180K+ base OR $200K+ OTE
-3. Skips companies you've already applied to
+2. Filters: Remote, $100K+ base AND $200K+ OTE
+3. Skips companies Matthew already applied to
 4. Pulls RepVue + Glassdoor data
-5. Emails you with gut-check verdict (APPLY/MAYBE/PASS)
+5. Emails Matthew with gut-check verdict (APPLY/MAYBE/PASS)
 
 ---
 
@@ -66,14 +68,14 @@ Reply **"PASS"** → Job gets logged and skipped
 
 ---
 
-## ✅ ACTION ITEMS
+## ✅ NEXT STEPS
 
 **Matthew:**
-- [ ] Disable Vercel firewall (2 min on laptop)
-- [ ] Verify first email arrives within 30 min
+- [ ] Wait 30 min, check Gmail for first scraper email
+- [ ] If no email after 1 hour, ping Claude to debug
 
 **Next Claude Session:**
-- Read `PROJECT_INSTRUCTIONS.md` from this repo
-- Read `APPLICATION_LOG.md` from this repo
+- Read `PROJECT_INSTRUCTIONS.md` from repo
+- Read `APPLICATION_LOG.md` from repo (now has Cyara #39 + Mastercard #40 rejections)
 - Scan Gmail for recruiter updates
-- Verify scraper is running
+- Verify scraper is sending emails
