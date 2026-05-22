@@ -19,7 +19,7 @@ const SEARCH_CONFIG = {
   ],
   location: "remote",
   countryCode: "US",
-  minBaseSalary: 180000,
+  minBaseSalary: 100000,
   minOTE: 200000,
   emailTo: "mgolia6@gmail.com"
 };
