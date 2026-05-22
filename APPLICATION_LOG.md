@@ -21,6 +21,8 @@
 
 | # | Company | Role | Role Type | Date Applied | Salary Range | Resume Version | CL Version | Source | Warm Contact | Status | Recruiter | Notes |
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| 40 | Mastercard | Director, Account Management, Travel | Account Management | 5/22/2026 | — | Pre-May 21 | — | Cold | None | Closed — No | — | Auto-rejected 5/22. |
+| 39 | Cyara | Senior Enterprise AE | Enterprise AE | 5/21/2026 | — | Pre-May 21 | — | Cold | None | Closed — No | — | Rejected 5/21. |
 | 38 | Qualtrics | Enterprise AE — Goods & Services | Enterprise AE | 5/21/2026 | $109.5K–$207.5K base | May 21 Master v1 | Version A — Metrics-forward | Referral | Saurabh Vaish | Applied | — | **NEW MASTER USED.** Deal complexity addressed proactively (Salesforce lesson applied). |
 | 37 | Onboard | Strategic AE | Enterprise AE | 5/19/2026 | — | Pre-May 21 | — | Referral | Chris Wisniewski | Applied | — | Recon call 5/19. LinkedIn outreach to Chris Kiene (CRO). |
 | 36 | Otter AI | Enterprise AE | Enterprise AE | 5/19/2026 | — | Pre-May 21 | — | Cold | None | Applied | — | No response yet. |
