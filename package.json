@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node src/scraper.js",
     "build": "echo 'No build needed'",
-    "vercel-build": "echo 'Serverless functions ready'"
+    "vercel-build": "echo 'Build complete'"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
