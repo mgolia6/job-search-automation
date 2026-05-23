@@ -15,7 +15,7 @@ const SEARCH_CONFIG = {
   countryCode:     "US",
   minBaseSalary:   100000,  // $100K base floor
   minOTE:          200000,  // $200K OTE floor
-  maxAgeDays:      14,      // only surface roles posted in last 14 days
+  maxAgeDays:      2,      // only surface roles posted in last 14 days
   emailTo:         "mgolia6@gmail.com"
 };
 
