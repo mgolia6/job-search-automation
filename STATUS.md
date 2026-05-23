@@ -1,45 +1,84 @@
-# JOB SEARCH AUTOMATION — STATUS & ACTION ITEMS
+# JOB SEARCH AUTOMATION — STATUS
 
 **Last Updated:** May 23, 2026
-**Status:** 95% complete — ONE action item blocking full automation
+**Session:** Full-day work session
 
 ---
 
-## 🚨 SCRAPER IS NOT RUNNING — ACTION REQUIRED
+## 🔴 DASHBOARD — INCOMPLETE (NEXT SESSION)
 
-**Problem:** Vercel firewall is blocking GitHub Actions from hitting the scraper endpoint.
-**Result:** No job emails are being generated. The cron runs every 30 min but gets blocked.
+The job search dashboard UI was attempted repeatedly via Vercel and Supabase Edge Functions but did not load successfully. **Next session: convert repo to Next.js** — one command, Vercel knows exactly what to do, no more config fights.
 
-**Fix (2 minutes on laptop):**
-1. Go to: https://vercel.com/matthews-projects-fc20f25d/job-search-automation/settings/security
-2. Find **"Firewall"** or **"Attack Challenge Mode"**
-3. **Disable it** OR add GitHub Actions IP ranges to allowlist
+**What exists:**
+- Supabase `applications` table seeded with all 46 rows
+- Supabase `jobs`, `company_health`, `email_alerts` tables live
+- `api/data.js` endpoint exists in repo (returns JSON from Supabase)
+- Supabase Edge Function `dashboard` deployed (v2) but not rendering correctly
 
-**This has been the blocker since May 21. Not yet resolved as of May 23.**
-
----
-
-## ✅ WHAT IS BUILT AND DEPLOYED
-
-- **GitHub Repo:** https://github.com/mgolia6/job-search-automation — Live ✅
-- **Supabase DB:** https://yaepgxsbjtbdkiidxtmf.supabase.co — Live ✅
-- **Vercel Function:** https://job-search-automation-matthews-projects-fc20f25d.vercel.app — Deployed ✅ (but firewall-blocked)
-- **GitHub Actions Cron:** Every 30 minutes — Running ✅ (but blocked by firewall)
+**Next session plan:**
+1. `npx create-next-app` scaffold in repo
+2. Move dashboard to `pages/index.jsx`
+3. Move API to `pages/api/data.js`
+4. Push — Vercel auto-detects Next.js, deploys clean
 
 ---
 
-## 📋 WHAT IT DOES (Once Firewall Fixed)
+## ✅ SCRAPER — FIXED AND RUNNING
 
-Every 30 minutes:
-1. Searches Indeed for Enterprise/Strategic AE roles
-2. Filters: Remote, $180K+ base OR $200K+ OTE
-3. Skips companies already applied to
-4. Pulls RepVue + Glassdoor data
-5. Emails with gut-check verdict: APPLY / MAYBE / PASS
+Three bugs killed today:
 
-**When you get an email:**
-- Reply **"BUILD"** → Come to Claude, paste JD, get resume + 2 cover letters
-- Reply **"PASS"** → Job gets logged and skipped
+1. **`api/cron.js`** was a health-check stub — never called `runJobScraper()`. Fixed.
+2. **Parser** was regex-matching wrong format. Indeed MCP returns structured text fields (`**Job Title:**`, `**Company:**`, etc.) — parser rewritten to match actual format.
+3. **Salary filter** math was inverted — would have passed nearly anything. Fixed.
+4. **Recency filter** set to **2 days** (was 14 — too old to be useful).
+
+Scraper runs every 30 min via GitHub Actions cron → hits `/api/cron` on Vercel → calls Indeed MCP → filters → emails mgolia6@gmail.com.
+
+**Watch for:** First scraper email should arrive within 30 min of next GitHub Actions cycle. If nothing after 2 hours, check Vercel function logs.
+
+---
+
+## ✅ APPLICATION LOG — FULLY RECONCILED
+
+**46 rows total** as of May 23, 2026.
+
+**Added this session (were missing from log):**
+- #17 Salesforce Non-Profit AE (3/16)
+- #20 Pendo Account Director (4/8) — rejected 4/10
+- #21 Samsara Regional Sales Director NE (4/8) — rejected 4/10
+- #24 Kong Enterprise AE NE (3/31) — rejected 4/13
+- #33 Gong Enterprise AE East (4/3) — rejected 5/13
+- #34 Rippling Enterprise AE East Coast (4/3) — no response
+- #35 Mastercard Director AM Travel (4/3) — rejected 5/22
+- #42 Onboard Strategic AE first application (5/14)
+- #46 Cyara Senior Enterprise AE — rejected 5/21
+
+**Statuses updated from Gmail:**
+- GitHub #19 → Closed — No (rejected 5/12)
+- Qualtrics TMT #37 → Closed — No (rejected 5/7)
+- Twilio #18, #27, #31, #32 → all Closed — No (rejected 4/28, Alexa Lowe)
+- Atlassian #30 → Closed — No (rejected 4/30)
+- Zendesk #41 → Closed — No (rejected 5/20)
+
+**Sync warning in place:** File header now includes row count checkpoint (46) and Drive backup file ID so no future session can truncate it without tripping a flag.
+
+---
+
+## ✅ SUPABASE — SEEDED
+
+All 46 applications loaded into `applications` table.
+`gut_check` column added to `jobs` table.
+`app_number` column added to `applications` table.
+
+---
+
+## 📋 NEXT SESSION PRIORITIES
+
+1. **Dashboard** — convert to Next.js, deploy clean
+2. **Scraper** — verify first email came through; tune if needed
+3. **Warm contacts** — Arthur Poje (Atlassian) re-engagement still queued
+4. **Salesforce K-12 (#26)** — Dave Capasso outreach before it goes stale
+5. **Dataiku / Amanda Walt** — cover letters still pending
 
 ---
 
@@ -47,16 +86,3 @@ Every 30 minutes:
 
 - Anthropic API: ~$5–10/month
 - Everything else: Free
-
----
-
-## ✅ ACTION ITEMS
-
-**Matthew (BLOCKING):**
-- [ ] **Disable Vercel firewall** — scraper cannot run until this is done
-
-**Claude (every session):**
-- Read APPLICATION_LOG.md from GitHub (verify row count — should be 39 as of 5/23)
-- Read PROJECT_INSTRUCTIONS.md and STATUS.md
-- Scan Gmail for recruiter activity since last session
-- Verify scraper is running (check for job alert emails)
