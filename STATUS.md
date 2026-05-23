@@ -1,63 +1,45 @@
 # JOB SEARCH AUTOMATION — STATUS & ACTION ITEMS
 
-**Last Updated:** May 22, 2026, 7:15am ET  
-**Status:** LIVE — Scraper running, config fixed
+**Last Updated:** May 23, 2026
+**Status:** 95% complete — ONE action item blocking full automation
 
 ---
 
-## ✅ WHAT'S DEPLOYED
+## 🚨 SCRAPER IS NOT RUNNING — ACTION REQUIRED
 
-### **GitHub Repo**
-- **URL:** https://github.com/mgolia6/job-search-automation
-- **Status:** Live, latest commits pushed 5/22
+**Problem:** Vercel firewall is blocking GitHub Actions from hitting the scraper endpoint.
+**Result:** No job emails are being generated. The cron runs every 30 min but gets blocked.
 
-### **Supabase Database**
-- **Project:** `job-search-pipeline`
-- **URL:** https://yaepgxsbjtbdkiidxtmf.supabase.co
-- **Status:** Live, schema deployed
+**Fix (2 minutes on laptop):**
+1. Go to: https://vercel.com/matthews-projects-fc20f25d/job-search-automation/settings/security
+2. Find **"Firewall"** or **"Attack Challenge Mode"**
+3. **Disable it** OR add GitHub Actions IP ranges to allowlist
 
-### **Vercel Deployment**
-- **URL:** https://job-search-automation-matthews-projects-fc20f25d.vercel.app
-- **Status:** Live, auto-deploys on GitHub push
-- **Environment Variables:** All set ✅
-
-### **GitHub Actions**
-- **Workflow:** `.github/workflows/cron.yml`
-- **Schedule:** Every 30 minutes
-- **Status:** Running successfully ✅
+**This has been the blocker since May 21. Not yet resolved as of May 23.**
 
 ---
 
-## 🔧 FIXED THIS SESSION (5/22/2026)
+## ✅ WHAT IS BUILT AND DEPLOYED
 
-**Search Config Updated:**
-- `minBaseSalary`: Lowered from $180K → $100K
-- Reason: Most Enterprise AE JDs show OTE ranges, not base. Base ranges vary wildly. 
-- Real filter: `minOTE: 200000` (unchanged)
-
-**Why no emails before:**
-Scraper was running successfully but filtering out nearly every job because of the $180K base floor. Example: Qualtrics #38 has $109.5K–$207.5K base — scraper would have skipped it.
-
-**Firewall Status:**
-Attack Challenge Mode is **NOT active** on Vercel. Not the issue.
+- **GitHub Repo:** https://github.com/mgolia6/job-search-automation — Live ✅
+- **Supabase DB:** https://yaepgxsbjtbdkiidxtmf.supabase.co — Live ✅
+- **Vercel Function:** https://job-search-automation-matthews-projects-fc20f25d.vercel.app — Deployed ✅ (but firewall-blocked)
+- **GitHub Actions Cron:** Every 30 minutes — Running ✅ (but blocked by firewall)
 
 ---
 
-## 📋 WHAT IT DOES
+## 📋 WHAT IT DOES (Once Firewall Fixed)
 
 Every 30 minutes:
 1. Searches Indeed for Enterprise/Strategic AE roles
-2. Filters: Remote, $100K+ base AND $200K+ OTE
-3. Skips companies Matthew already applied to
+2. Filters: Remote, $180K+ base OR $200K+ OTE
+3. Skips companies already applied to
 4. Pulls RepVue + Glassdoor data
-5. Emails Matthew with gut-check verdict (APPLY/MAYBE/PASS)
+5. Emails with gut-check verdict: APPLY / MAYBE / PASS
 
----
-
-## 🎯 WHEN YOU GET AN EMAIL
-
-Reply **"BUILD"** → Come to Claude, paste JD, get resume + 2 cover letters  
-Reply **"PASS"** → Job gets logged and skipped
+**When you get an email:**
+- Reply **"BUILD"** → Come to Claude, paste JD, get resume + 2 cover letters
+- Reply **"PASS"** → Job gets logged and skipped
 
 ---
 
@@ -68,14 +50,13 @@ Reply **"PASS"** → Job gets logged and skipped
 
 ---
 
-## ✅ NEXT STEPS
+## ✅ ACTION ITEMS
 
-**Matthew:**
-- [ ] Wait 30 min, check Gmail for first scraper email
-- [ ] If no email after 1 hour, ping Claude to debug
+**Matthew (BLOCKING):**
+- [ ] **Disable Vercel firewall** — scraper cannot run until this is done
 
-**Next Claude Session:**
-- Read `PROJECT_INSTRUCTIONS.md` from repo
-- Read `APPLICATION_LOG.md` from repo (now has Cyara #39 + Mastercard #40 rejections)
-- Scan Gmail for recruiter updates
-- Verify scraper is sending emails
+**Claude (every session):**
+- Read APPLICATION_LOG.md from GitHub (verify row count — should be 39 as of 5/23)
+- Read PROJECT_INSTRUCTIONS.md and STATUS.md
+- Scan Gmail for recruiter activity since last session
+- Verify scraper is running (check for job alert emails)
