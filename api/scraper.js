@@ -15,17 +15,17 @@ const CONFIG = {
 };
 
 async function jsearch(query) {
-  const url = new URL('https://jsearch.p.rapidapi.com/search');
-  url.searchParams.set('query', query);
-  url.searchParams.set('page', '1');
-  url.searchParams.set('num_pages', '1');
-  url.searchParams.set('date_posted', 'today');
-  url.searchParams.set('remote_jobs_only', 'true');
-  url.searchParams.set('employment_types', 'FULLTIME');
-  url.searchParams.set('country', 'us');
+  const params = new URLSearchParams({
+    query,
+    num_pages: '1',
+    country: 'us',
+    date_posted: 'today'
+  });
+  const url = `https://jsearch.p.rapidapi.com/search-v2?${params}`;
 
-  const res = await fetch(url.toString(), {
+  const res = await fetch(url, {
     headers: {
+      'Content-Type': 'application/json',
       'x-rapidapi-host': 'jsearch.p.rapidapi.com',
       'x-rapidapi-key': process.env.RAPIDAPI_KEY
     },
