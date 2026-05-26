@@ -20,6 +20,7 @@ module.exports = async function handler(req, res) {
   // Run scraper asynchronously in background
   (async () => {
     try {
+      const startTime = new Date();
       console.log('[cron] Starting scraper...');
       
       const allJobs = [];
@@ -44,14 +45,17 @@ module.exports = async function handler(req, res) {
       console.log(`[cron] New jobs: ${newJobs.length}`);
       
       // Store
+      let storedCount = 0;
       if (newJobs.length > 0) {
         await storeJobs(newJobs);
+        storedCount = newJobs.length;
         console.log(`[cron] Stored ${newJobs.length} jobs`);
       }
       
-      console.log('[cron] Complete');
+      const duration = Date.now() - startTime.getTime();
+      console.log(`[cron] Complete in ${duration}ms: found=${allJobs.length}, deduped=${deduped.length}, new=${newJobs.length}, stored=${storedCount}`);
     } catch (err) {
-      console.error('[cron] Error:', err.message);
+      console.error('[cron] Error:', err.message, err.stack);
     }
   })();
 };
@@ -67,6 +71,8 @@ async function scrapeActiveJobs() {
       url.searchParams.append('location_filter', '"United States"');
       url.searchParams.append('description_type', 'text');
       
+      console.log(`[active-jobs] Fetching "${keyword}"...`);
+      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -76,22 +82,30 @@ async function scrapeActiveJobs() {
         }
       });
       
+      console.log(`[active-jobs] Status: ${response.status}`);
+      
       if (!response.ok) {
-        console.log(`[active-jobs] Status ${response.status} for "${keyword}"`);
+        const text = await response.text();
+        console.log(`[active-jobs] Error response: ${text.slice(0, 200)}`);
         continue;
       }
       
       const data = await response.json();
-      const normalized = (data.data || data.jobs || data || [])
+      const jobs_list = data.data || data.jobs || data || [];
+      console.log(`[active-jobs] Got ${jobs_list.length} raw results`);
+      
+      const normalized = jobs_list
         .map(j => normalizeActiveJob(j))
         .filter(Boolean);
       
+      console.log(`[active-jobs] "${keyword}": ${normalized.length} normalized`);
       jobs.push(...normalized);
     } catch (err) {
       console.error(`[active-jobs] Error "${keyword}":`, err.message);
     }
   }
   
+  console.log(`[active-jobs] Total: ${jobs.length}`);
   return jobs;
 }
 
@@ -106,6 +120,8 @@ async function scrapeLinkedIn() {
       url.searchParams.append('datePosted', 'past24Hours');
       url.searchParams.append('sort', 'mostRecent');
       
+      console.log(`[linkedin] Fetching "${keyword}"...`);
+      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -114,22 +130,30 @@ async function scrapeLinkedIn() {
         }
       });
       
+      console.log(`[linkedin] Status: ${response.status}`);
+      
       if (!response.ok) {
-        console.log(`[linkedin] Status ${response.status} for "${keyword}"`);
+        const text = await response.text();
+        console.log(`[linkedin] Error response: ${text.slice(0, 200)}`);
         continue;
       }
       
       const data = await response.json();
-      const normalized = (data.data || data.jobs || [])
+      const jobs_list = data.data || data.jobs || [];
+      console.log(`[linkedin] Got ${jobs_list.length} raw results`);
+      
+      const normalized = jobs_list
         .map(j => normalizeLinkedInJob(j))
         .filter(Boolean);
       
+      console.log(`[linkedin] "${keyword}": ${normalized.length} normalized`);
       jobs.push(...normalized);
     } catch (err) {
       console.error(`[linkedin] Error "${keyword}":`, err.message);
     }
   }
   
+  console.log(`[linkedin] Total: ${jobs.length}`);
   return jobs;
 }
 
