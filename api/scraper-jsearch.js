@@ -6,7 +6,7 @@ const CONFIG = {
   maxAgeDays: 2,
   emailTo: 'mgolia6@gmail.com',
   titleKeywords: ['account executive', 'strategic account', 'enterprise account', 'enterprise sales'],
-  minSalary: 200000 // $200K OTE floor
+  minSalary: 150000 // $150K base = ~$300K OTE
 };
 
 const SEARCHES = [
