@@ -1,3 +1,4 @@
+// redeploy trigger 20260526T014449
 export default async function handler(req, res) {
   const vars = {
     ANTHROPIC_API_KEY:  !!process.env.ANTHROPIC_API_KEY,
