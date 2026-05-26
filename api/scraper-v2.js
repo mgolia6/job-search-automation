@@ -77,6 +77,7 @@ module.exports = async function handler(req, res) {
 
 async function scrapeLinkedIn() {
   const jobs = [];
+  console.log('[linkedin] Starting LinkedIn scrape...');
   
   for (const keyword of CONFIG.titleKeywords) {
     try {
@@ -86,6 +87,8 @@ async function scrapeLinkedIn() {
       url.searchParams.append('datePosted', 'past24Hours');
       url.searchParams.append('sort', 'mostRecent');
       
+      console.log(`[linkedin] Fetching "${keyword}"...`);
+      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -94,6 +97,8 @@ async function scrapeLinkedIn() {
         }
       });
       
+      console.log(`[linkedin] Response: ${response.status}`);
+      
       if (!response.ok) continue;
       
       const data = await response.json();
@@ -101,12 +106,14 @@ async function scrapeLinkedIn() {
         .map(j => normalizeLinkedInJob(j))
         .filter(Boolean);
       
+      console.log(`[linkedin] "${keyword}": ${normalized.length} jobs`);
       jobs.push(...normalized);
     } catch (err) {
       console.error(`[linkedin] Error with keyword "${keyword}":`, err.message);
     }
   }
   
+  console.log(`[linkedin] Total: ${jobs.length}`);
   return jobs;
 }
 
