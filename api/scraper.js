@@ -1,4 +1,4 @@
-// api/scraper.js — web search only, no MCP, no SDK
+// api/scraper.js — web search, prompt reframed
 const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
@@ -8,14 +8,15 @@ const CONFIG = {
   aeTitleKeywords: ['account executive','account manager','strategic account','enterprise sales','enterprise account']
 };
 
-async function claude(userPrompt) {
-  const body = {
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 4000,
-    tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-    messages: [{ role: 'user', content: userPrompt }]
-  };
+const SEARCHES = [
+  'Enterprise Account Executive remote job openings posted this week on Greenhouse or Lever',
+  'Strategic Account Executive remote B2B SaaS job openings posted this week',
+  'Senior Account Executive remote enterprise sales job openings posted this week on Greenhouse or Ashby',
+  'Strategic Account Manager remote SaaS job openings posted this week',
+  'Enterprise Account Executive remote fintech or HR tech job posted this week',
+];
 
+async function claude(userPrompt) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -23,7 +24,12 @@ async function claude(userPrompt) {
       'x-api-key': process.env.ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01'
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2000,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages: [{ role: 'user', content: userPrompt }]
+    })
   });
 
   if (!res.ok) {
@@ -35,34 +41,24 @@ async function claude(userPrompt) {
 
 async function runJobScraper() {
   console.log('[scraper] START', new Date().toISOString());
-
-  const queries = [
-    'site:boards.greenhouse.io "enterprise account executive" remote',
-    'site:jobs.lever.co "enterprise account executive" remote',
-    'site:jobs.ashbyhq.com "enterprise account executive" remote',
-    'site:boards.greenhouse.io "strategic account executive" remote',
-    'site:jobs.lever.co "senior account executive" remote',
-  ];
-
   const allJobs = [];
 
-  for (const query of queries) {
+  for (const search of SEARCHES) {
     try {
-      console.log('[scraper] searching:', query.slice(0, 60));
+      console.log('[scraper] searching:', search.slice(0, 60));
       const msg = await claude(
-        `Search for: ${query}\n\nFind job postings from the last 2 days only. US remote roles. Return ONLY a JSON array:\n[{"company":"Acme","title":"Enterprise Account Executive","url":"https://...","salary":"$120k-$150k or Not listed","date":"2026-05-25"}]\n\nReturn empty array [] if nothing found. No other text.`
+        `Find real job postings for: ${search}\n\nRequirements:\n- Posted within the last 2 days\n- US remote or fully remote\n- Real job listings only, not articles or blog posts\n\nReturn ONLY a JSON array with no other text before or after:\n[{"company":"Acme Corp","title":"Enterprise Account Executive","url":"https://boards.greenhouse.io/acme/jobs/123","salary":"$120k-$200k OTE or Not listed","date":"2026-05-25"}]\n\nReturn [] if nothing found.`
       );
 
       const text = (msg.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
-      console.log('[scraper] response snippet:', text.slice(0, 200));
+      console.log('[scraper] preview:', text.slice(0, 150).replace(/\n/g, ' '));
 
-      const match = text.match(/\[[\s\S]*?\]/);
-      if (!match) { console.log('[scraper] no JSON array found'); continue; }
+      const match = text.match(/\[[\s\S]*\]/);
+      if (!match) { console.log('[scraper] no JSON found'); continue; }
 
       let arr;
-      try { arr = JSON.parse(match[0]); } catch(e) { console.log('[scraper] JSON parse fail:', e.message); continue; }
-
-      console.log(`[scraper] parsed ${arr.length} jobs from query`);
+      try { arr = JSON.parse(match[0]); } catch(e) { console.log('[scraper] parse fail:', e.message); continue; }
+      console.log(`[scraper] got ${arr.length} jobs`);
 
       for (const j of arr) {
         if (!j.company || !j.title || !j.url) continue;
@@ -75,39 +71,27 @@ async function runJobScraper() {
           applyUrl: j.url, postedDate: j.date ? new Date(j.date) : new Date()
         });
       }
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 1200));
     } catch (err) {
-      console.error('[scraper] query failed:', err.message);
+      console.error('[scraper] error:', err.message);
     }
   }
 
-  console.log(`[scraper] Raw total: ${allJobs.length}`);
+  console.log(`[scraper] total raw: ${allJobs.length}`);
   const deduped = globalDedupe(allJobs);
   const newJobs = await filterNewJobs(deduped);
-  console.log(`[scraper] ${newJobs.length} new after dedup/filter`);
+  console.log(`[scraper] ${newJobs.length} new after filter`);
 
   if (!newJobs.length) return { jobsFound: 0 };
 
   await storeJobs(newJobs);
   for (const job of newJobs) await sendAlert(job);
-  console.log(`[scraper] Done. ${newJobs.length} alerts sent.`);
   return { jobsFound: newJobs.length };
 }
 
-function isAERole(title) {
-  if (!title) return false;
-  return CONFIG.aeTitleKeywords.some(k => title.toLowerCase().includes(k));
-}
-
-function withinMaxAge(dateStr) {
-  if (!dateStr) return true;
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d)) return true;
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - CONFIG.maxAgeDays);
-    return d >= cutoff;
-  } catch { return true; }
+function isAERole(t) {
+  if (!t) return false;
+  return CONFIG.aeTitleKeywords.some(k => t.toLowerCase().includes(k));
 }
 
 function slugify(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80); }
@@ -141,7 +125,7 @@ async function storeJobs(jobs) {
 
 async function sendAlert(job) {
   const subject = `[${job.source}] ${job.company}: ${job.title}`;
-  const text = `MAYBE — No health data yet\n\nCompany:  ${job.company}\nRole:     ${job.title}\nSource:   ${job.source}\nSalary:   ${job.salary}\nLink:     ${job.applyUrl}\n\n---\nReply BUILD -> paste JD in Claude, get resume + 2 CLs`;
+  const text = `New role found\n\nCompany:  ${job.company}\nRole:     ${job.title}\nSource:   ${job.source}\nSalary:   ${job.salary}\nLink:     ${job.applyUrl}\n\n---\nReply BUILD -> paste JD in Claude, get resume + 2 CLs`;
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -150,7 +134,7 @@ async function sendAlert(job) {
   });
   const data = await res.json();
   if (!res.ok) console.error('[email]', JSON.stringify(data));
-  else console.log('[email] sent:', job.company, data.id);
+  else console.log('[email] sent:', job.company);
 }
 
 module.exports = { runJobScraper };
