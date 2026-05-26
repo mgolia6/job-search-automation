@@ -541,8 +541,6 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 <div class="toast" id="toast"></div>
 
 <script>
-var SUPA_URL  = 'https://ulkusggbsmkscnwcyshm.supabase.co';
-var SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsa3VzZ2dic21rc2Nud2N5c2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY0Nzg5NzQsImV4cCI6MjA2MjA1NDk3NH0.4mxdCPV2GLHQKZ5w0M6UDGSFgHGa_hTPPKL8Q7ZnJTg';
 var CRON_SECRET = 'cron-secret-matthew';
 
 var APPS = [], JOBS = [];
@@ -565,33 +563,30 @@ function badge(status) {
   return '<span class="badge" style="color:' + cfg.color + ';background:' + cfg.bg + '">' + (status || '—') + '</span>';
 }
 
-function db(table, params) {
-  return fetch(SUPA_URL + '/rest/v1/' + table + (params || ''), {
-    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-  }).then(function(r) { return r.json(); });
+function loadData() {
+  return fetch('/api/data')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      APPS = Array.isArray(d.applications) ? d.applications : [];
+      JOBS = Array.isArray(d.jobs) ? d.jobs : [];
+      renderPipeline();
+      renderScraper();
+    })
+    .catch(function(e) {
+      document.getElementById('pane-pipeline').innerHTML =
+        '<div class="error-box">⚠ Could not load data: ' + e.message + '</div>';
+    });
 }
 
 function dbPatch(table, id, body) {
-  return fetch(SUPA_URL + '/rest/v1/' + table + '?id=eq.' + id, {
+  return fetch('/api/data', {
     method: 'PATCH',
-    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-    body: JSON.stringify(body)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: id, ...body })
   }).then(function(r) { return r.json(); });
 }
 
-// Load data
-Promise.all([
-  db('applications', '?order=app_number.asc.nullslast&limit=200'),
-  db('jobs', '?order=scraped_at.desc&limit=100')
-]).then(function(results) {
-  APPS = Array.isArray(results[0]) ? results[0] : [];
-  JOBS = Array.isArray(results[1]) ? results[1] : [];
-  renderPipeline();
-  renderScraper();
-}).catch(function(e) {
-  document.getElementById('pane-pipeline').innerHTML =
-    '<div class="error-box">⚠ Could not connect to database: ' + e.message + '</div>';
-});
+loadData();
 
 // ── Pipeline ──────────────────────────────────────────────────────────────────
 function renderPipeline() {
@@ -799,8 +794,8 @@ function triggerScraper(btn) {
     btn.innerHTML = orig;
     showToast(data.success ? '✓ Scraper complete — ' + (data.jobsFound||0) + ' new jobs' : '⚠ Scraper error: ' + (data.error||'unknown'));
     if (data.success) {
-      db('jobs', '?order=scraped_at.desc&limit=100').then(function(jobs) {
-        JOBS = Array.isArray(jobs) ? jobs : [];
+      fetch('/api/data').then(function(r){ return r.json(); }).then(function(d) {
+        JOBS = Array.isArray(d.jobs) ? d.jobs : [];
         renderScraper();
       });
     }
