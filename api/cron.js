@@ -16,39 +16,38 @@ module.exports = async function handler(req, res) {
 
   try {
     const startTime = new Date();
-    console.log('[cron] Starting scraper...');
     
     const allJobs = [];
+    let errors = [];
     
-    // Try Active Jobs DB (more reliable than LinkedIn)
-    console.log('[cron] Scraping Active Jobs DB...');
-    const activeJobs = await scrapeActiveJobs();
-    console.log(`[cron] Active Jobs DB: ${activeJobs.length} jobs`);
-    allJobs.push(...activeJobs);
+    // Test Active Jobs DB
+    try {
+      const activeJobs = await scrapeActiveJobs();
+      allJobs.push(...activeJobs);
+    } catch (err) {
+      errors.push(`Active Jobs: ${err.message}`);
+    }
     
-    // Try LinkedIn
-    console.log('[cron] Scraping LinkedIn...');
-    const linkedinJobs = await scrapeLinkedIn();
-    console.log(`[cron] LinkedIn: ${linkedinJobs.length} jobs`);
-    allJobs.push(...linkedinJobs);
+    // Test LinkedIn
+    try {
+      const linkedinJobs = await scrapeLinkedIn();
+      allJobs.push(...linkedinJobs);
+    } catch (err) {
+      errors.push(`LinkedIn: ${err.message}`);
+    }
     
     // Dedupe and filter
     const deduped = globalDedupe(allJobs);
-    console.log(`[cron] After dedupe: ${deduped.length} jobs`);
-    
     const newJobs = await filterNewJobs(deduped);
-    console.log(`[cron] New jobs: ${newJobs.length}`);
     
     // Store
     let storedCount = 0;
     if (newJobs.length > 0) {
       await storeJobs(newJobs);
       storedCount = newJobs.length;
-      console.log(`[cron] Stored ${newJobs.length} jobs`);
     }
     
     const duration = Date.now() - startTime.getTime();
-    console.log(`[cron] Complete in ${duration}ms`);
     
     return res.status(200).json({
       success: true,
@@ -56,7 +55,8 @@ module.exports = async function handler(req, res) {
       deduped: deduped.length,
       new: newJobs.length,
       stored: storedCount,
-      duration
+      duration,
+      errors: errors.length > 0 ? errors : null
     });
   } catch (err) {
     console.error('[cron] Error:', err.message, err.stack);
@@ -67,6 +67,10 @@ module.exports = async function handler(req, res) {
 async function scrapeActiveJobs() {
   const jobs = [];
   
+  if (!process.env.RAPIDAPI_KEY) {
+    throw new Error('RAPIDAPI_KEY not set');
+  }
+  
   for (const keyword of CONFIG.titleKeywords) {
     try {
       const url = new URL('https://active-jobs-db.p.rapidapi.com/active-ats-1h');
@@ -74,8 +78,6 @@ async function scrapeActiveJobs() {
       url.searchParams.append('title_filter', `"${keyword}"`);
       url.searchParams.append('location_filter', '"United States"');
       url.searchParams.append('description_type', 'text');
-      
-      console.log(`[active-jobs] Fetching "${keyword}"...`);
       
       const response = await fetch(url, {
         method: 'GET',
@@ -86,35 +88,34 @@ async function scrapeActiveJobs() {
         }
       });
       
-      console.log(`[active-jobs] Status: ${response.status}`);
-      
       if (!response.ok) {
         const text = await response.text();
-        console.log(`[active-jobs] Error response: ${text.slice(0, 200)}`);
-        continue;
+        throw new Error(`Status ${response.status}: ${text.slice(0, 100)}`);
       }
       
       const data = await response.json();
       const jobs_list = data.data || data.jobs || data || [];
-      console.log(`[active-jobs] Got ${jobs_list.length} raw results`);
       
       const normalized = jobs_list
         .map(j => normalizeActiveJob(j))
         .filter(Boolean);
       
-      console.log(`[active-jobs] "${keyword}": ${normalized.length} normalized`);
       jobs.push(...normalized);
     } catch (err) {
-      console.error(`[active-jobs] Error "${keyword}":`, err.message);
+      console.error(`[active-jobs] "${keyword}":`, err.message);
+      // Continue with next keyword instead of throwing
     }
   }
   
-  console.log(`[active-jobs] Total: ${jobs.length}`);
   return jobs;
 }
 
 async function scrapeLinkedIn() {
   const jobs = [];
+  
+  if (!process.env.RAPIDAPI_KEY) {
+    throw new Error('RAPIDAPI_KEY not set');
+  }
   
   for (const keyword of CONFIG.titleKeywords) {
     try {
@@ -124,8 +125,6 @@ async function scrapeLinkedIn() {
       url.searchParams.append('datePosted', 'past24Hours');
       url.searchParams.append('sort', 'mostRecent');
       
-      console.log(`[linkedin] Fetching "${keyword}"...`);
-      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -134,30 +133,25 @@ async function scrapeLinkedIn() {
         }
       });
       
-      console.log(`[linkedin] Status: ${response.status}`);
-      
       if (!response.ok) {
         const text = await response.text();
-        console.log(`[linkedin] Error response: ${text.slice(0, 200)}`);
-        continue;
+        throw new Error(`Status ${response.status}: ${text.slice(0, 100)}`);
       }
       
       const data = await response.json();
       const jobs_list = data.data || data.jobs || [];
-      console.log(`[linkedin] Got ${jobs_list.length} raw results`);
       
       const normalized = jobs_list
         .map(j => normalizeLinkedInJob(j))
         .filter(Boolean);
       
-      console.log(`[linkedin] "${keyword}": ${normalized.length} normalized`);
       jobs.push(...normalized);
     } catch (err) {
-      console.error(`[linkedin] Error "${keyword}":`, err.message);
+      console.error(`[linkedin] "${keyword}":`, err.message);
+      // Continue with next keyword instead of throwing
     }
   }
   
-  console.log(`[linkedin] Total: ${jobs.length}`);
   return jobs;
 }
 
