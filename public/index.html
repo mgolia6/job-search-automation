@@ -495,6 +495,12 @@ td { padding: 11px 14px; vertical-align: middle; }
   background: var(--accent-light);
 }
 
+.tab-divider {
+  width: 1px;
+  background: var(--border);
+  margin: 6px 8px;
+}
+
 /* ── Tier Badges ── */
 .tier-badge {
   display: inline-flex;
@@ -526,6 +532,52 @@ td { padding: 11px 14px; vertical-align: middle; }
 .tier-badge.tier-unknown {
   background: var(--bg);
   color: var(--muted);
+}
+
+/* ── Status Badges ── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-left: 8px;
+}
+
+.status-badge.status-backlog {
+  background: var(--yellow-light);
+  color: var(--yellow);
+}
+
+.status-badge.status-dismissed {
+  background: var(--red-light);
+  color: var(--red);
+}
+
+/* ── Job Justification ── */
+.job-justification {
+  padding: 10px 12px;
+  margin: 12px 0;
+  background: var(--bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--sub);
+}
+
+.job-justification strong {
+  color: var(--text);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+/* ── Dismissed Cards ── */
+.job-card-new.dismissed {
+  opacity: 0.6;
+  border-color: var(--red);
 }
 
 /* ── Job Card Updates ── */
@@ -600,6 +652,93 @@ td { padding: 11px 14px; vertical-align: middle; }
 
 .recon-link:hover {
   text-decoration: underline;
+}
+
+/* ── Dismiss Modal ── */
+.dismiss-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dismiss-modal {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.dismiss-modal h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.dismiss-select,
+.dismiss-notes {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: var(--sans);
+  margin-bottom: 12px;
+}
+
+.dismiss-select:focus,
+.dismiss-notes:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.dismiss-notes {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.dismiss-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.dismiss-cancel,
+.dismiss-submit {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.dismiss-cancel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.dismiss-cancel:hover {
+  background: var(--border);
+}
+
+.dismiss-submit {
+  background: var(--red);
+  border: none;
+  color: white;
+}
+
+.dismiss-submit:hover {
+  background: #b91c1c;
 }
 
 
@@ -1289,7 +1428,8 @@ function renderScraper() {
     return;
   }
 
-  // Filter by tier
+  // Filter by tier or status
+  var dismissedJobs = JOBS.filter(function(j) { return j.status === 'dismissed'; });
   var tier1 = activeJobs.filter(function(j) { return j.estimated_ote >= 300000; });
   var tier2 = activeJobs.filter(function(j) { return j.estimated_ote >= 250000 && j.estimated_ote < 300000; });
   var tier3 = activeJobs.filter(function(j) { return j.estimated_ote >= 200000 && j.estimated_ote < 250000; });
@@ -1300,6 +1440,8 @@ function renderScraper() {
   else if (SCRAPER_FILTER === '250k') filtered = tier2;
   else if (SCRAPER_FILTER === '200k') filtered = tier3;
   else if (SCRAPER_FILTER === 'unknown') filtered = tierUnknown;
+  else if (SCRAPER_FILTER === 'backlog') filtered = backlogJobs;
+  else if (SCRAPER_FILTER === 'dismissed') filtered = dismissedJobs;
 
   // Sort jobs
   filtered.sort(function(a, b) {
@@ -1316,11 +1458,14 @@ function renderScraper() {
 
   // Tier tabs
   var html = '<div class="opportunities-tabs">'
-    + opportunityTab('all', 'All (' + activeJobs.length + ')', SCRAPER_FILTER === 'all')
+    + opportunityTab('all', 'Active (' + activeJobs.length + ')', SCRAPER_FILTER === 'all')
     + opportunityTab('300k', '$300K+ (' + tier1.length + ')', SCRAPER_FILTER === '300k')
     + opportunityTab('250k', '$250K–$300K (' + tier2.length + ')', SCRAPER_FILTER === '250k')
     + opportunityTab('200k', '$200K–$250K (' + tier3.length + ')', SCRAPER_FILTER === '200k')
     + opportunityTab('unknown', 'Unknown (' + tierUnknown.length + ')', SCRAPER_FILTER === 'unknown')
+    + '<div class="tab-divider"></div>'
+    + opportunityTab('backlog', 'Backlog (' + backlogJobs.length + ')', SCRAPER_FILTER === 'backlog')
+    + opportunityTab('dismissed', 'Dismissed', SCRAPER_FILTER === 'dismissed')
     + '</div>';
 
   // Sort toggle
@@ -1361,15 +1506,20 @@ function renderJobCard(j) {
   var baseSalary = j.base_salary ? '$' + Math.round(j.base_salary / 1000) + 'K' : 'Not listed';
   var ote = j.estimated_ote ? '$' + Math.round(j.estimated_ote / 1000) + 'K' : 'Unknown';
   var isBacklog = j.status === 'backlog';
+  var isDismissed = j.status === 'dismissed';
   var source = j.source || 'Unknown';
   var tierBadge = getTierBadge(j.estimated_ote);
+  var statusBadge = '';
+  if (isBacklog) statusBadge = '<span class="status-badge status-backlog">Backlogged</span>';
+  if (isDismissed) statusBadge = '<span class="status-badge status-dismissed">Dismissed</span>';
 
-  return '<div class="job-card-new' + (isBacklog ? ' backlogged' : '') + '">'
+  return '<div class="job-card-new' + (isBacklog ? ' backlogged' : '') + (isDismissed ? ' dismissed' : '') + '">'
     + '<div class="job-card-header">'
-    + '<div class="job-card-co">' + (j.company || '') + ' ' + tierBadge + '</div>'
+    + '<div class="job-card-co">' + (j.company || '') + ' ' + tierBadge + ' ' + statusBadge + '</div>'
     + '<div class="job-card-title">' + (j.title || '') + '</div>'
     + '<div class="job-card-source">Source: ' + source + '</div>'
     + '</div>'
+    + (j.justification ? '<div class="job-justification"><strong>Reason:</strong> ' + j.justification + '</div>' : '')
     + '<div class="job-card-meta">'
     + '<div class="meta-row"><span class="meta-label">Base:</span> <span class="meta-value">' + baseSalary + '</span></div>'
     + '<div class="meta-row"><span class="meta-label">Est OTE:</span> <span class="meta-value ote">' + ote + '</span></div>'
@@ -1380,12 +1530,14 @@ function renderJobCard(j) {
     + (isExpanded ? '▼' : '▶') + ' Company Recon'
     + '</div>'
     + (isExpanded ? renderReconSection(j) : '')
-    + '<div class="job-card-actions">'
-    + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + jobId + '\', \'add_to_pipeline\', ' + JSON.stringify(j) + ')">Add to Pipeline</button>'
-    + '<button class="action-btn action-backlog" onclick="promptJobAction(event, \'' + jobId + '\', \'backlog\')">Backlog</button>'
-    + '<button class="action-btn action-dismiss" onclick="promptJobAction(event, \'' + jobId + '\', \'dismiss\')">Not a Fit</button>'
-    + (j.apply_url ? '<a href="' + j.apply_url + '" target="_blank" class="action-btn action-apply">Apply →</a>' : '')
-    + '</div>'
+    + (!isDismissed ? 
+      '<div class="job-card-actions">'
+      + '<button class="action-btn action-pipeline" onclick="jobAction(event, \\'' + jobId + '\\', \\'add_to_pipeline\\', ' + JSON.stringify(j) + ')">Add to Pipeline</button>'
+      + (!isBacklog ? '<button class="action-btn action-backlog" onclick="promptJobAction(event, \\'' + jobId + '\\', \\'backlog\\')">Backlog</button>' : '')
+      + '<button class="action-btn action-dismiss" onclick="promptJobAction(event, \\'' + jobId + '\\', \\'dismiss\\')">Not a Fit</button>'
+      + (j.apply_url ? '<a href="' + j.apply_url + '" target="_blank" class="action-btn action-apply">Apply →</a>' : '')
+      + '</div>'
+      : '<div class="job-card-actions"><a href="' + (j.apply_url || '#') + '" target="_blank" class="action-btn action-apply">View Posting →</a></div>')
     + '</div>';
 }
 
@@ -1474,14 +1626,71 @@ function setScraperSort(s) {
 }
 
 function promptJobAction(event, jobId, action) {
-  var actionLabel = action === 'backlog' ? 'Backlog' : 'Dismiss';
-  var justification = prompt('Why ' + actionLabel.toLowerCase() + ' this role?');
-  if (justification === null) return; // User cancelled
-  if (!justification.trim()) {
-    alert('Please provide a justification.');
+  if (action === 'dismiss') {
+    // Show modal for dismiss with dropdown + notes
+    showDismissModal(event, jobId);
+  } else if (action === 'backlog') {
+    var justification = prompt('Why backlog this role?');
+    if (justification === null) return; // User cancelled
+    if (!justification.trim()) {
+      alert('Please provide a justification.');
+      return;
+    }
+    jobAction(event, jobId, action, null, justification);
+  }
+}
+
+function showDismissModal(triggerEvent, jobId) {
+  // Create modal overlay
+  var modal = document.createElement('div');
+  modal.className = 'dismiss-modal-overlay';
+  modal.innerHTML = '<div class="dismiss-modal">'
+    + '<h3>Why is this not a fit?</h3>'
+    + '<select id="dismiss-reason" class="dismiss-select">'
+    + '<option value="">Select a reason...</option>'
+    + '<option value="Location not aligned">Location not aligned</option>'
+    + '<option value="Salary not aligned">Salary not aligned</option>'
+    + '<option value="Company size not aligned">Company size not aligned</option>'
+    + '<option value="Industry not aligned">Industry not aligned</option>'
+    + '<option value="Role too junior">Role too junior</option>'
+    + '<option value="Role too senior">Role too senior</option>'
+    + '<option value="Wrong sales motion (SMB/MM/ENT)">Wrong sales motion</option>'
+    + '<option value="Product/service not interesting">Product/service not interesting</option>'
+    + '<option value="Company health concerns">Company health concerns</option>'
+    + '<option value="Other">Other</option>'
+    + '</select>'
+    + '<textarea id="dismiss-notes" class="dismiss-notes" placeholder="Additional notes (optional)..."></textarea>'
+    + '<div class="dismiss-actions">'
+    + '<button class="dismiss-cancel" onclick="closeDismissModal()">Cancel</button>'
+    + '<button class="dismiss-submit" onclick="submitDismiss(\'' + jobId + '\', event)">Dismiss</button>'
+    + '</div>'
+    + '</div>';
+  document.body.appendChild(modal);
+  
+  // Store trigger event for later
+  modal.triggerEvent = triggerEvent;
+}
+
+function closeDismissModal() {
+  var modal = document.querySelector('.dismiss-modal-overlay');
+  if (modal) modal.remove();
+}
+
+function submitDismiss(jobId, submitEvent) {
+  var reason = document.getElementById('dismiss-reason').value;
+  var notes = document.getElementById('dismiss-notes').value.trim();
+  
+  if (!reason) {
+    alert('Please select a reason');
     return;
   }
-  jobAction(event, jobId, action, null, justification);
+  
+  var justification = notes ? `${reason}: ${notes}` : reason;
+  var modal = document.querySelector('.dismiss-modal-overlay');
+  var triggerEvent = modal ? modal.triggerEvent : submitEvent;
+  
+  closeDismissModal();
+  jobAction(triggerEvent, jobId, 'dismiss', null, justification);
 }
 
 function jobAction(event, jobId, action, jobData, justification) {

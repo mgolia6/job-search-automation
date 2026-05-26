@@ -6,19 +6,7 @@ const CONFIG = {
   maxAgeDays: 2,
   emailTo: 'mgolia6@gmail.com',
   titleKeywords: ['account executive', 'strategic account', 'enterprise account', 'enterprise sales'],
-  minSalary: 150000, // $150K base = ~$300K OTE
-  // Preferred sources - filter out aggregators
-  blockedSources: [
-    'remote rocketship',
-    'the ladders', 
-    'talent.com',
-    'media bistro',
-    'ziprecruiter',
-    'monster',
-    'simplyhired',
-    'jooble',
-    'adzuna'
-  ]
+  minSalary: 150000 // $150K base = ~$300K OTE
 };
 
 const SEARCHES = [
@@ -55,13 +43,41 @@ function normalizeJob(j) {
   const company = j.employer_name;
   const title = j.job_title;
   const url = j.job_apply_link;
-  const source = j.job_publisher || 'Unknown';
+  
+  // Extract source from apply URL domain
+  let source = 'Unknown';
+  if (url) {
+    try {
+      const domain = new URL(url).hostname.toLowerCase();
+      if (domain.includes('linkedin')) source = 'LinkedIn';
+      else if (domain.includes('indeed')) source = 'Indeed';
+      else if (domain.includes('remoterocketship')) source = 'Remote Rocketship';
+      else if (domain.includes('theladders')) source = 'The Ladders';
+      else if (domain.includes('talent.com')) source = 'Talent.com';
+      else if (domain.includes('mediabistro')) source = 'Media Bistro';
+      else if (domain.includes('ziprecruiter')) source = 'ZipRecruiter';
+      else if (domain.includes('monster')) source = 'Monster';
+      else if (domain.includes('simplyhired')) source = 'SimplyHired';
+      else if (domain.includes('jooble')) source = 'Jooble';
+      else if (domain.includes('adzuna')) source = 'Adzuna';
+      else if (domain.includes('jobgether')) source = 'Jobgether';
+      else if (domain.includes('glassdoor')) source = 'Glassdoor';
+      else if (domain.includes('greenhouse')) source = 'Greenhouse (Company Site)';
+      else if (domain.includes('lever')) source = 'Lever (Company Site)';
+      else if (domain.includes('workday')) source = 'Workday (Company Site)';
+      else if (domain.includes('careers') || domain.includes('jobs')) source = 'Company Career Site';
+      else source = domain.replace('www.', '');
+    } catch (e) {
+      source = 'Unknown';
+    }
+  }
   
   if (!company || !title) return null;
   if (!isAERole(title)) return null;
   
   // Filter out blocked sources (aggregators)
-  if (CONFIG.blockedSources.some(blocked => source.toLowerCase().includes(blocked))) {
+  const blockedSources = ['Remote Rocketship', 'The Ladders', 'Talent.com', 'Media Bistro', 'ZipRecruiter', 'Monster', 'SimplyHired', 'Jooble', 'Adzuna', 'Jobgether'];
+  if (blockedSources.includes(source)) {
     return null;
   }
   
