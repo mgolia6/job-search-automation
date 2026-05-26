@@ -6,14 +6,18 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { action, jobId, jobData } = req.body;
+  const { action, jobId, jobData, justification } = req.body;
 
   try {
     if (action === 'backlog') {
-      // Mark job as backlogged
+      // Mark job as backlogged with justification
       const { error } = await supabase
         .from('jobs')
-        .update({ status: 'backlog', updated_at: new Date() })
+        .update({ 
+          status: 'backlog', 
+          justification: justification || null,
+          updated_at: new Date() 
+        })
         .eq('job_id', jobId);
       
       if (error) throw error;
@@ -21,10 +25,14 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'dismiss') {
-      // Mark job as dismissed
+      // Mark job as dismissed with justification
       const { error } = await supabase
         .from('jobs')
-        .update({ status: 'dismissed', updated_at: new Date() })
+        .update({ 
+          status: 'dismissed', 
+          justification: justification || null,
+          updated_at: new Date() 
+        })
         .eq('job_id', jobId);
       
       if (error) throw error;

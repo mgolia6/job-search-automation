@@ -463,6 +463,122 @@ td { padding: 11px 14px; vertical-align: middle; }
   text-decoration: underline;
 }
 
+/* ── Opportunities Tabs ── */
+.opportunities-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.opportunity-tab {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sub);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all .15s;
+  margin-bottom: -2px;
+}
+
+.opportunity-tab:hover {
+  color: var(--text);
+  background: var(--bg);
+}
+
+.opportunity-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* ── Tier Badges ── */
+.tier-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-left: 8px;
+}
+
+.tier-badge.tier-high {
+  background: var(--green-light);
+  color: var(--green);
+}
+
+.tier-badge.tier-med {
+  background: var(--blue-light);
+  color: var(--blue);
+}
+
+.tier-badge.tier-low {
+  background: var(--purple-light);
+  color: var(--purple);
+}
+
+.tier-badge.tier-unknown {
+  background: var(--bg);
+  color: var(--muted);
+}
+
+/* ── Job Card Updates ── */
+.job-card-source {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-family: var(--mono);
+}
+
+.recon-toggle {
+  padding: 8px 12px;
+  margin: 12px 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  background: var(--accent-light);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+}
+
+.recon-toggle:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.recon-section {
+  padding: 12px;
+  margin: 8px 0 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.recon-row {
+  margin-bottom: 8px;
+  color: var(--sub);
+}
+
+.recon-row:last-child {
+  margin-bottom: 0;
+}
+
+.recon-row strong {
+  color: var(--text);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
 
 .scraper-controls {
   display: flex;
@@ -1093,9 +1209,10 @@ function toggleRow(rowId) {
 
 function filterApps(q) { searchQ = q; renderRows(); }
 
-// ── Scraper Feed ──────────────────────────────────────────────────────────────
-var SCRAPER_FILTER = 'all'; // 'all', 'new', 'backlog'
+// ── Scraper Feed / Opportunities ─────────────────────────────────────────────
+var SCRAPER_FILTER = 'all'; // 'all', '300k', '250k', '200k', 'unknown'
 var SCRAPER_SORT = 'ote'; // 'ote', 'date'
+var expandedRecon = {}; // Track which jobs have recon section expanded
 
 function renderScraper() {
   var el = document.getElementById('scraper-content');
@@ -1149,12 +1266,17 @@ function renderScraper() {
     return;
   }
 
-  // Filter jobs
-  var filtered = JOBS.filter(function(j) {
-    if (SCRAPER_FILTER === 'new') return j.status === 'new' || !j.status;
-    if (SCRAPER_FILTER === 'backlog') return j.status === 'backlog';
-    return j.status !== 'dismissed';
-  });
+  // Filter by tier
+  var tier1 = activeJobs.filter(function(j) { return j.estimated_ote >= 300000; });
+  var tier2 = activeJobs.filter(function(j) { return j.estimated_ote >= 250000 && j.estimated_ote < 300000; });
+  var tier3 = activeJobs.filter(function(j) { return j.estimated_ote >= 200000 && j.estimated_ote < 250000; });
+  var tierUnknown = activeJobs.filter(function(j) { return !j.estimated_ote; });
+
+  var filtered = activeJobs;
+  if (SCRAPER_FILTER === '300k') filtered = tier1;
+  else if (SCRAPER_FILTER === '250k') filtered = tier2;
+  else if (SCRAPER_FILTER === '200k') filtered = tier3;
+  else if (SCRAPER_FILTER === 'unknown') filtered = tierUnknown;
 
   // Sort jobs
   filtered.sort(function(a, b) {
@@ -1169,54 +1291,61 @@ function renderScraper() {
     return bDate - aDate; // Newest first
   });
 
-  // Group by OTE tier
-  var tier1 = filtered.filter(function(j) { return j.estimated_ote >= 300000; });
-  var tier2 = filtered.filter(function(j) { return j.estimated_ote >= 250000 && j.estimated_ote < 300000; });
-  var tier3 = filtered.filter(function(j) { return j.estimated_ote >= 200000 && j.estimated_ote < 250000; });
-  var tierUnknown = filtered.filter(function(j) { return !j.estimated_ote; });
+  // Tier tabs
+  var html = '<div class="opportunities-tabs">'
+    + opportunityTab('all', 'All (' + activeJobs.length + ')', SCRAPER_FILTER === 'all')
+    + opportunityTab('300k', '$300K+ (' + tier1.length + ')', SCRAPER_FILTER === '300k')
+    + opportunityTab('250k', '$250K–$300K (' + tier2.length + ')', SCRAPER_FILTER === '250k')
+    + opportunityTab('200k', '$200K–$250K (' + tier3.length + ')', SCRAPER_FILTER === '200k')
+    + opportunityTab('unknown', 'Unknown (' + tierUnknown.length + ')', SCRAPER_FILTER === 'unknown')
+    + '</div>';
 
-  var html = '<div class="scraper-controls">'
-    + '<div class="scraper-filters">'
-    + '<button class="filter-btn' + (SCRAPER_FILTER === 'all' ? ' active' : '') + '" onclick="setScraperFilter(\'all\')">All (' + filtered.length + ')</button>'
-    + '<button class="filter-btn' + (SCRAPER_FILTER === 'new' ? ' active' : '') + '" onclick="setScraperFilter(\'new\')">New</button>'
-    + '<button class="filter-btn' + (SCRAPER_FILTER === 'backlog' ? ' active' : '') + '" onclick="setScraperFilter(\'backlog\')">Backlog</button>'
-    + '</div>'
+  // Sort toggle
+  html += '<div class="scraper-controls" style="margin-top:16px;">'
     + '<div class="scraper-sort">'
-    + '<button class="filter-btn' + (SCRAPER_SORT === 'ote' ? ' active' : '') + '" onclick="setScraperSort(\'ote\')">💰 OTE</button>'
-    + '<button class="filter-btn' + (SCRAPER_SORT === 'date' ? ' active' : '') + '" onclick="setScraperSort(\'date\')">🕐 Date</button>'
+    + '<button class="filter-btn' + (SCRAPER_SORT === 'ote' ? ' active' : '') + '" onclick="setScraperSort(\'ote\')">Sort: OTE</button>'
+    + '<button class="filter-btn' + (SCRAPER_SORT === 'date' ? ' active' : '') + '" onclick="setScraperSort(\'date\')">Sort: Date</button>'
     + '</div>'
     + '</div>';
 
-  if (tier1.length) html += renderTier('$300K+ OTE', tier1);
-  if (tier2.length) html += renderTier('$250K–$300K OTE', tier2);
-  if (tier3.length) html += renderTier('$200K–$250K OTE', tier3);
-  if (tierUnknown.length) html += renderTier('Salary Not Listed', tierUnknown);
+  // Job cards
+  html += '<div class="job-cards">' + filtered.map(renderJobCard).join('') + '</div>';
 
   if (!filtered.length) {
-    html += '<div style="text-align:center;padding:48px;color:var(--muted)">No jobs in this filter.</div>';
+    html += '<div style="text-align:center;padding:48px;color:var(--muted)">No jobs in this tier.</div>';
   }
 
   el.innerHTML = html;
 }
 
-function renderTier(label, jobs) {
-  return '<div class="tier-section">'
-    + '<div class="tier-label">' + label + ' <span class="tier-count">(' + jobs.length + ')</span></div>'
-    + '<div class="job-cards">' + jobs.map(renderJobCard).join('') + '</div>'
-    + '</div>';
+function opportunityTab(key, label, isActive) {
+  return '<button class="opportunity-tab' + (isActive ? ' active' : '') + '" onclick="setScraperFilter(\'' + key + '\')">' + label + '</button>';
+}
+
+function getTierBadge(ote) {
+  if (!ote) return '<span class="tier-badge tier-unknown">Unknown OTE</span>';
+  if (ote >= 300000) return '<span class="tier-badge tier-high">$300K+ OTE</span>';
+  if (ote >= 250000) return '<span class="tier-badge tier-med">$250K–$300K OTE</span>';
+  if (ote >= 200000) return '<span class="tier-badge tier-low">$200K–$250K OTE</span>';
+  return '<span class="tier-badge tier-unknown">Unknown OTE</span>';
 }
 
 function renderJobCard(j) {
+  var jobId = j.job_id;
+  var isExpanded = expandedRecon[jobId];
   var date = j.scraped_at
     ? new Date(j.scraped_at).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '—';
   var baseSalary = j.base_salary ? '$' + Math.round(j.base_salary / 1000) + 'K' : 'Not listed';
   var ote = j.estimated_ote ? '$' + Math.round(j.estimated_ote / 1000) + 'K' : 'Unknown';
   var isBacklog = j.status === 'backlog';
+  var source = j.source || 'Unknown';
+  var tierBadge = getTierBadge(j.estimated_ote);
 
   return '<div class="job-card-new' + (isBacklog ? ' backlogged' : '') + '">'
     + '<div class="job-card-header">'
-    + '<div class="job-card-co">' + (j.company || '') + '</div>'
+    + '<div class="job-card-co">' + (j.company || '') + ' ' + tierBadge + '</div>'
     + '<div class="job-card-title">' + (j.title || '') + '</div>'
+    + '<div class="job-card-source">Source: ' + source + '</div>'
     + '</div>'
     + '<div class="job-card-meta">'
     + '<div class="meta-row"><span class="meta-label">Base:</span> <span class="meta-value">' + baseSalary + '</span></div>'
@@ -1224,18 +1353,42 @@ function renderJobCard(j) {
     + '<div class="meta-row"><span class="meta-label">Location:</span> <span class="meta-value">' + (j.location || 'Remote') + '</span></div>'
     + '<div class="meta-row"><span class="meta-label">Posted:</span> <span class="meta-value">' + date + '</span></div>'
     + '</div>'
+    + '<div class="recon-toggle" onclick="toggleRecon(\'' + jobId + '\')">'
+    + (isExpanded ? '▼' : '▶') + ' Company Recon'
+    + '</div>'
+    + (isExpanded ? renderReconSection(j) : '')
     + '<div class="job-card-actions">'
-    + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + j.job_id + '\', \'add_to_pipeline\', ' + JSON.stringify(j) + ')">📋 Add to Pipeline</button>'
-    + '<button class="action-btn action-backlog" onclick="jobAction(event, \'' + j.job_id + '\', \'backlog\')">⏸ Backlog</button>'
-    + '<button class="action-btn action-dismiss" onclick="jobAction(event, \'' + j.job_id + '\', \'dismiss\')">✕ Not a Fit</button>'
+    + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + jobId + '\', \'add_to_pipeline\', ' + JSON.stringify(j) + ')">Add to Pipeline</button>'
+    + '<button class="action-btn action-backlog" onclick="promptJobAction(event, \'' + jobId + '\', \'backlog\')">Backlog</button>'
+    + '<button class="action-btn action-dismiss" onclick="promptJobAction(event, \'' + jobId + '\', \'dismiss\')">Not a Fit</button>'
     + (j.apply_url ? '<a href="' + j.apply_url + '" target="_blank" class="action-btn action-apply">Apply →</a>' : '')
     + '</div>'
     + '</div>';
 }
 
+function renderReconSection(j) {
+  var careersUrl = 'https://' + (j.company || '').toLowerCase().replace(/\s+/g, '') + '.com/careers';
+  return '<div class="recon-section">'
+    + '<div class="recon-row"><strong>Gut Check:</strong> ' + (j.gut_check || 'No data yet') + '</div>'
+    + '<div class="recon-row"><strong>RepVue:</strong> Coming soon</div>'
+    + '<div class="recon-row"><strong>Glassdoor:</strong> Coming soon</div>'
+    + '<div class="recon-row"><strong>Careers Page:</strong> <a href="' + careersUrl + '" target="_blank" class="job-link">' + careersUrl + '</a></div>'
+    + '</div>';
+}
+
+function toggleRecon(jobId) {
+  expandedRecon[jobId] = !expandedRecon[jobId];
+  renderScraper();
+}
+
 function setScraperFilter(f) {
   SCRAPER_FILTER = f;
   renderScraper();
+  // Update active state on tabs
+  document.querySelectorAll('.opportunity-tab').forEach(function(tab) {
+    tab.classList.remove('active');
+  });
+  event.target.classList.add('active');
 }
 
 function setScraperSort(s) {
@@ -1243,14 +1396,30 @@ function setScraperSort(s) {
   renderScraper();
 }
 
-function jobAction(event, jobId, action, jobData) {
+function promptJobAction(event, jobId, action) {
+  var actionLabel = action === 'backlog' ? 'Backlog' : 'Dismiss';
+  var justification = prompt('Why ' + actionLabel.toLowerCase() + ' this role?');
+  if (justification === null) return; // User cancelled
+  if (!justification.trim()) {
+    alert('Please provide a justification.');
+    return;
+  }
+  jobAction(event, jobId, action, null, justification);
+}
+
+function jobAction(event, jobId, action, jobData, justification) {
   event.target.disabled = true;
   event.target.innerHTML = '<span class="spinner"></span>';
 
   fetch('/api/job-action', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: action, jobId: jobId, jobData: jobData })
+    body: JSON.stringify({ 
+      action: action, 
+      jobId: jobId, 
+      jobData: jobData,
+      justification: justification 
+    })
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
