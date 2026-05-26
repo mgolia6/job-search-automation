@@ -115,12 +115,15 @@ async function fetchRepVue(company) {
 
 async function fetchGlassdoor(company) {
   try {
-    // Glassdoor requires company ID which we don't have - use search
-    const searchUrl = `https://www.glassdoor.com/Search/results.htm?keyword=${encodeURIComponent(company)}`;
+    const url = new URL('https://glassdoor-real-time.p.rapidapi.com/search');
+    url.searchParams.append('query', company);
+    url.searchParams.append('type', 'company');
     
-    const response = await fetch(searchUrl, {
+    const response = await fetch(url, {
+      method: 'GET',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
+        'X-RapidAPI-Host': 'glassdoor-real-time.p.rapidapi.com'
       }
     });
 
@@ -128,17 +131,21 @@ async function fetchGlassdoor(company) {
       return { available: false };
     }
 
-    const html = await response.text();
+    const data = await response.json();
     
-    // Extract overall rating - Glassdoor uses patterns like "4.2" in their cards
-    const ratingMatch = html.match(/(\d+\.?\d+)\s*<\/span>\s*<span[^>]*>stars/i) || 
-                       html.match(/"ratingValue"[^>]*>(\d+\.?\d+)</i);
-    const rating = ratingMatch ? parseFloat(ratingMatch[1]) : null;
+    // Extract first matching company
+    const companyData = data.data?.[0] || data.companies?.[0] || data[0];
+    if (!companyData) {
+      return { available: false };
+    }
+    
+    const rating = parseFloat(companyData.rating || companyData.overall_rating || companyData.overallRating);
+    const companyUrl = companyData.url || companyData.link || `https://www.glassdoor.com/Search/results.htm?keyword=${encodeURIComponent(company)}`;
 
     return {
-      available: rating !== null,
-      rating,
-      url: searchUrl,
+      available: rating !== null && !isNaN(rating),
+      rating: rating || null,
+      url: companyUrl,
       scraped: new Date().toISOString()
     };
   } catch (error) {
