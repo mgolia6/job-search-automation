@@ -340,197 +340,6 @@ td { padding: 11px 14px; vertical-align: middle; }
 
 .job-card-right { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
 
-/* ── New Scraper UI ── */
-.scraper-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 12px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
-.scraper-filters, .scraper-sort {
-  display: flex;
-  gap: 6px;
-}
-
-.filter-btn {
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.filter-btn:hover {
-  background: var(--bg);
-  border-color: var(--border-strong);
-}
-
-.filter-btn.active {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-
-.tier-section {
-  margin-bottom: 28px;
-}
-
-.tier-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 12px;
-  padding-left: 4px;
-}
-
-.tier-count {
-  color: var(--muted);
-  font-weight: 400;
-}
-
-.job-card-new {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 10px;
-  transition: all 0.15s;
-}
-
-.job-card-new:hover {
-  border-color: var(--border-strong);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-
-.job-card-new.backlogged {
-  opacity: 0.7;
-  background: var(--bg);
-}
-
-.job-card-header {
-  margin-bottom: 12px;
-}
-
-.job-card-co {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 2px;
-}
-
-.job-card-title {
-  font-size: 13px;
-  color: var(--sub);
-}
-
-.job-card-meta {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-bottom: 14px;
-  padding: 10px 0;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
-
-.meta-row {
-  display: flex;
-  gap: 6px;
-  font-size: 12px;
-}
-
-.meta-label {
-  color: var(--muted);
-  font-weight: 500;
-  min-width: 70px;
-}
-
-.meta-value {
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 11px;
-}
-
-.meta-value.ote {
-  font-weight: 600;
-  color: var(--accent);
-}
-
-.job-card-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.action-btn {
-  padding: 6px 12px;
-  font-size: 11px;
-  font-weight: 500;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-decoration: none;
-  display: inline-block;
-}
-
-.action-btn:hover {
-  background: var(--bg);
-  border-color: var(--border-strong);
-}
-
-.action-pipeline {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.action-pipeline:hover {
-  background: var(--accent);
-  color: white;
-}
-
-.action-backlog {
-  border-color: var(--yellow);
-  color: var(--yellow);
-}
-
-.action-backlog:hover {
-  background: var(--yellow);
-  color: white;
-}
-
-.action-dismiss {
-  border-color: var(--border-strong);
-  color: var(--muted);
-}
-
-.action-dismiss:hover {
-  background: var(--red-light);
-  border-color: var(--red);
-  color: var(--red);
-}
-
-.action-apply {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-
-.action-apply:hover {
-  background: var(--accent-hover);
-}
-
 /* ── Modal ── */
 .modal-overlay {
   display: none;
@@ -732,7 +541,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 <div class="toast" id="toast"></div>
 
 <script>
-var CRON_SECRET = 'cron_secret_matthew';
+var CRON_SECRET = 'cron-secret-matthew';
 
 var APPS = [], JOBS = [];
 var statusFilter = 'all';
@@ -889,9 +698,6 @@ function setFilter(f, btn) {
 function filterApps(q) { searchQ = q; renderRows(); }
 
 // ── Scraper Feed ──────────────────────────────────────────────────────────────
-var SCRAPER_FILTER = 'all'; // 'all', 'new', 'backlog'
-var SCRAPER_SORT = 'ote'; // 'ote', 'date'
-
 function renderScraper() {
   var el = document.getElementById('scraper-content');
   if (!el) return;
@@ -901,124 +707,30 @@ function renderScraper() {
     return;
   }
 
-  // Filter jobs
-  var filtered = JOBS.filter(function(j) {
-    if (SCRAPER_FILTER === 'new') return j.status === 'new' || !j.status;
-    if (SCRAPER_FILTER === 'backlog') return j.status === 'backlog';
-    return j.status !== 'dismissed';
-  });
+  el.innerHTML = '<div class="job-cards">' + JOBS.map(function(j) {
+    var gut = j.gut_check || '';
+    var gutClass = gut.startsWith('APPLY') ? 'gut-apply' : gut.startsWith('MAYBE') ? 'gut-maybe' : 'gut-pass';
+    var gutLabel = gut.split('—')[0].trim() || 'MAYBE';
+    var date = j.scraped_at
+      ? new Date(j.scraped_at).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
 
-  // Sort jobs
-  filtered.sort(function(a, b) {
-    if (SCRAPER_SORT === 'ote') {
-      var aOTE = a.estimated_ote || 0;
-      var bOTE = b.estimated_ote || 0;
-      return bOTE - aOTE; // High to low
-    }
-    // date sort
-    var aDate = new Date(a.scraped_at || 0);
-    var bDate = new Date(b.scraped_at || 0);
-    return bDate - aDate; // Newest first
-  });
-
-  // Group by OTE tier
-  var tier1 = filtered.filter(function(j) { return j.estimated_ote >= 300000; });
-  var tier2 = filtered.filter(function(j) { return j.estimated_ote >= 250000 && j.estimated_ote < 300000; });
-  var tier3 = filtered.filter(function(j) { return j.estimated_ote >= 200000 && j.estimated_ote < 250000; });
-  var tierUnknown = filtered.filter(function(j) { return !j.estimated_ote; });
-
-  var html = '<div class="scraper-controls">'
-    + '<div class="scraper-filters">'
-    + '<button class="filter-btn' + (SCRAPER_FILTER === 'all' ? ' active' : '') + '" onclick="setScraperFilter(\'all\')">All (' + filtered.length + ')</button>'
-    + '<button class="filter-btn' + (SCRAPER_FILTER === 'new' ? ' active' : '') + '" onclick="setScraperFilter(\'new\')">New</button>'
-    + '<button class="filter-btn' + (SCRAPER_FILTER === 'backlog' ? ' active' : '') + '" onclick="setScraperFilter(\'backlog\')">Backlog</button>'
-    + '</div>'
-    + '<div class="scraper-sort">'
-    + '<button class="filter-btn' + (SCRAPER_SORT === 'ote' ? ' active' : '') + '" onclick="setScraperSort(\'ote\')">💰 OTE</button>'
-    + '<button class="filter-btn' + (SCRAPER_SORT === 'date' ? ' active' : '') + '" onclick="setScraperSort(\'date\')">🕐 Date</button>'
-    + '</div>'
-    + '</div>';
-
-  if (tier1.length) html += renderTier('$300K+ OTE', tier1);
-  if (tier2.length) html += renderTier('$250K–$300K OTE', tier2);
-  if (tier3.length) html += renderTier('$200K–$250K OTE', tier3);
-  if (tierUnknown.length) html += renderTier('Salary Not Listed', tierUnknown);
-
-  if (!filtered.length) {
-    html += '<div style="text-align:center;padding:48px;color:var(--muted)">No jobs in this filter.</div>';
-  }
-
-  el.innerHTML = html;
-}
-
-function renderTier(label, jobs) {
-  return '<div class="tier-section">'
-    + '<div class="tier-label">' + label + ' <span class="tier-count">(' + jobs.length + ')</span></div>'
-    + '<div class="job-cards">' + jobs.map(renderJobCard).join('') + '</div>'
-    + '</div>';
-}
-
-function renderJobCard(j) {
-  var date = j.scraped_at
-    ? new Date(j.scraped_at).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '—';
-  var baseSalary = j.base_salary ? '$' + Math.round(j.base_salary / 1000) + 'K' : 'Not listed';
-  var ote = j.estimated_ote ? '$' + Math.round(j.estimated_ote / 1000) + 'K' : 'Unknown';
-  var isBacklog = j.status === 'backlog';
-
-  return '<div class="job-card-new' + (isBacklog ? ' backlogged' : '') + '">'
-    + '<div class="job-card-header">'
-    + '<div class="job-card-co">' + (j.company || '') + '</div>'
-    + '<div class="job-card-title">' + (j.title || '') + '</div>'
-    + '</div>'
-    + '<div class="job-card-meta">'
-    + '<div class="meta-row"><span class="meta-label">Base:</span> <span class="meta-value">' + baseSalary + '</span></div>'
-    + '<div class="meta-row"><span class="meta-label">Est OTE:</span> <span class="meta-value ote">' + ote + '</span></div>'
-    + '<div class="meta-row"><span class="meta-label">Location:</span> <span class="meta-value">' + (j.location || 'Remote') + '</span></div>'
-    + '<div class="meta-row"><span class="meta-label">Posted:</span> <span class="meta-value">' + date + '</span></div>'
-    + '</div>'
-    + '<div class="job-card-actions">'
-    + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + j.job_id + '\', \'add_to_pipeline\', ' + JSON.stringify(j) + ')">📋 Add to Pipeline</button>'
-    + '<button class="action-btn action-backlog" onclick="jobAction(event, \'' + j.job_id + '\', \'backlog\')">⏸ Backlog</button>'
-    + '<button class="action-btn action-dismiss" onclick="jobAction(event, \'' + j.job_id + '\', \'dismiss\')">✕ Not a Fit</button>'
-    + (j.apply_url ? '<a href="' + j.apply_url + '" target="_blank" class="action-btn action-apply">Apply →</a>' : '')
-    + '</div>'
-    + '</div>';
-}
-
-function setScraperFilter(f) {
-  SCRAPER_FILTER = f;
-  renderScraper();
-}
-
-function setScraperSort(s) {
-  SCRAPER_SORT = s;
-  renderScraper();
-}
-
-function jobAction(event, jobId, action, jobData) {
-  event.target.disabled = true;
-  event.target.innerHTML = '<span class="spinner"></span>';
-
-  fetch('/api/job-action', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: action, jobId: jobId, jobData: jobData })
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    if (data.success) {
-      showToast(data.message);
-      loadData(); // Reload to update both jobs and applications
-    } else {
-      showToast('Error: ' + (data.error || 'Unknown error'), true);
-      event.target.disabled = false;
-      event.target.innerHTML = event.target.textContent;
-    }
-  })
-  .catch(function(err) {
-    showToast('Failed: ' + err.message, true);
-    event.target.disabled = false;
-  });
+    return '<div class="job-card">'
+      + '<div class="job-card-left">'
+      + '<div class="job-co">' + (j.company||'') + '</div>'
+      + '<div class="job-title">' + (j.title||'') + '</div>'
+      + '<div class="job-meta">'
+      + '<span>📍 ' + (j.location||'Remote') + '</span>'
+      + (j.salary && j.salary !== 'Not listed' ? '<span>💰 ' + j.salary + '</span>' : '')
+      + '<span>🔗 ' + (j.source||'') + '</span>'
+      + '<span>🕐 ' + date + '</span>'
+      + '</div>'
+      + '</div>'
+      + '<div class="job-card-right">'
+      + '<span class="gut ' + gutClass + '">' + gutLabel + '</span>'
+      + (j.apply_url ? '<a href="' + j.apply_url + '" target="_blank" class="btn btn-secondary" style="font-size:11px;padding:4px 10px">Apply →</a>' : '')
+      + '</div>'
+      + '</div>';
+  }).join('') + '</div>';
 }
 
 // ── Gmail Scan ────────────────────────────────────────────────────────────────

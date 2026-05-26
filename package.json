@@ -2,9 +2,14 @@
   "name": "job-search-automation",
   "version": "4.0.0",
   "scripts": {
-    "vercel-build": "echo Build complete"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.39.0"
+    "@supabase/supabase-js": "2.39.0",
+    "next": "^16.2.6",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
   }
 }

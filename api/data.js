@@ -25,7 +25,7 @@ module.exports = async function handler(req, res) {
 
   const [apps, jobs] = await Promise.all([
     fetch(base + '/rest/v1/applications?order=app_number.asc.nullslast&limit=200', { headers }).then(r => r.json()),
-    fetch(base + '/rest/v1/jobs?order=scraped_at.desc&limit=100', { headers }).then(r => r.json())
+    fetch(base + '/rest/v1/jobs?status=neq.dismissed&order=estimated_ote.desc.nullslast,scraped_at.desc&limit=100', { headers }).then(r => r.json())
   ]);
 
   return res.status(200).json({

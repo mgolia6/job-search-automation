@@ -70,6 +70,8 @@ function normalizeJob(j) {
     company: company.trim(),
     location: j.job_city && j.job_state ? `${j.job_city}, ${j.job_state}` : j.job_country || 'Remote',
     salary,
+    baseSalary: estimatedSalary,
+    estimatedOTE: estimatedSalary ? estimatedSalary * 2 : null,
     applyUrl: url || j.job_google_link || '',
     postedDate: j.job_posted_at_datetime_utc ? new Date(j.job_posted_at_datetime_utc * 1000) : new Date(),
     description: j.job_description?.slice(0, 500) || ''
@@ -110,9 +112,12 @@ async function storeJobs(jobs) {
     company: j.company,
     title: j.title,
     salary: j.salary,
+    base_salary: j.baseSalary,
+    estimated_ote: j.estimatedOTE,
     location: j.location,
     posted_date: j.postedDate,
     apply_url: j.applyUrl,
+    status: 'new',
     gut_check: 'MAYBE — No health data',
     scraped_at: new Date()
   })));
