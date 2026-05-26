@@ -1,36 +1,50 @@
 module.exports = async function handler(req, res) {
-  const start = Date.now();
-  let result = {};
+  const results = {};
 
+  // Test Greenhouse index
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 500,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{ role: 'user', content: 'Search for "enterprise account executive" remote jobs posted today on greenhouse.io. Return 2 results as JSON.' }]
-      })
+    const r = await fetch('https://boards.greenhouse.io/api/v1/jobs?q=account+executive&remote=true', {
+      headers: { 'User-Agent': 'JobBot/1.0' },
+      signal: AbortSignal.timeout(8000)
     });
-
     const data = await r.json();
-    result = {
+    results.greenhouse_index = {
       status: r.status,
-      ok: r.ok,
-      stop_reason: data.stop_reason,
-      error: data.error || null,
-      content_types: (data.content || []).map(b => b.type),
-      text_preview: (data.content || []).filter(b => b.type === 'text').map(b => b.text.slice(0, 300)).join('\n'),
-      elapsed_ms: Date.now() - start
+      total: data.jobs?.length || 0,
+      sample: (data.jobs || []).slice(0, 2).map(j => ({ title: j.title, company: j.company?.name }))
     };
-  } catch(e) {
-    result = { error: e.message, elapsed_ms: Date.now() - start };
-  }
+  } catch(e) { results.greenhouse_index = { error: e.message }; }
 
-  res.status(200).json(result);
+  // Test single Greenhouse board (Databricks)
+  try {
+    const r = await fetch('https://boards.greenhouse.io/api/v1/boards/databricks/jobs', {
+      headers: { 'User-Agent': 'JobBot/1.0' },
+      signal: AbortSignal.timeout(8000)
+    });
+    const data = await r.json();
+    const ae = (data.jobs || []).filter(j => j.title?.toLowerCase().includes('account'));
+    results.greenhouse_databricks = {
+      status: r.status,
+      total_jobs: data.jobs?.length || 0,
+      ae_roles: ae.length,
+      sample: ae.slice(0, 2).map(j => ({ title: j.title, location: j.location?.name }))
+    };
+  } catch(e) { results.greenhouse_databricks = { error: e.message }; }
+
+  // Test Lever
+  try {
+    const r = await fetch('https://api.lever.co/v0/postings?mode=json&limit=5', {
+      headers: { 'User-Agent': 'JobBot/1.0' },
+      signal: AbortSignal.timeout(8000)
+    });
+    const data = await r.json();
+    results.lever = {
+      status: r.status,
+      is_array: Array.isArray(data),
+      count: Array.isArray(data) ? data.length : 'N/A',
+      sample: Array.isArray(data) ? data.slice(0,2).map(j => j.text) : data
+    };
+  } catch(e) { results.lever = { error: e.message }; }
+
+  res.status(200).json(results);
 };
