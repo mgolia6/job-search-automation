@@ -7,28 +7,28 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #f8f9fb;
+  --bg: #fafbfc;
   --surface: #ffffff;
   --card: #ffffff;
-  --border: #e5e7eb;
-  --border-strong: #d1d5db;
-  --accent: #0891b2;
-  --accent-light: #cffafe;
-  --accent-hover: #0e7490;
-  --green: #059669;
+  --border: #e1e4e8;
+  --border-strong: #d0d7de;
+  --accent: #2563eb;
+  --accent-light: #eff6ff;
+  --accent-hover: #1d4ed8;
+  --green: #10b981;
   --green-light: #d1fae5;
-  --yellow: #d97706;
+  --yellow: #f59e0b;
   --yellow-light: #fef3c7;
-  --red: #dc2626;
+  --red: #ef4444;
   --red-light: #fee2e2;
-  --blue: #2563eb;
+  --blue: #3b82f6;
   --blue-light: #dbeafe;
-  --purple: #7c3aed;
+  --purple: #8b5cf6;
   --purple-light: #ede9fe;
   --gray: #6b7280;
-  --text: #111827;
-  --sub: #6b7280;
-  --muted: #9ca3af;
+  --text: #0f172a;
+  --sub: #64748b;
+  --muted: #94a3b8;
   --mono: 'JetBrains Mono', monospace;
   --sans: 'Inter', -apple-system, sans-serif;
 }
@@ -123,26 +123,42 @@ header {
 /* ── Tabs ── */
 .tabs {
   background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 0 24px;
+  padding: 6px;
   display: flex;
-  gap: 0;
+  gap: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 32px;
 }
 
 .tab {
-  padding: 14px 16px;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--sub);
-  background: none;
+  background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all .15s;
-  margin-bottom: -1px;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.tab:hover { color: var(--text); }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab:hover { 
+  color: var(--text); 
+  background: var(--bg);
+}
+.tab.active { 
+  color: white; 
+  background: var(--accent); 
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2);
+}
+
+.tab-icon {
+  font-size: 16px;
+  line-height: 1;
+}
 
 /* ── Main layout ── */
 main { padding: 24px; max-width: 1400px; margin: 0 auto; }
@@ -250,8 +266,19 @@ tbody tr {
   border-bottom: 1px solid var(--border);
   transition: background .1s;
 }
+
+tbody tr:nth-child(4n+1),
+tbody tr:nth-child(4n+2) {
+  background: var(--surface);
+}
+
+tbody tr:nth-child(4n+3),
+tbody tr:nth-child(4n+4) {
+  background: var(--bg);
+}
+
 tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: var(--bg); }
+tbody tr:hover { background: #eff6ff !important; }
 
 td { padding: 11px 14px; vertical-align: middle; }
 
@@ -265,11 +292,12 @@ td { padding: 11px 14px; vertical-align: middle; }
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: 20px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
+  max-width: none;
 }
 
 .warm-cell {
@@ -351,63 +379,77 @@ td { padding: 11px 14px; vertical-align: middle; }
 .kpi-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px 20px;
+  border-radius: 12px;
+  padding: 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  transition: all .15s;
+  gap: 16px;
+  transition: all .2s;
 }
 
 .kpi-card:hover {
   border-color: var(--border-strong);
-  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  transform: translateY(-1px);
 }
 
 .kpi-icon {
-  font-size: 28px;
-  line-height: 1;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kpi-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .kpi-content {
   flex: 1;
+  min-width: 0;
 }
 
 .kpi-num {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
   line-height: 1;
   margin-bottom: 4px;
   font-family: var(--mono);
 }
 
 .kpi-label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--sub);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   font-weight: 500;
+  line-height: 1.3;
 }
 
 /* ── Pipeline Tabs ── */
 .pipeline-tabs {
   display: flex;
-  gap: 4px;
-  border-bottom: 2px solid var(--border);
-  margin-bottom: 20px;
+  gap: 6px;
+  padding: 6px;
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
 }
 
 .pipeline-tab {
-  padding: 10px 18px;
+  padding: 8px 16px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--sub);
-  background: none;
+  background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-radius: 7px;
   cursor: pointer;
-  transition: all .15s;
-  margin-bottom: -2px;
+  transition: all .2s;
+  white-space: nowrap;
 }
 
 .pipeline-tab:hover {
@@ -416,9 +458,9 @@ td { padding: 11px 14px; vertical-align: middle; }
 }
 
 .pipeline-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-  background: var(--accent-light);
+  color: white;
+  background: var(--accent);
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2);
 }
 
 /* ── Expandable Rows ── */
@@ -466,22 +508,26 @@ td { padding: 11px 14px; vertical-align: middle; }
 /* ── Opportunities Tabs ── */
 .opportunities-tabs {
   display: flex;
-  gap: 4px;
-  border-bottom: 2px solid var(--border);
-  margin-bottom: 20px;
+  gap: 6px;
+  padding: 6px;
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
 .opportunity-tab {
-  padding: 10px 18px;
+  padding: 8px 16px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--sub);
-  background: none;
+  background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-radius: 7px;
   cursor: pointer;
-  transition: all .15s;
-  margin-bottom: -2px;
+  transition: all .2s;
+  white-space: nowrap;
 }
 
 .opportunity-tab:hover {
@@ -490,15 +536,15 @@ td { padding: 11px 14px; vertical-align: middle; }
 }
 
 .opportunity-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-  background: var(--accent-light);
+  color: white;
+  background: var(--accent);
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2);
 }
 
 .tab-divider {
   width: 1px;
   background: var(--border);
-  margin: 6px 8px;
+  margin: 4px 0;
 }
 
 /* ── Tier Badges ── */
@@ -589,36 +635,43 @@ td { padding: 11px 14px; vertical-align: middle; }
 }
 
 .recon-toggle {
-  padding: 8px 12px;
-  margin: 12px 0;
-  font-size: 12px;
-  font-weight: 500;
+  padding: 10px 14px;
+  margin: 16px 0 0;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--accent);
-  background: var(--accent-light);
-  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
   cursor: pointer;
-  transition: all .15s;
+  transition: all .2s;
   user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .recon-toggle:hover {
-  background: var(--accent);
-  color: white;
+  background: var(--accent-light);
+  border-color: var(--accent);
 }
 
 .recon-section {
-  padding: 12px;
-  margin: 8px 0 12px;
+  padding: 16px;
+  margin: 12px 0;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 8px;
+  font-size: 13px;
   line-height: 1.6;
 }
 
 .recon-row {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   color: var(--sub);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .recon-row:last-child {
@@ -628,7 +681,8 @@ td { padding: 11px 14px; vertical-align: middle; }
 .recon-row strong {
   color: var(--text);
   font-weight: 600;
-  margin-right: 4px;
+  min-width: 100px;
+  flex-shrink: 0;
 }
 
 .recon-loading {
@@ -1063,9 +1117,18 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 </header>
 
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('pipeline', this)">Pipeline</button>
-  <button class="tab" onclick="switchTab('scraper', this)">Opportunities</button>
-  <button class="tab" onclick="switchTab('gmail', this)">Gmail Scan</button>
+  <button class="tab active" onclick="switchTab('pipeline', this)">
+    <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
+    Pipeline
+  </button>
+  <button class="tab" onclick="switchTab('scraper', this)">
+    <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
+    Opportunities
+  </button>
+  <button class="tab" onclick="switchTab('gmail', this)">
+    <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+    Gmail Scan
+  </button>
 </div>
 
 <main>
@@ -1238,11 +1301,11 @@ function renderPipeline() {
 
   // KPIs with icons
   var html = '<div class="kpi-grid">'
-    + kpiCard('▣', total, 'Total Applications', '#2563eb')
-    + kpiCard('◉', active.length, 'Active', '#059669')
-    + kpiCard('◐', interviewing.length, 'Interviewing', '#7c3aed')
-    + kpiCard('◆', offers.length, 'Offers', '#d97706')
-    + kpiCard('◷', avgAge, 'Avg Age (days)', '#6b7280')
+    + kpiCard('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>', total, 'Total Applications', '#3b82f6')
+    + kpiCard('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>', active.length, 'Active', '#10b981')
+    + kpiCard('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>', interviewing.length, 'Interviewing', '#8b5cf6')
+    + kpiCard('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>', offers.length, 'Offers', '#f59e0b')
+    + kpiCard('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', avgAge, 'Avg Age (days)', '#64748b')
     + '</div>';
 
   // Tabs
@@ -1270,8 +1333,10 @@ function renderPipeline() {
 }
 
 function kpiCard(icon, num, label, color) {
+  // Determine background color from main color
+  var bgColor = color + '15'; // Add 15% opacity
   return '<div class="kpi-card">'
-    + '<div class="kpi-icon">' + icon + '</div>'
+    + '<div class="kpi-icon" style="background:' + bgColor + ';color:' + color + '">' + icon + '</div>'
     + '<div class="kpi-content">'
     + '<div class="kpi-num" style="color:' + color + '">' + num + '</div>'
     + '<div class="kpi-label">' + label + '</div>'
@@ -1401,26 +1466,11 @@ function renderScraper() {
   // Render KPIs
   var kpiEl = document.getElementById('scraper-kpis');
   if (kpiEl) {
-    kpiEl.innerHTML = '<div class="kpi-card">'
-      + '<div class="kpi-value">' + activeJobs.length + '</div>'
-      + '<div class="kpi-label">Active Opportunities</div>'
-      + '</div>'
-      + '<div class="kpi-card">'
-      + '<div class="kpi-value">' + newThisWeek + '</div>'
-      + '<div class="kpi-label">New This Week</div>'
-      + '</div>'
-      + '<div class="kpi-card">'
-      + '<div class="kpi-value">' + (avgOTE > 0 ? '$' + Math.round(avgOTE / 1000) + 'K' : '—') + '</div>'
-      + '<div class="kpi-label">Avg Est OTE</div>'
-      + '</div>'
-      + '<div class="kpi-card">'
-      + '<div class="kpi-value">' + highValueCount + '</div>'
-      + '<div class="kpi-label">$300K+ Roles</div>'
-      + '</div>'
-      + '<div class="kpi-card">'
-      + '<div class="kpi-value">' + backlogJobs.length + '</div>'
-      + '<div class="kpi-label">Backlogged</div>'
-      + '</div>';
+    kpiEl.innerHTML = kpiCard('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>', activeJobs.length, 'Active Opportunities', '#3b82f6')
+      + kpiCard('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', newThisWeek, 'New This Week', '#10b981')
+      + kpiCard('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>', (avgOTE > 0 ? '$' + Math.round(avgOTE / 1000) + 'K' : '—'), 'Avg Est OTE', '#f59e0b')
+      + kpiCard('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>', highValueCount, '$300K+ Roles', '#8b5cf6')
+      + kpiCard('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>', backlogJobs.length, 'Backlogged', '#64748b');
   }
 
   if (!JOBS.length) {
