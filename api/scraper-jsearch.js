@@ -42,7 +42,8 @@ async function searchJSearch(query) {
 function normalizeJob(j) {
   const company = j.employer_name;
   const title = j.job_title;
-  const url = j.job_apply_link;
+  // Try to get URL from available fields
+  const url = j.job_apply_link || j.job_google_link || j.job_apply_url || j.job_link || j.job_url;
   
   // Extract source from apply URL domain
   let source = 'Unknown';
