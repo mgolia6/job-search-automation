@@ -341,6 +341,37 @@ td { padding: 11px 14px; vertical-align: middle; }
 .job-card-right { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
 
 /* ── New Scraper UI ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 4px;
+  font-family: var(--mono);
+}
+
+.kpi-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
 .scraper-controls {
   display: flex;
   justify-content: space-between;
@@ -660,7 +691,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('pipeline', this)">Applications</button>
-  <button class="tab" onclick="switchTab('scraper', this)">Scraper Feed</button>
+  <button class="tab" onclick="switchTab('scraper', this)">Opportunities</button>
   <button class="tab" onclick="switchTab('gmail', this)">Gmail Scan</button>
 </div>
 
@@ -671,15 +702,39 @@ textarea.form-control { resize: vertical; min-height: 80px; }
     <div style="text-align:center;padding:40px;color:var(--muted)">Loading...</div>
   </div>
 
-  <!-- Scraper feed pane -->
+  <!-- Opportunities pane -->
   <div id="pane-scraper" style="display:none">
     <div class="scraper-header">
       <div>
-        <div class="scraper-title">Scraper Feed</div>
-        <div class="scraper-sub">New roles found in the last 2 days — not yet applied</div>
+        <div class="scraper-title">Opportunities</div>
+        <div class="scraper-sub">New roles from automated scraper — triage and add to pipeline</div>
       </div>
       <button class="btn btn-primary" onclick="triggerScraper(this)">⚡ Run Now</button>
     </div>
+    
+    <div class="kpi-grid" id="scraper-kpis">
+      <div class="kpi-card">
+        <div class="kpi-value">—</div>
+        <div class="kpi-label">Active Opportunities</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">—</div>
+        <div class="kpi-label">New This Week</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">—</div>
+        <div class="kpi-label">Avg Est OTE</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">—</div>
+        <div class="kpi-label">$300K+ Roles</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">—</div>
+        <div class="kpi-label">Backlogged</div>
+      </div>
+    </div>
+    
     <div id="scraper-content">
       <div style="text-align:center;padding:40px;color:var(--muted)">Loading...</div>
     </div>
@@ -895,6 +950,49 @@ var SCRAPER_SORT = 'ote'; // 'ote', 'date'
 function renderScraper() {
   var el = document.getElementById('scraper-content');
   if (!el) return;
+
+  // Calculate KPIs
+  var activeJobs = JOBS.filter(function(j) { return j.status !== 'dismissed'; });
+  var newJobs = activeJobs.filter(function(j) { return j.status === 'new' || !j.status; });
+  var backlogJobs = activeJobs.filter(function(j) { return j.status === 'backlog'; });
+  
+  var weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  var newThisWeek = activeJobs.filter(function(j) {
+    return j.scraped_at && new Date(j.scraped_at) > weekAgo;
+  }).length;
+  
+  var jobsWithOTE = activeJobs.filter(function(j) { return j.estimated_ote; });
+  var avgOTE = jobsWithOTE.length > 0
+    ? Math.round(jobsWithOTE.reduce(function(sum, j) { return sum + j.estimated_ote; }, 0) / jobsWithOTE.length)
+    : 0;
+  
+  var highValueCount = activeJobs.filter(function(j) { return j.estimated_ote >= 300000; }).length;
+
+  // Render KPIs
+  var kpiEl = document.getElementById('scraper-kpis');
+  if (kpiEl) {
+    kpiEl.innerHTML = '<div class="kpi-card">'
+      + '<div class="kpi-value">' + activeJobs.length + '</div>'
+      + '<div class="kpi-label">Active Opportunities</div>'
+      + '</div>'
+      + '<div class="kpi-card">'
+      + '<div class="kpi-value">' + newThisWeek + '</div>'
+      + '<div class="kpi-label">New This Week</div>'
+      + '</div>'
+      + '<div class="kpi-card">'
+      + '<div class="kpi-value">' + (avgOTE > 0 ? '$' + Math.round(avgOTE / 1000) + 'K' : '—') + '</div>'
+      + '<div class="kpi-label">Avg Est OTE</div>'
+      + '</div>'
+      + '<div class="kpi-card">'
+      + '<div class="kpi-value">' + highValueCount + '</div>'
+      + '<div class="kpi-label">$300K+ Roles</div>'
+      + '</div>'
+      + '<div class="kpi-card">'
+      + '<div class="kpi-value">' + backlogJobs.length + '</div>'
+      + '<div class="kpi-label">Backlogged</div>'
+      + '</div>';
+  }
 
   if (!JOBS.length) {
     el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--muted)">No jobs scraped yet. Run the scraper to find new roles.</div>';
