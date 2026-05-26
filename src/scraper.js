@@ -4,58 +4,58 @@ import { createClient } from '@supabase/supabase-js';
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase  = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-const SEARCH_CONFIG = {
+const CONFIG = {
   titles: [
-    "Enterprise Account Executive",
-    "Strategic Account Executive",
-    "Senior Account Executive",
-    "Strategic Account Manager"
+    'Enterprise Account Executive',
+    'Strategic Account Executive',
+    'Senior Account Executive',
+    'Strategic Account Manager'
   ],
-  location:        "remote",
-  countryCode:     "US",
-  minBaseSalary:   100000,  // $100K base floor
-  minOTE:          200000,  // $200K OTE floor
-  maxAgeDays:      2,      // only surface roles posted in last 14 days
-  emailTo:         "mgolia6@gmail.com"
+  minBaseSalary: 100000,
+  minOTE:        200000,
+  maxAgeDays:    5,
+  emailTo:       'mgolia6@gmail.com'
 };
 
+// ── Entry point ───────────────────────────────────────────────────────────────
 export async function runJobScraper() {
-  console.log('Starting job scraper...');
-  try {
-    const allJobs      = await searchIndeedJobs();
-    console.log(`Found ${allJobs.length} total jobs`);
+  console.log('[scraper] START', new Date().toISOString());
 
-    const newJobs      = await filterNewJobs(allJobs);
-    console.log(`${newJobs.length} new jobs after dedup/recency filter`);
+  const allJobs     = await searchIndeedJobs();
+  console.log(`[scraper] ${allJobs.length} raw jobs found`);
 
-    const enrichedJobs = await enrichWithCompanyHealth(newJobs);
-    await storeJobs(enrichedJobs);
+  const newJobs     = await filterNewJobs(allJobs);
+  console.log(`[scraper] ${newJobs.length} new after dedup`);
 
-    for (const job of enrichedJobs) {
-      await sendEmailAlert(job);
-    }
-
-    console.log(`Scraper complete. Sent ${enrichedJobs.length} alerts.`);
-    return { success: true, jobsFound: enrichedJobs.length };
-  } catch (error) {
-    console.error('Scraper error:', error);
-    throw error;
+  if (!newJobs.length) {
+    console.log('[scraper] Nothing new — done.');
+    return { jobsFound: 0 };
   }
+
+  const enriched = await enrichJobs(newJobs);
+  await storeJobs(enriched);
+
+  for (const job of enriched) {
+    await sendAlert(job);
+  }
+
+  console.log(`[scraper] Done. Sent ${enriched.length} alerts.`);
+  return { jobsFound: enriched.length };
 }
 
-// ── Indeed search ─────────────────────────────────────────────────────────────
+// ── Indeed search via MCP ─────────────────────────────────────────────────────
 async function searchIndeedJobs() {
-  const allJobs = [];
+  const results = [];
 
-  for (const title of SEARCH_CONFIG.titles) {
-    console.log(`Searching: "${title}"`);
+  for (const title of CONFIG.titles) {
+    console.log(`[indeed] Searching: "${title}"`);
     try {
-      const message = await anthropic.messages.create({
+      const msg = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
         messages: [{
           role: 'user',
-          content: `Use the Indeed search_jobs tool to search for "${title}" jobs. location: "${SEARCH_CONFIG.location}", country_code: "${SEARCH_CONFIG.countryCode}", job_type: "fulltime". Return all results.`
+          content: `Search Indeed for "${title}" jobs. Requirements: remote OR hybrid, United States, full-time. Return ALL results you find with complete details including job ID, company, title, location, salary/compensation, posted date, and job URL. List each job clearly.`
         }],
         mcp_servers: [{
           type: 'url',
@@ -64,257 +64,312 @@ async function searchIndeedJobs() {
         }]
       });
 
-      const jobs = parseIndeedResponse(message);
-      console.log(`  → ${jobs.length} raw results for "${title}"`);
-      allJobs.push(...jobs);
-    } catch (e) {
-      console.error(`Search failed for "${title}":`, e.message);
+      const jobs = parseResponse(msg, title);
+      console.log(`[indeed] "${title}" → ${jobs.length} results`);
+      results.push(...jobs);
+    } catch (err) {
+      console.error(`[indeed] Failed for "${title}":`, err.message);
     }
   }
 
-  return removeDuplicates(allJobs);
+  return dedupe(results);
 }
 
 // ── Parse Indeed MCP response ─────────────────────────────────────────────────
-// Indeed MCP returns structured text blocks like:
-//   **Job Title:** Senior Account Executive
-//   **Job Id:** JOB_1
-//   **Company:** Acme Corp
-//   **Location:** Remote
-//   **Posted on:** May 22, 2026
-//   **Job Type:** Full-time
-//   **Compensation:** $208,000 - $312,000 a year
-//   **View Job URL:** https://to.indeed.com/...
-function parseIndeedResponse(message) {
+function parseResponse(message, searchTitle) {
   const jobs = [];
 
-  // Collect all text content from all blocks
-  const fullText = message.content
-    .map(b => b.type === 'text' ? b.text : (b.content?.[0]?.text || ''))
+  // Gather all text from response blocks
+  const text = message.content
+    .map(b => {
+      if (b.type === 'text') return b.text;
+      if (b.type === 'mcp_tool_result') return b.content?.[0]?.text || '';
+      return '';
+    })
     .join('\n');
 
-  // Split into individual job blocks on Job Title field
-  const blocks = fullText.split(/(?=\*\*Job Title:\*\*)/);
+  // Try to parse structured job blocks
+  // Indeed MCP returns blocks starting with Job Title or **Job Title:**
+  const blocks = text.split(/(?=\*?\*?Job(?:\s+Title)?:?\*?\*?\s)/i).filter(Boolean);
 
   for (const block of blocks) {
-    if (!block.includes('**Job Title:**')) continue;
-
-    const get = (field) => {
-      const match = block.match(new RegExp(`\\*\\*${field}:\\*\\*\\s*(.+)`));
-      return match ? match[1].trim() : null;
+    const get = (patterns) => {
+      for (const pat of patterns) {
+        const m = block.match(pat);
+        if (m) return m[1].trim();
+      }
+      return null;
     };
 
-    const title       = get('Job Title');
-    const jobId       = get('Job Id');
-    const company     = get('Company');
-    const location    = get('Location');
-    const postedOn    = get('Posted on');
-    const compensation = get('Compensation');
-    const url         = get('View Job URL');
+    const title = get([
+      /\*\*Job Title:\*\*\s*(.+)/i,
+      /Job Title:\s*(.+)/i,
+      /^#+\s*(.+)/m
+    ]);
+
+    const company = get([
+      /\*\*Company:\*\*\s*(.+)/i,
+      /Company:\s*(.+)/i,
+      /Employer:\s*(.+)/i
+    ]);
 
     if (!title || !company) continue;
 
+    const jobId = get([
+      /\*\*Job Id:\*\*\s*(.+)/i,
+      /Job ID:\s*(.+)/i,
+      /ID:\s*(.+)/i
+    ]);
+
+    const salary = get([
+      /\*\*Compensation:\*\*\s*(.+)/i,
+      /\*\*Salary:\*\*\s*(.+)/i,
+      /Compensation:\s*(.+)/i,
+      /Salary:\s*(.+)/i,
+      /Pay:\s*(.+)/i
+    ]);
+
+    const location = get([
+      /\*\*Location:\*\*\s*(.+)/i,
+      /Location:\s*(.+)/i
+    ]);
+
+    const posted = get([
+      /\*\*Posted(?:\s+on)?:\*\*\s*(.+)/i,
+      /Posted(?:\s+on)?:\s*(.+)/i,
+      /Date Posted:\s*(.+)/i
+    ]);
+
+    const url = get([
+      /\*\*(?:View Job |Apply |Job )?URL:\*\*\s*(https?:\/\/\S+)/i,
+      /(?:View Job|Apply|URL):\s*(https?:\/\/\S+)/i,
+      /(https?:\/\/[^\s]+indeed\.com[^\s]*)/i
+    ]);
+
     // Recency filter
-    if (!isWithinMaxAge(postedOn)) {
-      console.log(`  Skipping (too old: ${postedOn}): ${company} — ${title}`);
+    if (!withinMaxAge(posted)) {
+      console.log(`[filter] Too old (${posted}): ${company} — ${title}`);
       continue;
     }
 
     // Salary filter
-    if (!meetsSalaryRequirements(compensation)) {
-      console.log(`  Skipping (salary: ${compensation}): ${company} — ${title}`);
+    if (salary && !meetsSalary(salary)) {
+      console.log(`[filter] Salary too low (${salary}): ${company} — ${title}`);
       continue;
     }
 
     jobs.push({
-      jobId:      jobId || generateJobId(company, title),
-      title:      title,
-      company:    company,
+      jobId:      jobId || slugify(company + '-' + title),
+      title,
+      company,
       location:   location || 'Remote',
-      salary:     compensation || 'Not listed',
+      salary:     salary || 'Not listed',
       applyUrl:   url || '',
-      postedDate: postedOn ? new Date(postedOn) : new Date()
+      postedDate: posted ? new Date(posted) : new Date()
     });
   }
 
   return jobs;
 }
 
-// ── Recency filter — only roles posted within maxAgeDays ──────────────────────
-function isWithinMaxAge(postedOnString) {
-  if (!postedOnString) return false;
+function withinMaxAge(dateStr) {
+  if (!dateStr) return true; // don't filter if no date
   try {
-    const posted  = new Date(postedOnString);
-    const cutoff  = new Date();
-    cutoff.setDate(cutoff.getDate() - SEARCH_CONFIG.maxAgeDays);
-    return posted >= cutoff;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return true; // can't parse, let it through
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - CONFIG.maxAgeDays);
+    return d >= cutoff;
   } catch {
-    return false;
+    return true;
   }
 }
 
-// ── Salary filter ─────────────────────────────────────────────────────────────
-function meetsSalaryRequirements(salaryString) {
-  if (!salaryString || salaryString.toLowerCase() === 'not specified') return false;
-
-  const numbers = salaryString.replace(/[$,]/g, '').match(/\d+(?:\.\d+)?(?:k|K)?/g);
-  if (!numbers) return false;
-
-  const amounts = numbers.map(n => {
-    const val = parseFloat(n);
-    return n.toLowerCase().endsWith('k') ? val * 1000 : (val < 1000 ? val * 1000 : val);
+function meetsSalary(salaryStr) {
+  if (!salaryStr || salaryStr === 'Not listed') return true; // let through if no data
+  const nums = salaryStr.replace(/[$,]/g, '').match(/\d+(?:\.\d+)?[kK]?/g);
+  if (!nums) return true;
+  const amounts = nums.map(n => {
+    const v = parseFloat(n);
+    return /[kK]$/.test(n) ? v * 1000 : (v < 2000 ? v * 1000 : v);
   });
-
-  const maxAmount = Math.max(...amounts);
-  const isOTE = /ote|total|on.target/i.test(salaryString);
-  return isOTE ? maxAmount >= SEARCH_CONFIG.minOTE : maxAmount >= SEARCH_CONFIG.minBaseSalary;
+  const max = Math.max(...amounts);
+  const isOTE = /ote|on.?target|total/i.test(salaryStr);
+  return isOTE ? max >= CONFIG.minOTE : max >= CONFIG.minBaseSalary;
 }
 
-function generateJobId(company, title) {
-  return `${company}-${title}`.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 100);
+function slugify(s) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 100);
 }
 
-function removeDuplicates(jobs) {
-  const seen = new Map();
-  return jobs.filter(job => {
-    if (seen.has(job.jobId)) return false;
-    seen.set(job.jobId, true);
+function dedupe(jobs) {
+  const seen = new Set();
+  return jobs.filter(j => {
+    if (seen.has(j.jobId)) return false;
+    seen.add(j.jobId);
     return true;
   });
 }
 
-// ── Dedup against Supabase ────────────────────────────────────────────────────
+// ── Dedup against DB ──────────────────────────────────────────────────────────
 async function filterNewJobs(jobs) {
-  const { data: seenJobs }   = await supabase.from('jobs').select('job_id');
-  const { data: appliedJobs } = await supabase.from('applications').select('company');
+  const { data: seenJobs }    = await supabase.from('jobs').select('job_id');
+  const { data: appliedApps } = await supabase.from('applications').select('company');
 
-  const seenIds          = new Set(seenJobs?.map(j => j.job_id) || []);
-  const appliedCompanies = new Set(appliedJobs?.map(a => a.company.toLowerCase()) || []);
+  const seenIds      = new Set((seenJobs    || []).map(j => j.job_id));
+  const appliedCos   = new Set((appliedApps || []).map(a => a.company.toLowerCase()));
 
-  return jobs.filter(job => {
-    if (seenIds.has(job.jobId)) return false;
-    if (appliedCompanies.has(job.company.toLowerCase())) return false;
+  return jobs.filter(j => {
+    if (seenIds.has(j.jobId)) return false;
+    if (appliedCos.has(j.company.toLowerCase())) return false;
     return true;
   });
 }
 
 // ── Company health ────────────────────────────────────────────────────────────
-async function enrichWithCompanyHealth(jobs) {
+async function enrichJobs(jobs) {
   const enriched = [];
   for (const job of jobs) {
     try {
       const { data: cached } = await supabase
-        .from('company_health').select('*').eq('company', job.company).single();
+        .from('company_health')
+        .select('*')
+        .eq('company', job.company)
+        .single();
 
-      let health;
-      if (cached && isRecent(cached.last_updated)) {
+      let health = {};
+      const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+
+      if (cached && new Date(cached.last_updated) > weekAgo) {
         health = cached;
       } else {
-        health = await fetchCompanyHealth(job.company);
+        health = await fetchHealth(job.company);
         await supabase.from('company_health').upsert({
           company: job.company, ...health, last_updated: new Date()
         });
       }
 
-      enriched.push({ ...job, health, gutCheck: generateGutCheck(job, health) });
-    } catch (e) {
-      console.error(`Health check failed for ${job.company}:`, e.message);
-      enriched.push({ ...job, health: {}, gutCheck: 'MAYBE — No health data, review manually' });
+      enriched.push({ ...job, health, gut: gutCheck(job, health) });
+    } catch (err) {
+      console.error(`[health] ${job.company}:`, err.message);
+      enriched.push({ ...job, health: {}, gut: 'MAYBE — No health data available' });
     }
   }
   return enriched;
 }
 
-function isRecent(timestamp) {
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  return new Date(timestamp) > sevenDaysAgo;
-}
-
-async function fetchCompanyHealth(company) {
-  const message = await anthropic.messages.create({
+async function fetchHealth(company) {
+  const msg = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 2000,
+    max_tokens: 1000,
     messages: [{
       role: 'user',
-      content: `Search RepVue and Glassdoor for "${company}". Return ONLY valid JSON, no other text: {"repvueScore": number|null, "quotaAttainment": number|null, "glassdoorRating": number|null, "glassdoorRecommend": number|null, "redFlags": "string"|null}`
+      content: `Look up "${company}" on RepVue and Glassdoor. Return ONLY a JSON object, no other text:
+{"repvueScore":null,"quotaAttainment":null,"glassdoorRating":null,"glassdoorRecommend":null,"redFlags":null}
+Fill in what you find. repvueScore is 0-100, quotaAttainment is %, glassdoorRating is out of 5, glassdoorRecommend is % who recommend. redFlags is a short string or null.`
     }],
     tools: [{ type: 'web_search_20250305', name: 'web_search' }]
   });
 
-  const text  = message.content.find(b => b.type === 'text')?.text || '{}';
-  const match = text.match(/\{[\s\S]*?\}/);
+  const textBlock = msg.content.find(b => b.type === 'text');
+  const raw = textBlock?.text || '{}';
+  const match = raw.match(/\{[\s\S]*?\}/);
   try { return match ? JSON.parse(match[0]) : {}; } catch { return {}; }
 }
 
-function generateGutCheck(job, health) {
-  const issues = [];
-  if (health.quotaAttainment != null && health.quotaAttainment < 40)  issues.push(`Low quota attainment (${health.quotaAttainment}%)`);
-  if (health.glassdoorRating != null && health.glassdoorRating  < 3.5) issues.push(`Low Glassdoor (${health.glassdoorRating}/5)`);
-  if (health.redFlags) issues.push(health.redFlags);
+function gutCheck(job, h) {
+  const flags = [];
+  if (h.quotaAttainment != null && h.quotaAttainment < 40)
+    flags.push(`quota attainment only ${h.quotaAttainment}%`);
+  if (h.glassdoorRating != null && h.glassdoorRating < 3.5)
+    flags.push(`Glassdoor ${h.glassdoorRating}/5`);
+  if (h.redFlags)
+    flags.push(h.redFlags);
 
-  if (issues.length >= 3) return `PASS — Multiple red flags: ${issues.join(', ')}`;
-  if (issues.length > 0)  return `MAYBE — Concerns: ${issues.join(', ')}`;
-  return `APPLY — Strong signals`;
+  const signals = [];
+  if (h.repvueScore != null)      signals.push(`RepVue ${h.repvueScore}/100`);
+  if (h.quotaAttainment != null)  signals.push(`${h.quotaAttainment}% quota attainment`);
+  if (h.glassdoorRating != null)  signals.push(`Glassdoor ${h.glassdoorRating}/5`);
+
+  const signalStr = signals.length ? signals.join(' · ') : 'No data found';
+
+  if (flags.length >= 2) return `PASS — ${flags.join(', ')}. Signals: ${signalStr}`;
+  if (flags.length === 1) return `MAYBE — ${flags[0]}. Signals: ${signalStr}`;
+  return `APPLY — Clean signals. ${signalStr}`;
 }
 
-// ── Store ─────────────────────────────────────────────────────────────────────
+// ── Store jobs ────────────────────────────────────────────────────────────────
 async function storeJobs(jobs) {
   if (!jobs.length) return;
-  const { error } = await supabase.from('jobs').insert(jobs.map(j => ({
+  const rows = jobs.map(j => ({
     job_id:      j.jobId,
     company:     j.company,
     title:       j.title,
     salary:      j.salary,
     location:    j.location,
     posted_date: j.postedDate,
-    apply_url:   j.applyUrl
-  })));
-  if (error) { console.error('Store error:', error); throw error; }
+    apply_url:   j.applyUrl,
+    gut_check:   j.gut,
+    scraped_at:  new Date()
+  }));
+  const { error } = await supabase.from('jobs').insert(rows);
+  if (error) console.error('[store] Error:', error.message);
 }
 
-// ── Email ─────────────────────────────────────────────────────────────────────
-async function sendEmailAlert(job) {
-  const body = `
-NEW ROLE — ${job.company}: ${job.title}
+// ── Email via Resend ──────────────────────────────────────────────────────────
+async function sendAlert(job) {
+  const h = job.health || {};
+  const subject = `NEW ROLE — ${job.company}: ${job.title}`;
 
+  const text = `
+${job.gut}
+
+Company:  ${job.company}
+Role:     ${job.title}
 Salary:   ${job.salary}
-Posted:   ${job.postedDate ? new Date(job.postedDate).toLocaleDateString() : 'Unknown'}
 Location: ${job.location}
-Link:     ${job.applyUrl}
+Posted:   ${job.postedDate ? new Date(job.postedDate).toLocaleDateString() : 'Unknown'}
+Link:     ${job.applyUrl || 'Not available'}
 
-QUICK SIGNALS:
-• RepVue score:      ${job.health.repvueScore       ?? 'N/A'}
-• Quota attainment:  ${job.health.quotaAttainment   ?? 'N/A'}%
-• Glassdoor:         ${job.health.glassdoorRating   ?? 'N/A'}/5
-• % recommend:       ${job.health.glassdoorRecommend ?? 'N/A'}%
-• Red flags:         ${job.health.redFlags          || 'None detected'}
-
-GUT CHECK: ${job.gutCheck}
+SIGNALS:
+  RepVue score:     ${h.repvueScore       ?? 'N/A'}
+  Quota attainment: ${h.quotaAttainment   ?? 'N/A'}%
+  Glassdoor:        ${h.glassdoorRating   ?? 'N/A'}/5
+  % Recommend:      ${h.glassdoorRecommend ?? 'N/A'}%
+  Red flags:        ${h.redFlags          || 'None detected'}
 
 ---
-Reply BUILD → paste JD in Claude, get resume + 2 cover letters
+Reply BUILD → come to Claude, paste JD, get resume + 2 CLs
 Reply PASS  → log and skip
   `.trim();
 
   try {
-    await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 500,
-      messages: [{
-        role: 'user',
-        content: `Send an email to ${SEARCH_CONFIG.emailTo} with subject "NEW ROLE — ${job.company}: ${job.title}" and this body:\n\n${body}`
-      }],
-      mcp_servers: [{
-        type: 'url',
-        url:  'https://gmailmcp.googleapis.com/mcp/v1',
-        name: 'gmail-mcp'
-      }]
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type':  'application/json'
+      },
+      body: JSON.stringify({
+        from:    'Job Alerts <onboarding@resend.dev>',
+        to:      [CONFIG.emailTo],
+        subject,
+        text
+      })
     });
 
-    await supabase.from('email_alerts').insert({ job_id: job.jobId, email_to: SEARCH_CONFIG.emailTo });
-    console.log(`Email sent: ${job.company} — ${job.title}`);
-  } catch (e) {
-    console.error('Email error:', e.message);
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('[email] Resend error:', data);
+    } else {
+      console.log(`[email] Sent: ${job.company} — ${job.title} (id: ${data.id})`);
+      await supabase.from('email_alerts').insert({
+        job_id:   job.jobId,
+        email_to: CONFIG.emailTo,
+        sent_at:  new Date()
+      });
+    }
+  } catch (err) {
+    console.error('[email] Fetch error:', err.message);
   }
 }
