@@ -163,14 +163,26 @@ async function runJobScraper() {
       
       if (!result.data || !Array.isArray(result.data)) {
         console.log('[scraper] no data returned for:', search);
+        console.log('[scraper] response:', JSON.stringify(result).slice(0, 500));
         continue;
       }
 
-      console.log(`[scraper] raw results: ${result.data.length}`);
+      console.log(`[scraper] raw results for "${search}": ${result.data.length}`);
       
       for (const rawJob of result.data) {
         const job = normalizeJob(rawJob);
-        if (job) allJobs.push(job);
+        if (job) {
+          allJobs.push(job);
+        } else {
+          // Log why it was filtered
+          const title = rawJob.job_title || 'Unknown';
+          const salary = rawJob.job_max_salary;
+          if (!isAERole(title)) {
+            console.log(`[scraper] filtered (title): ${title}`);
+          } else if (salary && salary < CONFIG.minSalary) {
+            console.log(`[scraper] filtered (salary $${salary}): ${rawJob.employer_name} - ${title}`);
+          }
+        }
       }
 
       // Rate limit: wait between searches
