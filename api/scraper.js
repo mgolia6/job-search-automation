@@ -20,7 +20,7 @@ const CONFIG = {
 // Raw Anthropic API call — no SDK
 async function claude(messages, tools, mcpServers) {
   const body = {
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-5-20251001',
     max_tokens: 4000,
     messages
   };
