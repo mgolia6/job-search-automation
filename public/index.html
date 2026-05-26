@@ -12,9 +12,9 @@
   --card: #ffffff;
   --border: #e5e7eb;
   --border-strong: #d1d5db;
-  --accent: #4f46e5;
-  --accent-light: #eef2ff;
-  --accent-hover: #4338ca;
+  --accent: #0891b2;
+  --accent-light: #cffafe;
+  --accent-hover: #0e7490;
   --green: #059669;
   --green-light: #d1fae5;
   --yellow: #d97706;
@@ -351,26 +351,118 @@ td { padding: 11px 14px; vertical-align: middle; }
 .kpi-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-  text-align: center;
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all .15s;
 }
 
-.kpi-value {
+.kpi-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+
+.kpi-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.kpi-content {
+  flex: 1;
+}
+
+.kpi-num {
   font-size: 24px;
   font-weight: 600;
-  color: var(--accent);
+  line-height: 1;
   margin-bottom: 4px;
   font-family: var(--mono);
 }
 
 .kpi-label {
   font-size: 11px;
-  color: var(--muted);
+  color: var(--sub);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 500;
 }
+
+/* ── Pipeline Tabs ── */
+.pipeline-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.pipeline-tab {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sub);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all .15s;
+  margin-bottom: -2px;
+}
+
+.pipeline-tab:hover {
+  color: var(--text);
+  background: var(--bg);
+}
+
+.pipeline-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* ── Expandable Rows ── */
+.app-row.expanded {
+  background: var(--bg);
+}
+
+.notes-row {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.notes-content {
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--sub);
+  line-height: 1.6;
+}
+
+.notes-section {
+  margin-bottom: 8px;
+}
+
+.notes-section:last-child {
+  margin-bottom: 0;
+}
+
+.notes-section strong {
+  color: var(--text);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.job-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.job-link:hover {
+  text-decoration: underline;
+}
+
 
 .scraper-controls {
   display: flex;
@@ -838,32 +930,53 @@ function dbPatch(table, id, body) {
 loadData();
 
 // ── Pipeline ──────────────────────────────────────────────────────────────────
+var expandedRows = {}; // Track which rows are expanded
+
 function renderPipeline() {
   var total        = APPS.length;
-  var applied      = APPS.filter(function(a){ return a.status === 'Applied'; });
-  var inProcess    = APPS.filter(function(a){ return a.status === 'Screening' || a.status === 'Interviewing'; });
+  var active       = APPS.filter(function(a){ return !(a.status||'').includes('Closed'); });
+  var interviewing = APPS.filter(function(a){ return a.status === 'Screening' || a.status === 'Interviewing'; });
   var offers       = APPS.filter(function(a){ return a.status === 'Offer'; });
-  var warm         = APPS.filter(function(a){ return a.warm_contact && a.warm_contact !== 'None'; });
-  var closed       = APPS.filter(function(a){ return (a.status||'').indexOf('Closed') > -1; });
+  var closed       = APPS.filter(function(a){ return (a.status||'').includes('Closed'); });
+  var newFromScraper = APPS.filter(function(a){ return a.status === 'New Opportunity'; });
 
-  // Stat cards — clicking them filters the table
-  var html = '<div class="stats">'
-    + statCard(total,          '#2563eb', 'Total Applied',  'all',          statusFilter === 'all')
-    + statCard(applied.length, '#d97706', 'Awaiting Reply', 'Applied',      statusFilter === 'Applied')
-    + statCard(inProcess.length,'#7c3aed','In Process',     '__inprocess__',statusFilter === '__inprocess__')
-    + statCard(warm.length,    '#4f46e5', 'Warm Paths',     'warm',         statusFilter === 'warm')
-    + statCard(closed.length,  '#dc2626', 'Closed',         'Closed',       statusFilter === 'Closed')
+  // Calculate average age in days
+  var avgAge = 0;
+  var datedApps = active.filter(function(a){ return a.date_applied; });
+  if (datedApps.length) {
+    var totalDays = datedApps.reduce(function(sum, a) {
+      var days = Math.floor((Date.now() - new Date(a.date_applied).getTime()) / (1000*60*60*24));
+      return sum + days;
+    }, 0);
+    avgAge = Math.round(totalDays / datedApps.length);
+  }
+
+  // KPIs with icons
+  var html = '<div class="kpi-grid">'
+    + kpiCard('📊', total, 'Total Applications', '#2563eb')
+    + kpiCard('🎯', active.length, 'Active', '#059669')
+    + kpiCard('💬', interviewing.length, 'Interviewing', '#7c3aed')
+    + kpiCard('🎁', offers.length, 'Offers', '#d97706')
+    + kpiCard('⏱', avgAge, 'Avg Age (days)', '#6b7280')
     + '</div>';
 
-  html += '<div class="controls">'
+  // Tabs
+  html += '<div class="pipeline-tabs">'
+    + pipelineTab('all', 'All', statusFilter === 'all')
+    + pipelineTab('active', 'Active', statusFilter === 'active')
+    + pipelineTab('interviewing', 'Interviewing', statusFilter === 'interviewing')
+    + pipelineTab('offers', 'Offers', statusFilter === 'offers')
+    + pipelineTab('closed', 'Closed', statusFilter === 'closed')
+    + pipelineTab('new', 'New from Scraper', statusFilter === 'new')
+    + '</div>';
+
+  // Search
+  html += '<div class="controls" style="margin-top:16px;">'
     + '<input class="search" type="text" placeholder="Search company, role, contact..." oninput="filterApps(this.value)" value="' + searchQ + '">'
-    + ['all','Applied','Screening','Interviewing','Offer','Closed','warm'].map(function(f) {
-        var label = { all:'All', warm:'⚡ Warm', Closed:'Closed' }[f] || f;
-        var active = statusFilter === f || (f === '__inprocess__' && statusFilter === '__inprocess__');
-        return '<button class="filter-btn' + (statusFilter === f ? ' active' : '') + '" onclick="setFilter(\'' + f + '\',this)">' + label + '</button>';
-      }).join('')
-    + '</div>'
-    + '<div class="table-wrap"><table>'
+    + '</div>';
+
+  // Table
+  html += '<div class="table-wrap"><table>'
     + '<thead><tr><th>#</th><th>Company</th><th>Role</th><th>Status</th><th>Applied</th><th>Salary</th><th>Contact</th><th></th></tr></thead>'
     + '<tbody id="app-tbody"></tbody></table></div>';
 
@@ -871,17 +984,27 @@ function renderPipeline() {
   renderRows();
 }
 
-function statCard(num, color, label, filterKey, isActive) {
-  return '<div class="stat-card' + (isActive ? ' active' : '') + '" onclick="setFilterFromCard(\'' + filterKey + '\')">'
-    + '<div class="stat-num" style="color:' + color + '">' + num + '</div>'
-    + '<div class="stat-label">' + label + '</div>'
-    + '<div class="stat-bar" style="background:' + color + ';opacity:.2"></div>'
-    + '</div>';
+function kpiCard(icon, num, label, color) {
+  return '<div class="kpi-card">'
+    + '<div class="kpi-icon">' + icon + '</div>'
+    + '<div class="kpi-content">'
+    + '<div class="kpi-num" style="color:' + color + '">' + num + '</div>'
+    + '<div class="kpi-label">' + label + '</div>'
+    + '</div></div>';
 }
 
-function setFilterFromCard(f) {
+function pipelineTab(key, label, isActive) {
+  return '<button class="pipeline-tab' + (isActive ? ' active' : '') + '" onclick="setPipelineFilter(\'' + key + '\')">' + label + '</button>';
+}
+
+function setPipelineFilter(f) {
   statusFilter = f;
-  renderPipeline(); // re-render with new active state on cards
+  renderRows();
+  // Update active state
+  document.querySelectorAll('.pipeline-tab').forEach(function(tab) {
+    tab.classList.remove('active');
+  });
+  event.target.classList.add('active');
 }
 
 function renderRows() {
@@ -893,15 +1016,16 @@ function renderRows() {
     var matchFilter;
     if (statusFilter === 'all') {
       matchFilter = true;
-    } else if (statusFilter === 'warm') {
-      matchFilter = !!a.warm_contact && a.warm_contact !== 'None';
-    } else if (statusFilter === 'Closed') {
-      matchFilter = (a.status||'').indexOf('Closed') > -1;
-    } else if (statusFilter === '__inprocess__') {
+    } else if (statusFilter === 'active') {
+      matchFilter = !(a.status||'').includes('Closed');
+    } else if (statusFilter === 'interviewing') {
       matchFilter = a.status === 'Screening' || a.status === 'Interviewing';
-    } else if (statusFilter === 'Applied') {
-      // "Awaiting Reply" = Applied and NOT closed
-      matchFilter = a.status === 'Applied';
+    } else if (statusFilter === 'offers') {
+      matchFilter = a.status === 'Offer';
+    } else if (statusFilter === 'closed') {
+      matchFilter = (a.status||'').includes('Closed');
+    } else if (statusFilter === 'new') {
+      matchFilter = a.status === 'New Opportunity';
     } else {
       matchFilter = (a.status||'') === statusFilter;
     }
@@ -917,13 +1041,18 @@ function renderRows() {
     return;
   }
 
-  tbody.innerHTML = filtered.map(function(a) {
+  var html = '';
+  filtered.forEach(function(a) {
+    var rowId = 'row-' + a.app_number;
+    var isExpanded = expandedRows[rowId];
     var date = a.date_applied
       ? new Date(a.date_applied).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '—';
     var warm = (a.warm_contact && a.warm_contact !== 'None')
       ? '<span class="warm-cell">⚡ ' + a.warm_contact + '</span>' : '';
     var escaped = JSON.stringify(a).replace(/'/g, "\\'");
-    return '<tr>'
+    
+    // Main row - clickable to expand
+    html += '<tr class="app-row' + (isExpanded ? ' expanded' : '') + '" onclick="toggleRow(\'' + rowId + '\')" style="cursor:pointer;">'
       + '<td class="num-cell">' + (a.app_number || '?') + '</td>'
       + '<td><div class="co-name">' + (a.company||'') + '</div><div class="co-type">' + (a.role_type||'') + '</div></td>'
       + '<td class="role-cell">' + (a.role||'') + '</td>'
@@ -931,16 +1060,27 @@ function renderRows() {
       + '<td class="date-cell">' + date + '</td>'
       + '<td class="salary-cell">' + (a.salary_range||'—') + '</td>'
       + '<td>' + warm + '</td>'
-      + '<td><button class="edit-btn" onclick=\'openModal(' + escaped + ')\'>Edit</button></td>'
+      + '<td onclick="event.stopPropagation()"><button class="edit-btn" onclick=\'openModal(' + escaped + ')\'>Edit</button></td>'
       + '</tr>';
-  }).join('');
+    
+    // Expandable notes row
+    if (isExpanded && (a.notes || a.apply_url)) {
+      html += '<tr class="notes-row"><td colspan="8"><div class="notes-content">';
+      if (a.apply_url) {
+        html += '<div class="notes-section"><strong>Job Posting:</strong> <a href="' + a.apply_url + '" target="_blank" class="job-link">' + a.apply_url + '</a></div>';
+      }
+      if (a.notes) {
+        html += '<div class="notes-section"><strong>Notes:</strong> ' + (a.notes||'—') + '</div>';
+      }
+      html += '</div></td></tr>';
+    }
+  });
+
+  tbody.innerHTML = html;
 }
 
-function setFilter(f, btn) {
-  statusFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
-  document.querySelectorAll('.stat-card').forEach(function(c){ c.classList.remove('active'); });
-  if (btn) btn.classList.add('active');
+function toggleRow(rowId) {
+  expandedRows[rowId] = !expandedRows[rowId];
   renderRows();
 }
 
