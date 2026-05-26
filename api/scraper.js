@@ -53,11 +53,25 @@ async function runJobScraper() {
       const text = (msg.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
       console.log('[scraper] preview:', text.slice(0, 150).replace(/\n/g, ' '));
 
-      const match = text.match(/\[[\s\S]*\]/);
+      // Strip code fences if present
+      const stripped = text.replace(/```json\n?/g, '').replace(/```/g, '').trim();
+      // Try bare array first, then look for array inside object
+      const match = stripped.match(/\[\s*[\s\S]*?\]/);
       if (!match) { console.log('[scraper] no JSON found'); continue; }
 
       let arr;
-      try { arr = JSON.parse(match[0]); } catch(e) { console.log('[scraper] parse fail:', e.message); continue; }
+      try {
+        const parsed = JSON.parse(match[0]);
+        arr = Array.isArray(parsed) ? parsed : (parsed.results || parsed.jobs || []);
+      } catch(e) {
+        // Try extracting from wrapper object
+        const objMatch = stripped.match(/\{[\s\S]*\}/);
+        if (!objMatch) { console.log('[scraper] parse fail:', e.message); continue; }
+        try {
+          const obj = JSON.parse(objMatch[0]);
+          arr = obj.results || obj.jobs || obj.listings || [];
+        } catch(e2) { console.log('[scraper] parse fail:', e2.message); continue; }
+      }
       console.log(`[scraper] got ${arr.length} jobs`);
 
       for (const j of arr) {
