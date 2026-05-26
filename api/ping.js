@@ -1,26 +1,42 @@
-const Anthropic = require('@anthropic-ai/sdk');
+const { createClient } = require('@supabase/supabase-js');
 
 module.exports = async function handler(req, res) {
-  let sdkVersion = 'unknown';
-  let sdkOk = false;
+  let supabaseOk = false;
+  let anthropicOk = false;
+  let anthropicError = null;
+
+  // Test Supabase
   try {
-    sdkVersion = require('@anthropic-ai/sdk/package.json').version;
-    new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    sdkOk = true;
-  } catch(e) {
-    sdkVersion = 'ERROR: ' + e.message.slice(0, 100);
-  }
+    const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+    const { error } = await db.from('applications').select('id').limit(1);
+    supabaseOk = !error;
+  } catch(e) { supabaseOk = false; }
+
+  // Test Anthropic via raw fetch
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 10,
+        messages: [{ role: 'user', content: 'Hi' }]
+      })
+    });
+    anthropicOk = r.ok;
+    if (!r.ok) anthropicError = await r.text();
+  } catch(e) { anthropicError = e.message; }
 
   res.status(200).json({
-    ok: sdkOk,
+    ok: supabaseOk && anthropicOk,
     node: process.version,
-    sdkVersion,
-    sdkOk,
-    env: {
-      ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
-      SUPABASE_URL: !!process.env.SUPABASE_URL,
-      RESEND_API_KEY: !!process.env.RESEND_API_KEY,
-    },
+    supabaseOk,
+    anthropicOk,
+    anthropicError,
     ts: new Date().toISOString()
   });
 };
