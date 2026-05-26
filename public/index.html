@@ -4,30 +4,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pipeline — Matthew Golia</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0c0c0f;
-  --surface: #111115;
-  --card: #18181d;
-  --border: #25252e;
-  --border-bright: #35354a;
-  --accent: #6366f1;
-  --accent-dim: rgba(99,102,241,.15);
-  --green: #22d3a0;
-  --green-dim: rgba(34,211,160,.12);
-  --yellow: #f0b429;
-  --yellow-dim: rgba(240,180,41,.12);
-  --red: #f87171;
-  --red-dim: rgba(248,113,113,.12);
-  --blue: #60a5fa;
-  --blue-dim: rgba(96,165,250,.12);
-  --purple: #c084fc;
-  --text: #e4e4f0;
-  --muted: #5a5a72;
-  --sub: #8888a8;
-  --mono: 'IBM Plex Mono', monospace;
-  --sans: 'IBM Plex Sans', sans-serif;
+  --bg: #f8f9fb;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --accent: #4f46e5;
+  --accent-light: #eef2ff;
+  --accent-hover: #4338ca;
+  --green: #059669;
+  --green-light: #d1fae5;
+  --yellow: #d97706;
+  --yellow-light: #fef3c7;
+  --red: #dc2626;
+  --red-light: #fee2e2;
+  --blue: #2563eb;
+  --blue-light: #dbeafe;
+  --purple: #7c3aed;
+  --purple-light: #ede9fe;
+  --gray: #6b7280;
+  --text: #111827;
+  --sub: #6b7280;
+  --muted: #9ca3af;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', -apple-system, sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,8 +48,8 @@ body {
 header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 0 28px;
-  height: 52px;
+  padding: 0 24px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -58,8 +61,7 @@ header {
 .logo {
   font-family: var(--mono);
   font-size: 13px;
-  font-weight: 600;
-  letter-spacing: .04em;
+  font-weight: 500;
   color: var(--text);
   display: flex;
   align-items: center;
@@ -67,401 +69,386 @@ header {
 }
 
 .logo-dot {
-  width: 7px; height: 7px;
+  width: 8px; height: 8px;
   background: var(--green);
   border-radius: 50%;
-  box-shadow: 0 0 8px var(--green);
   animation: pulse 2.5s ease-in-out infinite;
 }
 
 @keyframes pulse {
-  0%,100% { opacity: 1; }
-  50% { opacity: .4; }
+  0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(5,150,105,.4); }
+  50% { opacity: .7; box-shadow: 0 0 0 4px rgba(5,150,105,0); }
 }
 
-.header-right {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
+.header-actions { display: flex; gap: 8px; align-items: center; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--sans);
+  cursor: pointer;
+  transition: all .15s;
+  border: 1px solid transparent;
 }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.btn-secondary:hover { background: var(--bg); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--sub);
+  border-color: transparent;
+}
+.btn-ghost:hover { background: var(--bg); color: var(--text); }
+
+.btn:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ── Tabs ── */
 .tabs {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 0 28px;
+  padding: 0 24px;
   display: flex;
   gap: 0;
 }
 
 .tab {
-  padding: 10px 20px;
-  font-family: var(--mono);
-  font-size: 11px;
+  padding: 14px 16px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--muted);
+  color: var(--sub);
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   cursor: pointer;
   transition: all .15s;
+  margin-bottom: -1px;
 }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-.tab:hover { color: var(--sub); }
-.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+/* ── Main layout ── */
+main { padding: 24px; max-width: 1400px; margin: 0 auto; }
 
-/* ── Layout ── */
-.pane { display: none; padding: 28px; max-width: 1280px; margin: 0 auto; }
-.pane.active { display: block; }
-
-/* ── Stats row ── */
+/* ── Stat cards ── */
 .stats {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.stat {
-  background: var(--card);
+.stat-card {
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px 18px;
+  border-radius: 10px;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+  overflow: hidden;
 }
+.stat-card:hover { border-color: var(--border-strong); box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.stat-card.active { border-color: var(--accent); background: var(--accent-light); }
+.stat-card.active .stat-label { color: var(--accent); }
 
 .stat-num {
-  font-family: var(--mono);
   font-size: 28px;
   font-weight: 600;
   line-height: 1;
-  margin-bottom: 6px;
-}
-
-.stat-label {
+  margin-bottom: 4px;
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: .08em;
+}
+.stat-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--sub);
   text-transform: uppercase;
-  color: var(--muted);
+  letter-spacing: .05em;
+}
+.stat-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 0 0 10px 10px;
 }
 
 /* ── Controls ── */
 .controls {
   display: flex;
   gap: 8px;
-  margin-bottom: 14px;
   align-items: center;
+  margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
 .search {
   flex: 1;
   min-width: 200px;
+  max-width: 320px;
   padding: 8px 12px;
-  background: var(--card);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
+  font-size: 13px;
+  font-family: var(--sans);
+  background: var(--surface);
   color: var(--text);
-  font-family: var(--mono);
-  font-size: 12px;
   outline: none;
   transition: border-color .15s;
 }
-
 .search:focus { border-color: var(--accent); }
-.search::placeholder { color: var(--muted); }
 
 .filter-btn {
-  padding: 7px 14px;
-  background: var(--card);
-  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--surface);
+  color: var(--sub);
   cursor: pointer;
   transition: all .15s;
-  white-space: nowrap;
 }
-
-.filter-btn:hover { border-color: var(--border-bright); color: var(--sub); }
-.filter-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--text); }
+.filter-btn:hover { border-color: var(--border-strong); color: var(--text); }
+.filter-btn.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
 
 /* ── Table ── */
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
 
 table { width: 100%; border-collapse: collapse; }
 
-th {
+thead th {
+  padding: 10px 14px;
   text-align: left;
-  padding: 8px 12px;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: .08em;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
-  color: var(--muted);
+  letter-spacing: .05em;
+  color: var(--sub);
+  background: var(--bg);
   border-bottom: 1px solid var(--border);
-  white-space: nowrap;
 }
 
-td {
-  padding: 11px 12px;
+tbody tr {
   border-bottom: 1px solid var(--border);
-  vertical-align: middle;
+  transition: background .1s;
 }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--bg); }
 
-tr:hover td { background: rgba(99,102,241,.03); }
+td { padding: 11px 14px; vertical-align: middle; }
 
-.co-name { font-weight: 600; font-size: 13px; }
-.co-type { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
-.role-cell { max-width: 220px; font-size: 12px; color: var(--sub); }
-.date-cell { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
-.salary-cell { font-family: var(--mono); font-size: 11px; color: var(--green); white-space: nowrap; }
-.warm-cell { font-size: 11px; color: var(--accent); }
+.co-name { font-weight: 600; font-size: 13px; color: var(--text); }
+.co-type { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.role-cell { color: var(--sub); font-size: 12px; max-width: 220px; }
+.date-cell { font-size: 12px; color: var(--sub); white-space: nowrap; font-family: var(--mono); }
+.salary-cell { font-size: 12px; font-family: var(--mono); color: var(--sub); }
 .num-cell { font-family: var(--mono); font-size: 11px; color: var(--muted); }
 
-/* ── Badges ── */
 .badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 4px;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: .04em;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
-/* ── Edit button ── */
-.edit-btn {
-  background: none;
-  border: 1px solid var(--border);
+.warm-cell {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  background: var(--accent-light);
+  padding: 2px 8px;
   border-radius: 4px;
-  color: var(--muted);
-  padding: 3px 10px;
-  font-family: var(--mono);
-  font-size: 10px;
+  display: inline-block;
+}
+
+.edit-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  font-size: 11px;
+  background: var(--surface);
+  color: var(--sub);
   cursor: pointer;
   transition: all .15s;
 }
+.edit-btn:hover { background: var(--bg); color: var(--text); border-color: var(--border-strong); }
 
-.edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+.empty { text-align: center; padding: 48px; color: var(--muted); }
+
+/* ── Scraper pane ── */
+.scraper-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.scraper-title { font-size: 15px; font-weight: 600; }
+.scraper-sub { font-size: 12px; color: var(--sub); margin-top: 2px; }
+
+.job-cards { display: flex; flex-direction: column; gap: 10px; }
+
+.job-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+.job-card:hover { border-color: var(--border-strong); }
+
+.job-card-left {}
+.job-co { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+.job-title { color: var(--sub); font-size: 13px; margin-bottom: 6px; }
+.job-meta { display: flex; gap: 12px; flex-wrap: wrap; }
+.job-meta span { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+.gut {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.gut-apply { background: var(--green-light); color: var(--green); }
+.gut-maybe { background: var(--yellow-light); color: var(--yellow); }
+.gut-pass  { background: var(--red-light); color: var(--red); }
+
+.job-card-right { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
 
 /* ── Modal ── */
-.overlay {
+.modal-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.7);
-  z-index: 999;
+  background: rgba(0,0,0,.3);
+  backdrop-filter: blur(2px);
+  z-index: 200;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  backdrop-filter: blur(4px);
 }
-
-.overlay.open { display: flex; }
+.modal-overlay.open { display: flex; }
 
 .modal {
   background: var(--surface);
-  border: 1px solid var(--border-bright);
-  border-radius: 10px;
-  padding: 28px;
-  width: 480px;
-  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 440px;
+  max-width: 95vw;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.12);
 }
 
-.modal-company {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
+.modal-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
 
-.modal-role {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 22px;
-}
-
-.field-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 6px;
-  margin-top: 16px;
-  display: block;
-}
-
-select, textarea {
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--sub); margin-bottom: 6px; }
+.form-control {
   width: 100%;
-  background: var(--card);
-  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  color: var(--text);
-  padding: 9px 12px;
-  font-family: var(--mono);
-  font-size: 12px;
-  outline: none;
-  transition: border-color .15s;
-}
-
-select:focus, textarea:focus { border-color: var(--accent); }
-textarea { min-height: 90px; resize: vertical; }
-
-.modal-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 22px;
-}
-
-.btn {
-  padding: 8px 20px;
-  border-radius: 6px;
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all .15s;
-  border: none;
-}
-
-.btn-cancel { background: var(--card); border: 1px solid var(--border); color: var(--muted); }
-.btn-cancel:hover { border-color: var(--border-bright); color: var(--sub); }
-.btn-save { background: var(--accent); color: white; }
-.btn-save:hover { opacity: .85; }
-
-/* ── Scraper feed ── */
-.job-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 14px;
-}
-
-.job-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 20px;
-  transition: border-color .15s;
-}
-
-.job-card:hover { border-color: var(--border-bright); }
-
-.job-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.job-company { font-weight: 700; font-size: 14px; }
-.job-title { font-size: 12px; color: var(--sub); margin-top: 3px; }
-
-.verdict {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: .06em;
-  padding: 3px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-.verdict-apply { color: var(--green); background: var(--green-dim); }
-.verdict-maybe { color: var(--yellow); background: var(--yellow-dim); }
-.verdict-pass  { color: var(--red);   background: var(--red-dim); }
-
-.job-meta {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  margin-bottom: 10px;
-}
-
-.job-meta .sal { color: var(--green); }
-
-.job-gut {
-  font-size: 12px;
-  color: var(--sub);
-  margin-bottom: 14px;
-  line-height: 1.5;
-}
-
-.apply-link {
-  display: inline-block;
-  padding: 6px 16px;
-  background: var(--accent);
-  color: white;
-  border-radius: 6px;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 500;
-  text-decoration: none;
-  transition: opacity .15s;
-}
-
-.apply-link:hover { opacity: .8; }
-
-/* ── Empty states ── */
-.empty {
-  text-align: center;
-  padding: 80px 40px;
-  color: var(--muted);
-  font-family: var(--mono);
   font-size: 13px;
+  font-family: var(--sans);
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
 }
+.form-control:focus { border-color: var(--accent); }
+textarea.form-control { resize: vertical; min-height: 80px; }
 
-.empty-icon { font-size: 36px; margin-bottom: 16px; }
-.empty-title { color: var(--sub); margin-bottom: 8px; }
+.modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
 
-/* ── Error ── */
-.error-box {
-  background: var(--red-dim);
-  border: 1px solid rgba(248,113,113,.3);
-  border-radius: 8px;
-  padding: 16px 20px;
-  color: var(--red);
-  font-family: var(--mono);
-  font-size: 12px;
+/* ── Gmail scan panel ── */
+.scan-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
   margin-bottom: 20px;
 }
-
-/* ── Loading ── */
-.loading {
+.scan-panel-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.scan-panel-sub { font-size: 12px; color: var(--sub); margin-bottom: 14px; }
+.scan-results { margin-top: 14px; display: none; }
+.scan-result-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 12px;
-  padding: 40px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
 }
+.scan-result-item:last-child { border-bottom: none; }
+.scan-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.scan-result-company { font-weight: 600; font-size: 13px; }
+.scan-result-detail { font-size: 12px; color: var(--sub); }
 
 .spinner {
-  width: 16px; height: 16px;
+  width: 14px; height: 14px;
   border: 2px solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;
-  animation: spin .7s linear infinite;
+  animation: spin .6s linear infinite;
+  display: inline-block;
 }
-
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.error-box {
+  padding: 16px 20px;
+  background: var(--red-light);
+  color: var(--red);
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--text);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all .2s;
+  z-index: 999;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
 @media (max-width: 768px) {
-  .pane { padding: 16px; }
-  header { padding: 0 16px; }
-  .tabs { padding: 0 16px; }
+  main { padding: 16px; }
   .stats { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
@@ -471,69 +458,106 @@ textarea { min-height: 90px; resize: vertical; }
 <header>
   <div class="logo">
     <div class="logo-dot"></div>
-    PIPELINE
+    Pipeline / Matthew Golia
   </div>
-  <div class="header-right" id="hdr-date"></div>
+  <div class="header-actions">
+    <button class="btn btn-secondary" onclick="triggerScraper(this)">
+      ⚡ Run Scraper
+    </button>
+  </div>
 </header>
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('pipeline', this)">Applications</button>
   <button class="tab" onclick="switchTab('scraper', this)">Scraper Feed</button>
+  <button class="tab" onclick="switchTab('gmail', this)">Gmail Scan</button>
 </div>
 
-<div id="pane-pipeline" class="pane active">
-  <div class="loading"><div class="spinner"></div> Loading pipeline...</div>
-</div>
+<main>
 
-<div id="pane-scraper" class="pane">
-  <div class="loading"><div class="spinner"></div> Loading scraper feed...</div>
-</div>
+  <!-- Pipeline pane -->
+  <div id="pane-pipeline">
+    <div style="text-align:center;padding:40px;color:var(--muted)">Loading...</div>
+  </div>
 
-<!-- Edit Modal -->
-<div class="overlay" id="modal">
+  <!-- Scraper feed pane -->
+  <div id="pane-scraper" style="display:none">
+    <div class="scraper-header">
+      <div>
+        <div class="scraper-title">Scraper Feed</div>
+        <div class="scraper-sub">New roles found in the last 2 days — not yet applied</div>
+      </div>
+      <button class="btn btn-primary" onclick="triggerScraper(this)">⚡ Run Now</button>
+    </div>
+    <div id="scraper-content">
+      <div style="text-align:center;padding:40px;color:var(--muted)">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Gmail scan pane -->
+  <div id="pane-gmail" style="display:none">
+    <div class="scan-panel">
+      <div class="scan-panel-title">Scan Gmail for recruiter updates</div>
+      <div class="scan-panel-sub">Searches your inbox for replies, rejections, interview requests, and status changes since your last session.</div>
+      <button class="btn btn-primary" id="gmail-scan-btn" onclick="runGmailScan(this)">
+        Scan Inbox
+      </button>
+      <div class="scan-results" id="scan-results"></div>
+    </div>
+    <div style="color:var(--muted);font-size:12px;padding:4px 0;">
+      Results appear above. Any status changes can be applied to your pipeline from the Applications tab.
+    </div>
+  </div>
+
+</main>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
   <div class="modal">
-    <div class="modal-company" id="modal-meta"></div>
-    <div class="modal-role" id="modal-title"></div>
-    <input type="hidden" id="modal-id">
-
-    <label class="field-label">Status</label>
-    <select id="modal-status">
-      <option>Applied</option>
-      <option>Screening</option>
-      <option>Interviewing</option>
-      <option>Offer</option>
-      <option>Closed — No</option>
-      <option>Closed — Pass</option>
-    </select>
-
-    <label class="field-label">Notes</label>
-    <textarea id="modal-notes" rows="4"></textarea>
-
-    <div class="modal-actions">
-      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-save" onclick="saveEdit()">Save</button>
+    <div class="modal-title" id="modal-title">Edit Application</div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select id="modal-status" class="form-control">
+        <option>Applied</option>
+        <option>Screening</option>
+        <option>Interviewing</option>
+        <option>Offer</option>
+        <option>Closed - Rejected</option>
+        <option>Closed - Withdrew</option>
+        <option>Closed - No Response</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea id="modal-notes" class="form-control" placeholder="Recruiter name, next steps, feedback..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveModal()">Save</button>
     </div>
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-var SUPA_URL = "https://yaepgxsbjtbdkiidxtmf.supabase.co";
-var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZXBneHNianRiZGtpaWR4dG1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNzI4MjksImV4cCI6MjA5NDk0ODgyOX0.UXNAz76lwghgFuC9QLsuVEPq6Njoq1nwLLkEsOQXl0U";
+var SUPA_URL  = 'https://ulkusggbsmkscnwcyshm.supabase.co';
+var SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsa3VzZ2dic21rc2Nud2N5c2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY0Nzg5NzQsImV4cCI6MjA2MjA1NDk3NH0.4mxdCPV2GLHQKZ5w0M6UDGSFgHGa_hTPPKL8Q7ZnJTg';
+var CRON_SECRET = 'cron-secret-matthew';
 
 var APPS = [], JOBS = [];
 var statusFilter = 'all';
 var searchQ = '';
-
-document.getElementById('hdr-date').textContent =
-  new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+var currentApp = null;
 
 var STATUS_CFG = {
-  'Applied':       { color:'#60a5fa', bg:'rgba(96,165,250,.12)' },
-  'Screening':     { color:'#f0b429', bg:'rgba(240,180,41,.12)' },
-  'Interviewing':  { color:'#c084fc', bg:'rgba(192,132,252,.12)' },
-  'Offer':         { color:'#22d3a0', bg:'rgba(34,211,160,.12)' },
-  'Closed — No':   { color:'#f87171', bg:'rgba(248,113,113,.10)' },
-  'Closed — Pass': { color:'#5a5a72', bg:'rgba(90,90,114,.12)' }
+  'Applied':           { color: '#2563eb', bg: '#dbeafe' },
+  'Screening':         { color: '#7c3aed', bg: '#ede9fe' },
+  'Interviewing':      { color: '#059669', bg: '#d1fae5' },
+  'Offer':             { color: '#d97706', bg: '#fef3c7' },
+  'Closed - Rejected': { color: '#dc2626', bg: '#fee2e2' },
+  'Closed - Withdrew': { color: '#6b7280', bg: '#f3f4f6' },
+  'Closed - No Response': { color: '#9ca3af', bg: '#f3f4f6' },
 };
 
 function badge(status) {
@@ -543,19 +567,14 @@ function badge(status) {
 
 function db(table, params) {
   return fetch(SUPA_URL + '/rest/v1/' + table + (params || ''), {
-    headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY }
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
   }).then(function(r) { return r.json(); });
 }
 
 function dbPatch(table, id, body) {
   return fetch(SUPA_URL + '/rest/v1/' + table + '?id=eq.' + id, {
     method: 'PATCH',
-    headers: {
-      apikey: SUPA_KEY,
-      Authorization: 'Bearer ' + SUPA_KEY,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation'
-    },
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
     body: JSON.stringify(body)
   }).then(function(r) { return r.json(); });
 }
@@ -576,27 +595,28 @@ Promise.all([
 
 // ── Pipeline ──────────────────────────────────────────────────────────────────
 function renderPipeline() {
-  var total   = APPS.length;
-  var waiting = APPS.filter(function(a){ return a.status === 'Applied'; }).length;
-  var live    = APPS.filter(function(a){ return a.status === 'Screening' || a.status === 'Interviewing'; }).length;
-  var warm    = APPS.filter(function(a){ return a.warm_contact && a.warm_contact !== 'None'; }).length;
-  var closed  = APPS.filter(function(a){ return (a.status||'').indexOf('Closed') > -1; }).length;
+  var total        = APPS.length;
+  var applied      = APPS.filter(function(a){ return a.status === 'Applied'; });
+  var inProcess    = APPS.filter(function(a){ return a.status === 'Screening' || a.status === 'Interviewing'; });
+  var offers       = APPS.filter(function(a){ return a.status === 'Offer'; });
+  var warm         = APPS.filter(function(a){ return a.warm_contact && a.warm_contact !== 'None'; });
+  var closed       = APPS.filter(function(a){ return (a.status||'').indexOf('Closed') > -1; });
 
-  var filters = ['all','Applied','Screening','Interviewing','Offer','Closed','warm'];
-  var filterLabels = { all:'All', warm:'⚡ Warm', Closed:'Closed' };
-
+  // Stat cards — clicking them filters the table
   var html = '<div class="stats">'
-    + stat(total,   '#60a5fa', 'Total Applied')
-    + stat(waiting, '#f0b429', 'Awaiting Reply')
-    + stat(live,    '#c084fc', 'In Process')
-    + stat(warm,    '#6366f1', 'Warm Paths')
-    + stat(closed,  '#f87171', 'Closed')
-    + '</div>'
-    + '<div class="controls">'
-    + '<input class="search" type="text" placeholder="Search company, role, contact..." oninput="filterApps(this.value)">'
-    + filters.map(function(f) {
-        var label = filterLabels[f] || f;
-        return '<button class="filter-btn' + (f==='all'?' active':'') + '" onclick="setFilter(\'' + f + '\',this)">' + label + '</button>';
+    + statCard(total,          '#2563eb', 'Total Applied',  'all',          statusFilter === 'all')
+    + statCard(applied.length, '#d97706', 'Awaiting Reply', 'Applied',      statusFilter === 'Applied')
+    + statCard(inProcess.length,'#7c3aed','In Process',     '__inprocess__',statusFilter === '__inprocess__')
+    + statCard(warm.length,    '#4f46e5', 'Warm Paths',     'warm',         statusFilter === 'warm')
+    + statCard(closed.length,  '#dc2626', 'Closed',         'Closed',       statusFilter === 'Closed')
+    + '</div>';
+
+  html += '<div class="controls">'
+    + '<input class="search" type="text" placeholder="Search company, role, contact..." oninput="filterApps(this.value)" value="' + searchQ + '">'
+    + ['all','Applied','Screening','Interviewing','Offer','Closed','warm'].map(function(f) {
+        var label = { all:'All', warm:'⚡ Warm', Closed:'Closed' }[f] || f;
+        var active = statusFilter === f || (f === '__inprocess__' && statusFilter === '__inprocess__');
+        return '<button class="filter-btn' + (statusFilter === f ? ' active' : '') + '" onclick="setFilter(\'' + f + '\',this)">' + label + '</button>';
       }).join('')
     + '</div>'
     + '<div class="table-wrap"><table>'
@@ -607,9 +627,17 @@ function renderPipeline() {
   renderRows();
 }
 
-function stat(num, color, label) {
-  return '<div class="stat"><div class="stat-num" style="color:' + color + '">' + num + '</div>'
-    + '<div class="stat-label">' + label + '</div></div>';
+function statCard(num, color, label, filterKey, isActive) {
+  return '<div class="stat-card' + (isActive ? ' active' : '') + '" onclick="setFilterFromCard(\'' + filterKey + '\')">'
+    + '<div class="stat-num" style="color:' + color + '">' + num + '</div>'
+    + '<div class="stat-label">' + label + '</div>'
+    + '<div class="stat-bar" style="background:' + color + ';opacity:.2"></div>'
+    + '</div>';
+}
+
+function setFilterFromCard(f) {
+  statusFilter = f;
+  renderPipeline(); // re-render with new active state on cards
 }
 
 function renderRows() {
@@ -617,10 +645,23 @@ function renderRows() {
   var filtered = APPS.filter(function(a) {
     var matchSearch = !q || [a.company, a.role, a.warm_contact, a.recruiter, a.notes]
       .some(function(f){ return (f||'').toLowerCase().indexOf(q) > -1; });
-    var matchFilter = statusFilter === 'all' ? true
-      : statusFilter === 'warm' ? (!!a.warm_contact && a.warm_contact !== 'None')
-      : statusFilter === 'Closed' ? (a.status||'').indexOf('Closed') > -1
-      : (a.status||'') === statusFilter;
+
+    var matchFilter;
+    if (statusFilter === 'all') {
+      matchFilter = true;
+    } else if (statusFilter === 'warm') {
+      matchFilter = !!a.warm_contact && a.warm_contact !== 'None';
+    } else if (statusFilter === 'Closed') {
+      matchFilter = (a.status||'').indexOf('Closed') > -1;
+    } else if (statusFilter === '__inprocess__') {
+      matchFilter = a.status === 'Screening' || a.status === 'Interviewing';
+    } else if (statusFilter === 'Applied') {
+      // "Awaiting Reply" = Applied and NOT closed
+      matchFilter = a.status === 'Applied';
+    } else {
+      matchFilter = (a.status||'') === statusFilter;
+    }
+
     return matchSearch && matchFilter;
   });
 
@@ -654,95 +695,167 @@ function renderRows() {
 function setFilter(f, btn) {
   statusFilter = f;
   document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
+  document.querySelectorAll('.stat-card').forEach(function(c){ c.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
   renderRows();
 }
 
 function filterApps(q) { searchQ = q; renderRows(); }
 
-// ── Scraper ───────────────────────────────────────────────────────────────────
+// ── Scraper Feed ──────────────────────────────────────────────────────────────
 function renderScraper() {
-  var el = document.getElementById('pane-scraper');
+  var el = document.getElementById('scraper-content');
+  if (!el) return;
+
   if (!JOBS.length) {
-    el.innerHTML = '<div class="empty">'
-      + '<div class="empty-icon">📡</div>'
-      + '<div class="empty-title">No scraper results yet</div>'
-      + '<div>Runs every 30 min — roles posted in last 5 days only</div>'
-      + '</div>';
+    el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--muted)">No jobs scraped yet. Run the scraper to find new roles.</div>';
     return;
   }
 
-  el.innerHTML = '<div class="job-grid">' + JOBS.map(function(j) {
-    var gut = (j.gut_check || '').toUpperCase();
-    var vclass = gut.indexOf('APPLY') > -1 ? 'verdict-apply'
-               : gut.indexOf('MAYBE') > -1 ? 'verdict-maybe' : 'verdict-pass';
-    var vtext  = gut.indexOf('APPLY') > -1 ? 'APPLY'
-               : gut.indexOf('MAYBE') > -1 ? 'MAYBE' : 'PASS';
-    var posted = j.posted_date
-      ? new Date(j.posted_date).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '—';
+  el.innerHTML = '<div class="job-cards">' + JOBS.map(function(j) {
+    var gut = j.gut_check || '';
+    var gutClass = gut.startsWith('APPLY') ? 'gut-apply' : gut.startsWith('MAYBE') ? 'gut-maybe' : 'gut-pass';
+    var gutLabel = gut.split('—')[0].trim() || 'MAYBE';
+    var date = j.scraped_at
+      ? new Date(j.scraped_at).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
 
     return '<div class="job-card">'
-      + '<div class="job-card-header">'
-      + '<div><div class="job-company">' + (j.company||'') + '</div><div class="job-title">' + (j.title||'') + '</div></div>'
-      + (gut ? '<span class="verdict ' + vclass + '">' + vtext + '</span>' : '')
-      + '</div>'
+      + '<div class="job-card-left">'
+      + '<div class="job-co">' + (j.company||'') + '</div>'
+      + '<div class="job-title">' + (j.title||'') + '</div>'
       + '<div class="job-meta">'
-      + '<span class="sal">' + (j.salary||'Salary N/A') + '</span>'
-      + '<span>' + (j.location||'Remote') + '</span>'
-      + '<span>' + posted + '</span>'
+      + '<span>📍 ' + (j.location||'Remote') + '</span>'
+      + (j.salary && j.salary !== 'Not listed' ? '<span>💰 ' + j.salary + '</span>' : '')
+      + '<span>🔗 ' + (j.source||'') + '</span>'
+      + '<span>🕐 ' + date + '</span>'
       + '</div>'
-      + (j.gut_check ? '<div class="job-gut">' + j.gut_check + '</div>' : '')
-      + (j.apply_url ? '<a class="apply-link" href="' + j.apply_url + '" target="_blank">Apply →</a>' : '')
+      + '</div>'
+      + '<div class="job-card-right">'
+      + '<span class="gut ' + gutClass + '">' + gutLabel + '</span>'
+      + (j.apply_url ? '<a href="' + j.apply_url + '" target="_blank" class="btn btn-secondary" style="font-size:11px;padding:4px 10px">Apply →</a>' : '')
+      + '</div>'
       + '</div>';
   }).join('') + '</div>';
 }
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
-function switchTab(t, btn) {
-  document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-  document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('active'); });
-  document.getElementById('pane-' + t).classList.add('active');
+// ── Gmail Scan ────────────────────────────────────────────────────────────────
+function runGmailScan(btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Scanning...';
+  var resultsEl = document.getElementById('scan-results');
+  resultsEl.style.display = 'none';
+  resultsEl.innerHTML = '';
+
+  fetch('/api/gmail-scan', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + CRON_SECRET,
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    btn.disabled = false;
+    btn.innerHTML = 'Scan Inbox';
+    if (!data || !data.updates || !data.updates.length) {
+      resultsEl.style.display = 'block';
+      resultsEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px 0">No new recruiter activity found since last scan.</div>';
+      return;
+    }
+    var html = data.updates.map(function(u) {
+      var dotColor = u.type === 'rejection' ? '#dc2626' : u.type === 'interview' ? '#059669' : '#7c3aed';
+      return '<div class="scan-result-item">'
+        + '<div class="scan-dot" style="background:' + dotColor + '"></div>'
+        + '<div>'
+        + '<div class="scan-result-company">' + (u.company||'') + ' — ' + (u.subject||'') + '</div>'
+        + '<div class="scan-result-detail">' + (u.summary||'') + '</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+    resultsEl.style.display = 'block';
+    resultsEl.innerHTML = html;
+  })
+  .catch(function(err) {
+    btn.disabled = false;
+    btn.innerHTML = 'Scan Inbox';
+    resultsEl.style.display = 'block';
+    resultsEl.innerHTML = '<div class="error-box">Scan failed: ' + err.message + '</div>';
+  });
+}
+
+// ── Scraper trigger ───────────────────────────────────────────────────────────
+function triggerScraper(btn) {
+  btn.disabled = true;
+  var orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> Running...';
+
+  fetch('/api/cron', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + CRON_SECRET }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+    showToast(data.success ? '✓ Scraper complete — ' + (data.jobsFound||0) + ' new jobs' : '⚠ Scraper error: ' + (data.error||'unknown'));
+    if (data.success) {
+      db('jobs', '?order=scraped_at.desc&limit=100').then(function(jobs) {
+        JOBS = Array.isArray(jobs) ? jobs : [];
+        renderScraper();
+      });
+    }
+  })
+  .catch(function(err) {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+    showToast('⚠ ' + err.message);
+  });
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 function openModal(a) {
-  document.getElementById('modal-id').value    = a.id;
-  document.getElementById('modal-meta').textContent = '#' + (a.app_number||'?') + ' · ' + (a.role_type||'AE');
-  document.getElementById('modal-title').textContent = (a.company||'') + ' — ' + (a.role||'');
+  currentApp = a;
+  document.getElementById('modal-title').textContent = a.company + ' — ' + a.role;
   document.getElementById('modal-status').value = a.status || 'Applied';
-  document.getElementById('modal-notes').value  = a.notes || '';
+  document.getElementById('modal-notes').value = a.notes || '';
   document.getElementById('modal').classList.add('open');
 }
 
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
+  currentApp = null;
 }
 
-document.getElementById('modal').addEventListener('click', function(e) {
-  if (e.target === e.currentTarget) closeModal();
-});
-
-function saveEdit() {
-  var id     = document.getElementById('modal-id').value;
+function saveModal() {
+  if (!currentApp) return;
   var status = document.getElementById('modal-status').value;
   var notes  = document.getElementById('modal-notes').value;
-
-  dbPatch('applications', id, { status: status, notes: notes, updated_at: new Date() })
+  dbPatch('applications', currentApp.id, { status: status, notes: notes, updated_at: new Date() })
     .then(function() {
-      for (var i = 0; i < APPS.length; i++) {
-        if (APPS[i].id == id) {
-          APPS[i].status = status;
-          APPS[i].notes  = notes;
-          break;
-        }
-      }
+      var idx = APPS.findIndex(function(a){ return a.id === currentApp.id; });
+      if (idx > -1) { APPS[idx].status = status; APPS[idx].notes = notes; }
       closeModal();
-      renderRows();
+      renderPipeline();
+      showToast('✓ Saved');
     })
-    .catch(function(e) {
-      alert('Save failed: ' + e.message);
-    });
+    .catch(function(e) { showToast('⚠ Save failed: ' + e.message); });
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function switchTab(tab, btn) {
+  ['pipeline','scraper','gmail'].forEach(function(t) {
+    document.getElementById('pane-' + t).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3000);
 }
 </script>
 </body>
