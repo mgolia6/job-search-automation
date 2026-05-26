@@ -10,7 +10,7 @@
 All rows must be preserved in full on every update. If a prior session truncated this file,
 restore from Google Drive: APPLICATION_LOG_May212026.md (file ID: 1ZHJBDcs5aK5jOSqK2eHxWOzYv6YS_0Kxdxf-WOVAcAU).
 
-**Before any GitHub commit:** verify row count matches the last known total. As of May 23, 2026: **46 rows (#1–#46).**
+**Before any GitHub commit:** verify row count matches the last known total. As of May 26, 2026: **46 rows (#1–#46).** Microsoft #22/#23 closed. Otter.ai #43 closed.
 
 ---
 
@@ -62,8 +62,8 @@ Cover letter must proactively address deal complexity in paragraph 1 or 2. Proof
 | 19 | GitHub | Senior Enterprise Account Executive | Enterprise AE | 4/8/2026 | — | Unique (pre-master) | — | Referral | Piyush Chandra | Closed — No | — | Rejected 5/12 via iCIMS. Pre-master collateral. |
 | 20 | Pendo | Account Director, Enterprise Sales | Enterprise AE | 4/8/2026 | — | Unique (pre-master) | — | Cold | None | Closed — No | — | Rejected 4/10. Fast turnaround. |
 | 21 | Samsara | Regional Sales Director, Enterprise Select - Northeast US | Director/Manager | 4/8/2026 | — | Unique (pre-master) | — | Cold | None | Closed — No | — | Rejected 4/10. Different role from #12. |
-| 22 | Microsoft | Sales Excellence Manager | Director/Manager | 4/13/2026 | — | Unique (pre-master) | — | Referral | Dave Martin | Applied | — | Manager track — retained for Dave Martin relationship. Portal: New Referral. |
-| 23 | Microsoft | Senior Account Executive | Enterprise AE | 4/13/2026 | — | Unique (pre-master) | — | Referral | Dave Martin | Applied | — | Portal: New Referral. |
+| 22 | Microsoft | Sales Excellence Manager | Director/Manager | 4/13/2026 | — | Unique (pre-master) | — | Referral | Dave Martin | Closed — No | — | Dave Martin submitted referral 4/13. Followed up 4/22 — no response. Gone cold. |
+| 23 | Microsoft | Senior Account Executive | Enterprise AE | 4/13/2026 | — | Unique (pre-master) | — | Referral | Dave Martin | Closed — No | — | Dave Martin submitted referral 4/13. Followed up 4/22 — no response. Gone cold. |
 | 24 | Kong | Enterprise Account Executive, Northeast | Enterprise AE | 3/31/2026 | — | Unique (pre-master) | — | Company site | None | Closed — No | — | Rejected 4/13 |
 | 25 | Salesforce | Manager, Deal Strategy & Execution (DSG) | Director/Manager | 4/20/2026 | — | Sales Ops — Salesforce DSG | Version A — Metrics-forward | Company site | Dave Capasso | Closed — No | — | Rejected via automated email. |
 | 26 | Salesforce | Named Account Executive, K-12 | Enterprise AE | 4/20/2026 | $275K–$300K | AE — Salesforce EAE | Version A — Metrics-forward | Company site | Dave Capasso | Applied | — | Prior Salesforce final-round rejection on file with Bridie Ledwell. |
@@ -117,7 +117,7 @@ Cover letter must proactively address deal complexity in paragraph 1 or 2. Proof
 | 18,27,31,32 | Twilio | Michelle Clark | Strategic AE4 | — | — | Closed | All known roles filled or rejected. Connection limited to her org. |
 | 18,27,31,32 | Twilio | Alexa Lowe (recruiter) | — | 4/28/2026 | 4/28/2026 | Gone quiet | Reached out personally on rejections. Relationship worth noting. |
 | 19 | GitHub | Piyush Chandra | Senior Enterprise AE | ~4/22/2026 | No response | Gone quiet | Rejected 5/12. |
-| 22,23 | Microsoft | Dave Martin | Sales Excellence Manager + Senior AE | ~4/22/2026 | No response | Gone quiet | Portal: New Referral on both. Monitor. |
+| 22,23 | Microsoft | Dave Martin | Sales Excellence Manager + Senior AE | 4/22/2026 | No response | Gone cold | Referrals submitted 4/13, followed up 4/22 — no response. Both apps closed. |
 | 26 | Salesforce | Dave Capasso | Named AE, K-12 | — | — | Outreach recommended | Prior rejection on file. Capasso outreach before this stalls. |
 | MRI | MRI Software | Director of Sales (TBD) | Strategic AE | 4/29/2026 | Active | Active — not pursuing role | Director wants Matthew. Role declined — OTE ceiling, SMB focus. Maintain as reference. |
 | 37,38,45 | Qualtrics | Saurabh Vaish | Enterprise AE — TMT + Retail/Travel + Goods & Services | 5/4/2026 | 5/4/2026 | Active — high priority | TMT rejected 5/7. Retail/Travel and Goods & Services still active. Texting. Going to sales leadership directly. |
