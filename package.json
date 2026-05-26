@@ -1,19 +1,15 @@
 {
   "name": "job-search-automation",
-  "version": "1.0.0",
-  "description": "Automated job scraper with company health signals and email alerts",
-  "main": "api/cron.js",
+  "version": "2.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "node src/scraper.js",
-    "build": "echo 'No build needed'",
     "vercel-build": "echo 'Build complete'"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
-    "@supabase/supabase-js": "^2.39.0",
-    "node-fetch": "^3.3.2"
+    "@supabase/supabase-js": "^2.39.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "20.x"
   }
 }
