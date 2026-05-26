@@ -579,6 +579,29 @@ td { padding: 11px 14px; vertical-align: middle; }
   margin-right: 4px;
 }
 
+.recon-loading {
+  color: var(--muted);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.recon-error {
+  color: var(--red);
+  font-size: 11px;
+  padding: 8px 0;
+}
+
+.recon-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.recon-link:hover {
+  text-decoration: underline;
+}
+
 
 .scraper-controls {
   display: flex;
@@ -1368,12 +1391,66 @@ function renderJobCard(j) {
 
 function renderReconSection(j) {
   var careersUrl = 'https://' + (j.company || '').toLowerCase().replace(/\s+/g, '') + '.com/careers';
-  return '<div class="recon-section">'
+  var reconId = 'recon-' + j.job_id;
+  
+  // Check if we have cached recon data
+  var hasRecon = j.recon_data;
+  
+  if (!hasRecon) {
+    // Show loading state and trigger fetch
+    setTimeout(function() { fetchReconData(j.job_id, j.company); }, 100);
+    return '<div class="recon-section" id="' + reconId + '">'
+      + '<div class="recon-loading">Loading company data...</div>'
+      + '</div>';
+  }
+
+  var repvue = j.recon_data.repvue || {};
+  var glassdoor = j.recon_data.glassdoor || {};
+  
+  return '<div class="recon-section" id="' + reconId + '">'
     + '<div class="recon-row"><strong>Gut Check:</strong> ' + (j.gut_check || 'No data yet') + '</div>'
-    + '<div class="recon-row"><strong>RepVue:</strong> Coming soon</div>'
-    + '<div class="recon-row"><strong>Glassdoor:</strong> Coming soon</div>'
+    + '<div class="recon-row"><strong>RepVue:</strong> ' 
+    + (repvue.available 
+        ? (repvue.quotaAttainment ? repvue.quotaAttainment + '% quota attainment' : 'Rating: ' + repvue.rating + '/5') 
+          + ' <a href="' + repvue.url + '" target="_blank" class="recon-link">→</a>'
+        : 'Not found') 
+    + '</div>'
+    + '<div class="recon-row"><strong>Glassdoor:</strong> ' 
+    + (glassdoor.available 
+        ? glassdoor.rating + '/5 <a href="' + glassdoor.url + '" target="_blank" class="recon-link">→</a>'
+        : 'Not found') 
+    + '</div>'
     + '<div class="recon-row"><strong>Careers Page:</strong> <a href="' + careersUrl + '" target="_blank" class="job-link">' + careersUrl + '</a></div>'
     + '</div>';
+}
+
+function fetchReconData(jobId, company) {
+  fetch('/api/company-recon', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ company: company })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success) {
+      // Find the job in JOBS array and attach recon data
+      var job = JOBS.find(function(j) { return j.job_id === jobId; });
+      if (job) {
+        job.recon_data = {
+          repvue: data.repvue,
+          glassdoor: data.glassdoor
+        };
+        renderScraper(); // Re-render to show data
+      }
+    }
+  })
+  .catch(function(err) {
+    console.error('Recon fetch failed:', err);
+    var reconEl = document.getElementById('recon-' + jobId);
+    if (reconEl) {
+      reconEl.innerHTML = '<div class="recon-error">Failed to load company data</div>';
+    }
+  });
 }
 
 function toggleRecon(jobId) {
