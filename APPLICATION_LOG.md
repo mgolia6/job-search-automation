@@ -125,6 +125,7 @@ Cover letter must proactively address deal complexity in paragraph 1 or 2. Proof
 | 36 | Ema | Karla Castaneda (recruiter) | Enterprise AE | 5/4/2026 | — | InMail sent — awaiting response | LinkedIn InMail sent with Version B CL. Application submitted same day. |
 | 44 | Onboard | Chris Wisniewski (AE) | Strategic AE | 5/19/2026 | 5/19/2026 | Active — recon complete | Recon call 5/19. LinkedIn outreach to Chris Kiene (CRO) 5/19 — awaiting response. |
 | — | Unify Consulting | Nicole (recruiter) | Sales Ops / RevOps Consulting | 5/21/2026 | 5/21/2026 | Not pursuing — on speed dial | CT licensing blocker + comp ceiling $175K base. Maintain relationship. |
+| — | Network | Corissa Furr (Financial Advisor) | — | 5/21/2026 | 5/21/2026 | Active — nurture | LinkedIn intro call 5/21. Strong networker. Second meeting planned — mutually beneficial relationship. Not a direct pipeline play. |
 
 ---
 
