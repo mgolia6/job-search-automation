@@ -1,4 +1,4 @@
-const { runJobScraper } = require('./scraper.js');
+const { runJobScraper } = require('./scraper-jsearch.js');
 
 module.exports = async function handler(req, res) {
   console.log('[cron] Triggered', new Date().toISOString());
