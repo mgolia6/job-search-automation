@@ -1,6 +1,6 @@
 # MATTHEW GOLIA — APPLICATION LOG
 
-*Last updated: May 23, 2026*
+*Last updated: May 26, 2026*
 
 ---
 
@@ -79,11 +79,11 @@ Cover letter must proactively address deal complexity in paragraph 1 or 2. Proof
 | 36 | Ema | Enterprise Account Executive | Enterprise AE | 5/4/2026 | $200K–$300K OTE est. | Matthew_Golia_Ema_EnterpriseAE_May042026_Resume.docx | Version B — Mission/platform-forward | Company site | Karla Castaneda (recruiter — InMail sent) | Applied | Karla Castaneda | No CL field on application. Version B CL sent via LinkedIn InMail. |
 | 37 | Qualtrics | Enterprise Account Executive — TMT | Enterprise AE | 5/5/2026 | $109.5K–$207.5K base | Matthew_Golia_Qualtrics_EnterpriseAE_May052026_Resume.docx | Pending | Referral | Saurabh Vaish | Closed — No | — | Rejected 5/7. |
 | 38 | Qualtrics | Enterprise Account Executive — Retail/Travel/Hospitality | Enterprise AE | 5/5/2026 | $109.5K–$207.5K base | Matthew_Golia_Qualtrics_EnterpriseAE_May052026_Resume.docx | Pending | Referral | Saurabh Vaish | Applied | — | Retail/Travel/Hospitality vertical likely stronger fit given ADTRAV background. |
-| 39 | Dataiku | Strategic Account Executive, East (GH: 5849771004) | Enterprise AE | 5/5/2026 | $150K–$175K base est. | Golia_Resume_MASTER_AE_May012026_v2.docx | Pending | Referral | Amanda Walt | Applied | — | Amanda Walt driving referral to hiring managers. AI builder angle is primary differentiator. |
-| 40 | Dataiku | Enterprise Account Executive (GH: 5979655004) | Enterprise AE | 5/5/2026 | $150K–$175K base est. | Golia_Resume_MASTER_AE_May012026_v2.docx | Pending | Referral | Amanda Walt | Applied | — | Same referral path as #39. Cover letters pending post-call. |
+| 39 | Dataiku | Strategic Account Executive, East (GH: 5849771004) | Enterprise AE | 5/5/2026 | $150K–$175K base est. | Golia_Resume_MASTER_AE_May012026_v2.docx | Pending | Referral | Amanda Walt | Applied | — | Amanda Walt driving referral. Last Amanda response 5/12 — she pinged recruiter. No Dataiku contact in 2 weeks. ⚠️ Follow up with Amanda. |
+| 40 | Dataiku | Enterprise Account Executive (GH: 5979655004) | Enterprise AE | 5/5/2026 | $150K–$175K base est. | Golia_Resume_MASTER_AE_May012026_v2.docx | Pending | Referral | Amanda Walt | Applied | — | Same referral path as #39. No Dataiku contact in 2 weeks. ⚠️ Follow up with Amanda. |
 | 41 | Zendesk | Enterprise Account Executive | Enterprise AE | 5/11/2026 | — | Pre-May 21 | — | Cold | None | Closed — No | — | Applied 5/11, rejected 5/20. |
 | 42 | Onboard | Strategic Account Executive | Enterprise AE | 5/14/2026 | — | Pre-May 21 | — | Cold | None | Applied | — | First Onboard application 5/14. No response yet. |
-| 43 | Otter AI | Enterprise Account Executive | Enterprise AE | 5/19/2026 | — | Pre-May 21 | — | Cold | None | Applied | — | Applied 5/19. No response yet. |
+| 43 | Otter AI | Enterprise Account Executive | Enterprise AE | 5/19/2026 | — | Pre-May 21 | — | Cold | None | Closed — No | — | Rejected 5/23. Auto-rejection email from talent@otter.ai. |
 | 44 | Onboard | Strategic Account Executive | Enterprise AE | 5/19/2026 | — | Pre-May 21 | — | Cold | Chris Wisniewski (AE — recon call 5/19) | Applied | — | Second Onboard application. Recon call with Chris Wisniewski 5/19. LinkedIn outreach to Chris Kiene (CRO) 5/19 — awaiting response. |
 | 45 | Qualtrics | Enterprise Account Executive — Goods & Services | Enterprise AE | 5/21/2026 | $109.5K–$207.5K base | Golia_Resume_MASTER_AE_May212026_v1.docx | Version A — Metrics-forward (AI in paragraph 1) | Referral | Saurabh Vaish | Applied | — | **NEW MAY 21 MASTER USED.** Applied via Saurabh referral link. Addresses deal complexity proactively (Salesforce framing gap lesson applied). |
 | 46 | Cyara | Senior Enterprise Account Executive | Enterprise AE | Unknown (pre-5/21/2026) | — | Pre-May 21 | — | Cold | None | Closed — No | Cindy Phillips (cindy.phillips@cyara.com) | Rejected 5/21. No confirmation email found — application date unknown. |
@@ -110,7 +110,7 @@ Cover letter must proactively address deal complexity in paragraph 1 or 2. Proof
 | 2 | Thomson Reuters | Ryan Colpaert | Senior Sales Executive | — | — | Gone quiet | Application closed. Maintain relationship. |
 | 4 | Atlassian | Arthur Poje | Head of Solution Sales Executives | — | — | Gone quiet | Application withdrawn. |
 | 5 | Mastercard | Meredith Spatz | Director, Account Management | — | — | Gone quiet | Application closed. |
-| 5,35 | Mastercard | Cole Horgan (recruiter) | — | — | — | Monitor | Live contact. Share relevant postings directly. |
+| 5,35 | Mastercard | Cole Horgan (recruiter) | — | 5/15/2026 | 5/20/2026 | Monitor | Travel role filled, base too low per Cole. Stayed warm — re-engage when right role surfaces. |
 | 7 | Gartner | Josh Giordano | Account Executive | — | — | Gone quiet | Application closed. |
 | 16 | Salesforce | Dave Capasso | Account Executive | — | — | Active | Also tied to #25, #26. Outreach recommended on #26 (K-12 AE) before it stalls. |
 | 16 | Salesforce | Bridie Ledwell (recruiter) | — | Last activity 4/8 | — | Gone quiet | bledwell@salesforce.com. Prior final-round rejection on file. |
