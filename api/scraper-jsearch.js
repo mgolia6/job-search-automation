@@ -99,10 +99,10 @@ function globalDedupe(jobs) {
 
 async function filterNewJobs(jobs) {
   const { data: seen } = await supabase.from('jobs').select('job_id');
-  const { data: applied } = await supabase.from('applications').select('company');
+  // Temporarily disabled: const { data: applied } = await supabase.from('applications').select('company');
   const seenIds = new Set((seen || []).map(j => j.job_id));
-  const appliedCos = new Set((applied || []).map(a => a.company.toLowerCase()));
-  return jobs.filter(j => !seenIds.has(j.jobId) && !appliedCos.has(j.company.toLowerCase()));
+  // Temporarily disabled: const appliedCos = new Set((applied || []).map(a => a.company.toLowerCase()));
+  return jobs.filter(j => !seenIds.has(j.jobId)); // && !appliedCos.has(j.company.toLowerCase()));
 }
 
 async function storeJobs(jobs) {
