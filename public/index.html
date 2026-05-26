@@ -708,6 +708,29 @@ td { padding: 11px 14px; vertical-align: middle; }
   text-decoration: underline;
 }
 
+/* ── Recon Buttons ── */
+.recon-btn {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  background: var(--accent);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.recon-btn:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
+}
+
+.recon-btn:active {
+  transform: scale(0.98);
+}
+
+
 /* ── Dismiss Modal ── */
 .dismiss-modal-overlay {
   position: fixed;
@@ -1599,10 +1622,11 @@ function renderReconSection(j) {
   var hasRecon = j.recon_data;
   
   if (!hasRecon) {
-    // Show loading state and trigger fetch
+    // Show loading state and trigger fetch for RepVue only
     setTimeout(function() { fetchReconData(j.job_id, j.company); }, 100);
     return '<div class="recon-section" id="' + reconId + '">'
       + '<div class="recon-loading">Loading company data...</div>'
+      + '<button class="recon-btn recon-btn-glassdoor" onclick="fetchGlassdoor(\'' + j.job_id + '\', \'' + j.company + '\')">Check Glassdoor</button>'
       + '</div>';
   }
 
@@ -1620,7 +1644,7 @@ function renderReconSection(j) {
     + '<div class="recon-row"><strong>Glassdoor:</strong> ' 
     + (glassdoor.available 
         ? glassdoor.rating + '/5 <a href="' + glassdoor.url + '" target="_blank" class="recon-link">→</a>'
-        : 'Not found') 
+        : '<button class="recon-btn recon-btn-glassdoor" onclick="fetchGlassdoor(\'' + j.job_id + '\', \'' + j.company + '\')">Check Now</button>') 
     + '</div>'
     + '<div class="recon-row"><strong>Careers Page:</strong> <a href="' + careersUrl + '" target="_blank" class="job-link">' + careersUrl + '</a></div>'
     + '</div>';
@@ -1651,6 +1675,51 @@ function fetchReconData(jobId, company) {
     var reconEl = document.getElementById('recon-' + jobId);
     if (reconEl) {
       reconEl.innerHTML = '<div class="recon-error">Failed to load company data</div>';
+    }
+  });
+}
+
+function fetchGlassdoor(jobId, company) {
+  var job = JOBS.find(function(j) { return j.job_id === jobId; });
+  if (!job) return;
+  
+  var reconEl = document.getElementById('recon-' + jobId);
+  if (!reconEl) return;
+  
+  // Show loading
+  var glassdoorRow = reconEl.querySelector('[data-glassdoor-cell]') || reconEl.querySelector('div:nth-child(3)');
+  if (glassdoorRow) {
+    glassdoorRow.innerHTML = '<strong>Glassdoor:</strong> <span style="font-style:italic;color:var(--muted)">Checking...</span>';
+  }
+  
+  fetch('/api/company-recon', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ company: company })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success && data.glassdoor) {
+      // Update job object
+      if (!job.recon_data) job.recon_data = {};
+      job.recon_data.glassdoor = data.glassdoor;
+      
+      // Update display
+      if (data.glassdoor.available) {
+        if (glassdoorRow) {
+          glassdoorRow.innerHTML = '<strong>Glassdoor:</strong> ' + data.glassdoor.rating + '/5 <a href="' + data.glassdoor.url + '" target="_blank" class="recon-link">→</a>';
+        }
+      } else {
+        if (glassdoorRow) {
+          glassdoorRow.innerHTML = '<strong>Glassdoor:</strong> <span style="color:var(--muted)">Not found</span>';
+        }
+      }
+    }
+  })
+  .catch(function(err) {
+    console.error('Glassdoor fetch failed:', err);
+    if (glassdoorRow) {
+      glassdoorRow.innerHTML = '<strong>Glassdoor:</strong> <span style="color:var(--red)">Error loading</span>';
     }
   });
 }

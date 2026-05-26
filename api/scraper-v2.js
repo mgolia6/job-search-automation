@@ -10,18 +10,11 @@ const CONFIG = {
   sources: {
     linkedin: {
       enabled: true,
-      host: 'linkedin-job-search-real-time1.p.rapidapi.com',
-      quota: 50 // calls per run
+      host: 'linkedin-job-search-real-time1.p.rapidapi.com'
     },
     activeJobs: {
       enabled: true,
-      host: 'active-jobs-db.p.rapidapi.com',
-      quota: 30
-    },
-    workday: {
-      enabled: false, // Enable when targeting specific companies
-      host: 'workday-jobs-api.p.rapidapi.com',
-      quota: 20
+      host: 'active-jobs-db.p.rapidapi.com'
     }
   }
 };
@@ -122,27 +115,35 @@ async function scrapeActiveJobs() {
   
   for (const keyword of CONFIG.titleKeywords) {
     try {
-      const url = new URL('https://active-jobs-db.p.rapidapi.com/active-ats-jobs');
-      url.searchParams.append('title', keyword);
-      url.searchParams.append('location', 'remote');
-      url.searchParams.append('date_posted', '1'); // Last 24 hours
+      const url = new URL('https://active-jobs-db.p.rapidapi.com/active-ats-1h');
+      url.searchParams.append('offset', '0');
+      url.searchParams.append('title_filter', `"${keyword}"`);
+      url.searchParams.append('location_filter', '"United States"');
+      url.searchParams.append('description_type', 'text');
       
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
-          'X-RapidAPI-Host': 'active-jobs-db.p.rapidapi.com'
+          'Content-Type': 'application/json',
+          'x-rapidapi-host': 'active-jobs-db.p.rapidapi.com',
+          'x-rapidapi-key': process.env.RAPIDAPI_KEY
         }
       });
       
-      if (!response.ok) continue;
+      if (!response.ok) {
+        console.log(`[active-jobs] ${response.status} for "${keyword}"`);
+        continue;
+      }
       
       const data = await response.json();
-      const normalized = (data.data || data.jobs || [])
+      const jobs_array = data.data || data.jobs || data || [];
+      
+      const normalized = jobs_array
         .map(j => normalizeActiveJob(j))
         .filter(Boolean);
       
       jobs.push(...normalized);
+      console.log(`[active-jobs] Found ${normalized.length} for "${keyword}"`);
     } catch (err) {
       console.error(`[active-jobs] Error with keyword "${keyword}":`, err.message);
     }

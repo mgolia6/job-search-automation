@@ -115,32 +115,32 @@ async function fetchRepVue(company) {
 
 async function fetchGlassdoor(company) {
   try {
-    const url = new URL('https://glassdoor-real-time.p.rapidapi.com/search');
-    url.searchParams.append('query', company);
-    url.searchParams.append('type', 'company');
+    // Search for company first to get ID
+    const searchUrl = new URL('https://glassdoor-real-time.p.rapidapi.com/search');
+    searchUrl.searchParams.append('query', company);
     
-    const response = await fetch(url, {
+    const searchResponse = await fetch(searchUrl, {
       method: 'GET',
       headers: {
-        'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
-        'X-RapidAPI-Host': 'glassdoor-real-time.p.rapidapi.com'
+        'Content-Type': 'application/json',
+        'x-rapidapi-host': 'glassdoor-real-time.p.rapidapi.com',
+        'x-rapidapi-key': process.env.RAPIDAPI_KEY
       }
     });
 
-    if (!response.ok) {
+    if (!searchResponse.ok) {
       return { available: false };
     }
 
-    const data = await response.json();
+    const searchData = await searchResponse.json();
+    const companyResult = searchData.data?.[0] || searchData[0];
     
-    // Extract first matching company
-    const companyData = data.data?.[0] || data.companies?.[0] || data[0];
-    if (!companyData) {
+    if (!companyResult) {
       return { available: false };
     }
-    
-    const rating = parseFloat(companyData.rating || companyData.overall_rating || companyData.overallRating);
-    const companyUrl = companyData.url || companyData.link || `https://www.glassdoor.com/Search/results.htm?keyword=${encodeURIComponent(company)}`;
+
+    const rating = parseFloat(companyResult.rating || companyResult.overall_rating);
+    const companyUrl = `https://www.glassdoor.com/Reviews/${company.replace(/\s+/g, '-')}-Reviews-E${companyResult.id || 'unknown'}`;
 
     return {
       available: rating !== null && !isNaN(rating),
