@@ -155,6 +155,10 @@ Paste JD in Claude → resume + 2 CLs`;
 async function runJobScraper() {
   console.log('[scraper] START', new Date().toISOString());
   const allJobs = [];
+  const diagnostics = {
+    searches: [],
+    filters: { title: [], salary: [] }
+  };
 
   for (const search of SEARCHES) {
     try {
@@ -162,12 +166,15 @@ async function runJobScraper() {
       const result = await searchJSearch(search);
       
       if (!result.data || !Array.isArray(result.data)) {
-        console.log('[scraper] no data returned for:', search);
+        const msg = `no data returned for: ${search}`;
+        console.log('[scraper]', msg);
         console.log('[scraper] response:', JSON.stringify(result).slice(0, 500));
+        diagnostics.searches.push({ query: search, count: 0, error: msg });
         continue;
       }
 
       console.log(`[scraper] raw results for "${search}": ${result.data.length}`);
+      diagnostics.searches.push({ query: search, count: result.data.length });
       
       for (const rawJob of result.data) {
         const job = normalizeJob(rawJob);
@@ -179,8 +186,10 @@ async function runJobScraper() {
           const salary = rawJob.job_max_salary;
           if (!isAERole(title)) {
             console.log(`[scraper] filtered (title): ${title}`);
+            diagnostics.filters.title.push(title);
           } else if (salary && salary < CONFIG.minSalary) {
             console.log(`[scraper] filtered (salary $${salary}): ${rawJob.employer_name} - ${title}`);
+            diagnostics.filters.salary.push({ company: rawJob.employer_name, title, salary });
           }
         }
       }
@@ -189,6 +198,7 @@ async function runJobScraper() {
       await new Promise(r => setTimeout(r, 1000));
     } catch (e) {
       console.error('[scraper] error:', e.message);
+      diagnostics.searches.push({ query: search, count: 0, error: e.message });
     }
   }
 
@@ -199,14 +209,14 @@ async function runJobScraper() {
   const newJobs = await filterNewJobs(deduped);
   console.log(`[scraper] new jobs to store: ${newJobs.length}`);
 
-  if (!newJobs.length) return { jobsFound: 0 };
+  if (!newJobs.length) return { jobsFound: 0, diagnostics };
 
   await storeJobs(newJobs);
   for (const job of newJobs) {
     await sendAlert(job);
   }
   
-  return { jobsFound: newJobs.length };
+  return { jobsFound: newJobs.length, diagnostics };
 }
 
 module.exports = { runJobScraper };
