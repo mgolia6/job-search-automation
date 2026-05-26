@@ -14,50 +14,54 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  // Respond immediately so browser doesn't time out
-  res.status(200).json({ success: true, status: 'running', message: 'Scraper started', timestamp: new Date().toISOString() });
-
-  // Run scraper asynchronously in background
-  (async () => {
-    try {
-      const startTime = new Date();
-      console.log('[cron] Starting scraper...');
-      
-      const allJobs = [];
-      
-      // Try Active Jobs DB (more reliable than LinkedIn)
-      console.log('[cron] Scraping Active Jobs DB...');
-      const activeJobs = await scrapeActiveJobs();
-      console.log(`[cron] Active Jobs DB: ${activeJobs.length} jobs`);
-      allJobs.push(...activeJobs);
-      
-      // Try LinkedIn
-      console.log('[cron] Scraping LinkedIn...');
-      const linkedinJobs = await scrapeLinkedIn();
-      console.log(`[cron] LinkedIn: ${linkedinJobs.length} jobs`);
-      allJobs.push(...linkedinJobs);
-      
-      // Dedupe and filter
-      const deduped = globalDedupe(allJobs);
-      console.log(`[cron] After dedupe: ${deduped.length} jobs`);
-      
-      const newJobs = await filterNewJobs(deduped);
-      console.log(`[cron] New jobs: ${newJobs.length}`);
-      
-      // Store
-      let storedCount = 0;
-      if (newJobs.length > 0) {
-        await storeJobs(newJobs);
-        storedCount = newJobs.length;
-        console.log(`[cron] Stored ${newJobs.length} jobs`);
-      }
-      
-      const duration = Date.now() - startTime.getTime();
-      console.log(`[cron] Complete in ${duration}ms: found=${allJobs.length}, deduped=${deduped.length}, new=${newJobs.length}, stored=${storedCount}`);
-    } catch (err) {
-      console.error('[cron] Error:', err.message, err.stack);
+  try {
+    const startTime = new Date();
+    console.log('[cron] Starting scraper...');
+    
+    const allJobs = [];
+    
+    // Try Active Jobs DB (more reliable than LinkedIn)
+    console.log('[cron] Scraping Active Jobs DB...');
+    const activeJobs = await scrapeActiveJobs();
+    console.log(`[cron] Active Jobs DB: ${activeJobs.length} jobs`);
+    allJobs.push(...activeJobs);
+    
+    // Try LinkedIn
+    console.log('[cron] Scraping LinkedIn...');
+    const linkedinJobs = await scrapeLinkedIn();
+    console.log(`[cron] LinkedIn: ${linkedinJobs.length} jobs`);
+    allJobs.push(...linkedinJobs);
+    
+    // Dedupe and filter
+    const deduped = globalDedupe(allJobs);
+    console.log(`[cron] After dedupe: ${deduped.length} jobs`);
+    
+    const newJobs = await filterNewJobs(deduped);
+    console.log(`[cron] New jobs: ${newJobs.length}`);
+    
+    // Store
+    let storedCount = 0;
+    if (newJobs.length > 0) {
+      await storeJobs(newJobs);
+      storedCount = newJobs.length;
+      console.log(`[cron] Stored ${newJobs.length} jobs`);
     }
-  })();
+    
+    const duration = Date.now() - startTime.getTime();
+    console.log(`[cron] Complete in ${duration}ms`);
+    
+    return res.status(200).json({
+      success: true,
+      found: allJobs.length,
+      deduped: deduped.length,
+      new: newJobs.length,
+      stored: storedCount,
+      duration
+    });
+  } catch (err) {
+    console.error('[cron] Error:', err.message, err.stack);
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 async function scrapeActiveJobs() {
