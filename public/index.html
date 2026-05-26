@@ -1178,7 +1178,7 @@ function triggerScraper(btn) {
   .then(function(data) {
     btn.disabled = false;
     btn.innerHTML = orig;
-    showToast(data.success ? '✓ Scraper complete — ' + (data.jobsFound||0) + ' new jobs' : '⚠ Scraper error: ' + (data.error||'unknown'));
+    showToast('⚡ Scraper running — check Opportunities tab in ~1 min');
     if (data.success) {
       fetch('/api/data').then(function(r){ return r.json(); }).then(function(d) {
         JOBS = Array.isArray(d.jobs) ? d.jobs : [];
