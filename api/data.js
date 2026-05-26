@@ -1,10 +1,12 @@
-export const config = { maxDuration: 30 };
-
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
   const base = process.env.SUPABASE_URL;
   const key  = process.env.SUPABASE_KEY;
-
   const headers = {
     'apikey': key,
     'Authorization': 'Bearer ' + key,
@@ -22,9 +24,14 @@ export default async function handler(req, res) {
   }
 
   const [apps, jobs] = await Promise.all([
-    fetch(base + '/rest/v1/applications?order=app_number.asc.nullslast&limit=100', { headers }).then(r => r.json()),
-    fetch(base + '/rest/v1/jobs?order=scraped_at.desc&limit=50', { headers }).then(r => r.json())
+    fetch(base + '/rest/v1/applications?order=app_number.asc.nullslast&limit=200', { headers }).then(r => r.json()),
+    fetch(base + '/rest/v1/jobs?order=scraped_at.desc&limit=100', { headers }).then(r => r.json())
   ]);
 
-  res.status(200).json({ applications: apps || [], jobs: jobs || [] });
-}
+  return res.status(200).json({
+    applications: Array.isArray(apps) ? apps : [],
+    jobs: Array.isArray(jobs) ? jobs : []
+  });
+};
+
+module.exports.config = { maxDuration: 30 };
