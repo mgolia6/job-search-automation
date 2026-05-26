@@ -6,7 +6,19 @@ const CONFIG = {
   maxAgeDays: 2,
   emailTo: 'mgolia6@gmail.com',
   titleKeywords: ['account executive', 'strategic account', 'enterprise account', 'enterprise sales'],
-  minSalary: 150000 // $150K base = ~$300K OTE
+  minSalary: 150000, // $150K base = ~$300K OTE
+  // Preferred sources - filter out aggregators
+  blockedSources: [
+    'remote rocketship',
+    'the ladders', 
+    'talent.com',
+    'media bistro',
+    'ziprecruiter',
+    'monster',
+    'simplyhired',
+    'jooble',
+    'adzuna'
+  ]
 };
 
 const SEARCHES = [
@@ -21,7 +33,7 @@ async function searchJSearch(query) {
   url.searchParams.append('query', `${query} remote USA`);
   url.searchParams.append('page', '1');
   url.searchParams.append('num_pages', '1');
-  url.searchParams.append('date_posted', 'week'); // Last 7 days
+  url.searchParams.append('date_posted', 'today'); // Today only (closest to 48 hours available)
 
   const res = await fetch(url, {
     method: 'GET',
@@ -43,9 +55,15 @@ function normalizeJob(j) {
   const company = j.employer_name;
   const title = j.job_title;
   const url = j.job_apply_link;
+  const source = j.job_publisher || 'Unknown';
   
   if (!company || !title) return null;
   if (!isAERole(title)) return null;
+  
+  // Filter out blocked sources (aggregators)
+  if (CONFIG.blockedSources.some(blocked => source.toLowerCase().includes(blocked))) {
+    return null;
+  }
   
   // Parse salary from job data
   let salary = 'Not listed';
@@ -62,10 +80,19 @@ function normalizeJob(j) {
   if (estimatedSalary && estimatedSalary < CONFIG.minSalary) {
     return null;
   }
+  
+  // Filter by recency - must be within 48 hours
+  const postedDate = j.job_posted_at_datetime_utc ? new Date(j.job_posted_at_datetime_utc * 1000) : null;
+  if (postedDate) {
+    const hoursAgo = (Date.now() - postedDate.getTime()) / (1000 * 60 * 60);
+    if (hoursAgo > 48) {
+      return null;
+    }
+  }
 
   return {
     jobId: j.job_id || `jsearch-${slugify(company + '-' + title)}`,
-    source: 'JSearch',
+    source: source,
     title: title.trim(),
     company: company.trim(),
     location: j.job_city && j.job_state ? `${j.job_city}, ${j.job_state}` : j.job_country || 'Remote',
@@ -73,7 +100,7 @@ function normalizeJob(j) {
     baseSalary: estimatedSalary,
     estimatedOTE: estimatedSalary ? estimatedSalary * 2 : null,
     applyUrl: url || j.job_google_link || '',
-    postedDate: j.job_posted_at_datetime_utc ? new Date(j.job_posted_at_datetime_utc * 1000) : new Date(),
+    postedDate: postedDate || new Date(),
     description: j.job_description?.slice(0, 500) || ''
   };
 }
@@ -111,6 +138,7 @@ async function storeJobs(jobs) {
     job_id: j.jobId,
     company: j.company,
     title: j.title,
+    source: j.source,
     salary: j.salary,
     base_salary: j.baseSalary,
     estimated_ote: j.estimatedOTE,

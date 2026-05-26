@@ -895,12 +895,19 @@ var STATUS_CFG = {
   'Interviewing':      { color: '#059669', bg: '#d1fae5' },
   'Offer':             { color: '#d97706', bg: '#fef3c7' },
   'Closed - Rejected': { color: '#dc2626', bg: '#fee2e2' },
-  'Closed - Withdrew': { color: '#6b7280', bg: '#f3f4f6' },
-  'Closed - No Response': { color: '#9ca3af', bg: '#f3f4f6' },
+  'Closed - Withdrew': { color: '#dc2626', bg: '#fee2e2' },
+  'Closed - No Response': { color: '#dc2626', bg: '#fee2e2' },
+  'Closed - No':       { color: '#dc2626', bg: '#fee2e2' },
+  'Closed - Pass':     { color: '#dc2626', bg: '#fee2e2' },
 };
 
 function badge(status) {
-  var cfg = STATUS_CFG[status] || STATUS_CFG['Applied'];
+  var cfg = STATUS_CFG[status];
+  // Default any "Closed" status to red if not explicitly configured
+  if (!cfg && status && status.toLowerCase().includes('closed')) {
+    cfg = { color: '#dc2626', bg: '#fee2e2' };
+  }
+  if (!cfg) cfg = STATUS_CFG['Applied'];
   return '<span class="badge" style="color:' + cfg.color + ';background:' + cfg.bg + '">' + (status || '—') + '</span>';
 }
 
@@ -953,11 +960,11 @@ function renderPipeline() {
 
   // KPIs with icons
   var html = '<div class="kpi-grid">'
-    + kpiCard('📊', total, 'Total Applications', '#2563eb')
-    + kpiCard('🎯', active.length, 'Active', '#059669')
-    + kpiCard('💬', interviewing.length, 'Interviewing', '#7c3aed')
-    + kpiCard('🎁', offers.length, 'Offers', '#d97706')
-    + kpiCard('⏱', avgAge, 'Avg Age (days)', '#6b7280')
+    + kpiCard('▣', total, 'Total Applications', '#2563eb')
+    + kpiCard('◉', active.length, 'Active', '#059669')
+    + kpiCard('◐', interviewing.length, 'Interviewing', '#7c3aed')
+    + kpiCard('◆', offers.length, 'Offers', '#d97706')
+    + kpiCard('◷', avgAge, 'Avg Age (days)', '#6b7280')
     + '</div>';
 
   // Tabs
