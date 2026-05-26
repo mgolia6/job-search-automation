@@ -1,7 +1,6 @@
 {
   "name": "job-search-automation",
   "version": "2.0.0",
-  "type": "module",
   "scripts": {
     "vercel-build": "echo 'Build complete'"
   },
