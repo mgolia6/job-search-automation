@@ -1,20 +1,22 @@
-const { runJobScraper } = require("./scraper.js");
+const { runJobScraper } = require('./scraper.js');
 
 module.exports = async function handler(req, res) {
-  console.log("[cron] Triggered", new Date().toISOString());
+  console.log('[cron] Triggered', new Date().toISOString());
 
   const auth = req.headers.authorization;
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    console.log("[cron] Auth failed");
-    return res.status(401).json({ error: "Unauthorized" });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  // Respond immediately so browser doesn't time out
+  res.status(200).json({ success: true, status: 'running', message: 'Scraper started — check email in 3-5 mins', timestamp: new Date().toISOString() });
+
+  // Run scraper after response is sent
   try {
     const result = await runJobScraper();
-    return res.status(200).json({ success: true, ...result, timestamp: new Date().toISOString() });
-  } catch (err) {
-    console.error("[cron] Error:", err.message, err.stack);
-    return res.status(500).json({ success: false, error: err.message, timestamp: new Date().toISOString() });
+    console.log('[cron] Complete:', JSON.stringify(result));
+  } catch(err) {
+    console.error('[cron] Error:', err.message);
   }
 };
 
