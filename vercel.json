@@ -1,8 +1,10 @@
 {
   "outputDirectory": "public",
+  "installCommand": "npm install",
   "functions": {
     "api/**/*.js": {
-      "maxDuration": 300
+      "maxDuration": 300,
+      "includeFiles": "node_modules/**"
     }
   }
 }
