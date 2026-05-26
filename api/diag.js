@@ -1,50 +1,35 @@
 module.exports = async function handler(req, res) {
-  const results = {};
+  const key = process.env.RAPIDAPI_KEY;
+  if (!key) return res.status(200).json({ error: 'RAPIDAPI_KEY not set' });
 
-  // Test Greenhouse index
   try {
-    const r = await fetch('https://boards.greenhouse.io/api/v1/jobs?q=account+executive&remote=true', {
-      headers: { 'User-Agent': 'JobBot/1.0' },
-      signal: AbortSignal.timeout(8000)
+    const url = 'https://jsearch.p.rapidapi.com/search?query=Enterprise+Account+Executive+remote&page=1&num_pages=1&date_posted=today&remote_jobs_only=true&country=us';
+    const r = await fetch(url, {
+      headers: {
+        'x-rapidapi-host': 'jsearch.p.rapidapi.com',
+        'x-rapidapi-key': key
+      },
+      signal: AbortSignal.timeout(10000)
     });
-    const data = await r.json();
-    results.greenhouse_index = {
-      status: r.status,
-      total: data.jobs?.length || 0,
-      sample: (data.jobs || []).slice(0, 2).map(j => ({ title: j.title, company: j.company?.name }))
-    };
-  } catch(e) { results.greenhouse_index = { error: e.message }; }
 
-  // Test single Greenhouse board (Databricks)
-  try {
-    const r = await fetch('https://boards.greenhouse.io/api/v1/boards/databricks/jobs', {
-      headers: { 'User-Agent': 'JobBot/1.0' },
-      signal: AbortSignal.timeout(8000)
+    const text = await r.text();
+    let data;
+    try { data = JSON.parse(text); } catch(e) { data = { raw: text.slice(0, 300) }; }
+
+    return res.status(200).json({
+      status: r.status,
+      ok: r.ok,
+      keyPrefix: key.slice(0, 8) + '...',
+      resultCount: data.data?.length ?? 'N/A',
+      status_field: data.status,
+      error: data.message || data.error || null,
+      sample: (data.data || []).slice(0, 2).map(j => ({
+        title: j.job_title,
+        company: j.employer_name,
+        posted: j.job_posted_at_datetime_utc
+      }))
     });
-    const data = await r.json();
-    const ae = (data.jobs || []).filter(j => j.title?.toLowerCase().includes('account'));
-    results.greenhouse_databricks = {
-      status: r.status,
-      total_jobs: data.jobs?.length || 0,
-      ae_roles: ae.length,
-      sample: ae.slice(0, 2).map(j => ({ title: j.title, location: j.location?.name }))
-    };
-  } catch(e) { results.greenhouse_databricks = { error: e.message }; }
-
-  // Test Lever
-  try {
-    const r = await fetch('https://api.lever.co/v0/postings?mode=json&limit=5', {
-      headers: { 'User-Agent': 'JobBot/1.0' },
-      signal: AbortSignal.timeout(8000)
-    });
-    const data = await r.json();
-    results.lever = {
-      status: r.status,
-      is_array: Array.isArray(data),
-      count: Array.isArray(data) ? data.length : 'N/A',
-      sample: Array.isArray(data) ? data.slice(0,2).map(j => j.text) : data
-    };
-  } catch(e) { results.lever = { error: e.message }; }
-
-  res.status(200).json(results);
+  } catch(e) {
+    return res.status(200).json({ error: e.message });
+  }
 };
