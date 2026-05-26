@@ -85,7 +85,7 @@ async function searchIndeedJobs() {
         null,
         [{ type: 'url', url: 'https://mcp.indeed.com/claude/mcp', name: 'indeed-mcp' }]
       );
-      results.push(...parseLineResults(msg, 'Indeed'));
+      results.push(...parseJsonResults(msg, 'Indeed'));
     } catch (err) { console.error(`[indeed] "${title}":`, err.message); }
   }
   return results;
@@ -104,14 +104,45 @@ async function searchGoogleATS() {
   for (const query of queries) {
     try {
       const msg = await claude(
-        [{ role: 'user', content: `Search: ${query}\n\nOnly jobs posted in the last 2 days. US remote only. One line per job:\nCOMPANY | TITLE | URL | SALARY | DATE\n\nOnly real job postings. Skip articles.` }],
+        [{ role: 'user', content: `Search: ${query}\n\nOnly jobs posted in the last 2 days. US remote only. Return ONLY a JSON array, no other text:\n[{"company":"","title":"","url":"","salary":"","date":""}]\nOnly real job postings. Empty array if none found.` }],
         [{ type: 'web_search_20250305', name: 'web_search' }]
       );
-      results.push(...parseLineResults(msg));
+      results.push(...parseJsonResults(msg));
       await new Promise(r => setTimeout(r, 800));
     } catch (err) { console.error(`[google]:`, err.message); }
   }
   return results;
+}
+
+function parseJsonResults(message, defaultSource) {
+  const jobs = [];
+  const blocks = message.content || [];
+  const text = blocks.filter(b => b.type === 'text').map(b => b.text).join('\n');
+  const match = text.match(/\[\s*[\s\S]*?\]/);
+  if (!match) return jobs;
+  let arr;
+  try { arr = JSON.parse(match[0]); } catch { return jobs; }
+  for (const j of arr) {
+    if (!j.company || !j.title || !j.url) continue;
+    if (!isAERole(j.title)) continue;
+    if (j.date && !withinMaxAge(j.date)) continue;
+    const source = defaultSource || (
+      j.url.includes('greenhouse') ? 'Greenhouse' :
+      j.url.includes('lever.co')   ? 'Lever'      :
+      j.url.includes('ashby')      ? 'Ashby'      : 'ATS'
+    );
+    jobs.push({
+      jobId:      `${source.toLowerCase()}-${slugify(j.company + '-' + j.title)}`,
+      source,
+      title:      j.title.replace(/^[#*\s]+/, ''),
+      company:    j.company.replace(/^[#*\s]+/, ''),
+      location:   'Remote',
+      salary:     j.salary || 'Not listed',
+      applyUrl:   j.url,
+      postedDate: j.date ? new Date(j.date) : new Date()
+    });
+  }
+  return jobs;
 }
 
 function parseLineResults(message, defaultSource) {
