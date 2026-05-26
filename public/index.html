@@ -1532,9 +1532,9 @@ function renderJobCard(j) {
     + (isExpanded ? renderReconSection(j) : '')
     + (!isDismissed ? 
       '<div class="job-card-actions">'
-      + '<button class="action-btn action-pipeline" onclick="jobAction(event, \\'' + jobId + '\\', \\'add_to_pipeline\\', ' + JSON.stringify(j) + ')">Add to Pipeline</button>'
-      + (!isBacklog ? '<button class="action-btn action-backlog" onclick="promptJobAction(event, \\'' + jobId + '\\', \\'backlog\\')">Backlog</button>' : '')
-      + '<button class="action-btn action-dismiss" onclick="promptJobAction(event, \\'' + jobId + '\\', \\'dismiss\\')">Not a Fit</button>'
+      + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + jobId + '\', \'add_to_pipeline\', ' + JSON.stringify(j) + ')">Add to Pipeline</button>'
+      + (!isBacklog ? '<button class="action-btn action-backlog" onclick="promptJobAction(event, \'' + jobId + '\', \'backlog\')">Backlog</button>' : '')
+      + '<button class="action-btn action-dismiss" onclick="promptJobAction(event, \'' + jobId + '\', \'dismiss\')">Not a Fit</button>'
       + (j.apply_url ? '<a href="' + j.apply_url + '" target="_blank" class="action-btn action-apply">Apply →</a>' : '')
       + '</div>'
       : '<div class="job-card-actions"><a href="' + (j.apply_url || '#') + '" target="_blank" class="action-btn action-apply">View Posting →</a></div>')
