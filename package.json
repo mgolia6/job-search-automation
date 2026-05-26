@@ -2,10 +2,10 @@
   "name": "job-search-automation",
   "version": "2.0.0",
   "scripts": {
-    "vercel-build": "echo 'Build complete'"
+    "vercel-build": "echo Build complete"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.20.0",
+    "@anthropic-ai/sdk": "^0.39.0",
     "@supabase/supabase-js": "^2.39.0"
   },
   "engines": {
