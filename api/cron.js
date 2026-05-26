@@ -1,5 +1,3 @@
-const { runJobScraper } = require('./scraper-jsearch.js');
-
 module.exports = async function handler(req, res) {
   console.log('[cron] Triggered', new Date().toISOString());
 
@@ -11,7 +9,7 @@ module.exports = async function handler(req, res) {
   // Respond immediately so browser doesn't time out
   res.status(200).json({ success: true, status: 'running', message: 'Scraper started — check logs in 3-5 mins', timestamp: new Date().toISOString() });
 
-  // Choose scraper based on env var (default to v2)
+  // Use scraper-v2 by default (can override with SCRAPER_VERSION env var)
   const scraperVersion = process.env.SCRAPER_VERSION || 'v2';
   
   try {
@@ -20,7 +18,7 @@ module.exports = async function handler(req, res) {
       const scraperV2 = require('./scraper-v2.js');
       const mockReq = { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } };
       const mockRes = {
-        status: () => ({ json: (data) => console.log('[scraper-v2] Result:', data) })
+        status: (code) => ({ json: (data) => console.log(`[scraper-v2] ${code}:`, JSON.stringify(data)) })
       };
       await scraperV2(mockReq, mockRes);
     } else {
