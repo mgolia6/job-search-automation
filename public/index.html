@@ -1152,6 +1152,10 @@ textarea.form-control { resize: vertical; min-height: 80px; }
     <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
     Gmail Scan
   </button>
+  <button class="tab" onclick="switchTab('ats', this)">
+    <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+    ATS Engine
+  </button>
 </div>
 
 <main>
@@ -1211,6 +1215,84 @@ textarea.form-control { resize: vertical; min-height: 80px; }
     </div>
     <div style="color:var(--muted);font-size:12px;padding:4px 0;">
       Results appear above. Any status changes can be applied to your pipeline from the Applications tab.
+    </div>
+  </div>
+
+  <!-- ATS Engine pane -->
+  <div id="pane-ats" style="display:none">
+    <div class="scraper-header">
+      <div>
+        <div class="scraper-title">ATS Engine</div>
+        <div class="scraper-sub">Score your resume against a JD, check org health, and generate a tailored rewrite — before you apply.</div>
+      </div>
+    </div>
+
+    <!-- Step 1: JD Input -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-weight:600;font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+        <span style="background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">1</span>
+        Paste Job Description
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input id="ats-company" placeholder="Company name" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:12px;background:var(--bg)">
+        <input id="ats-role" placeholder="Role title" style="flex:2;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:12px;background:var(--bg)">
+      </div>
+      <textarea id="ats-jd" rows="8" placeholder="Paste the full job description here..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:12px;background:var(--bg);resize:vertical;line-height:1.5"></textarea>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="runATSAnalysis()" id="ats-run-btn">⚡ Analyze & Score</button>
+        <button class="btn btn-ghost" onclick="clearATS()">Clear</button>
+      </div>
+    </div>
+
+    <!-- Results: hidden until run -->
+    <div id="ats-results" style="display:none">
+
+      <!-- Score cards row -->
+      <div class="kpi-grid" id="ats-scores" style="margin-bottom:16px"></div>
+
+      <!-- RepVue / Org Health -->
+      <div class="card" style="margin-bottom:16px" id="ats-repvue-card">
+        <div style="font-weight:600;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          <span style="background:var(--purple);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">2</span>
+          Org Health — RepVue
+        </div>
+        <div id="ats-repvue-content" style="color:var(--muted);font-size:12px">Loading...</div>
+      </div>
+
+      <!-- Side-by-side rewrite -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          <span style="background:var(--green);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">3</span>
+          Resume Rewrite — Side by Side
+          <span id="ats-rewrite-status" style="font-size:11px;font-weight:400;color:var(--muted);margin-left:auto"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--sub);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Master Resume</div>
+            <div id="ats-master-pane" style="font-size:11px;line-height:1.7;color:var(--text);white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;max-height:600px;overflow-y:auto;font-family:var(--mono)"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Tailored Version</div>
+            <div id="ats-tailored-pane" style="font-size:11px;line-height:1.7;color:var(--text);white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;max-height:600px;overflow-y:auto;font-family:var(--mono)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gap analysis -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          <span style="background:var(--yellow);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">4</span>
+          Keyword Gap Analysis
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px" id="ats-gaps"></div>
+      </div>
+
+      <!-- Action bar -->
+      <div style="display:flex;gap:8px;align-items:center;padding:12px 0">
+        <button class="btn btn-primary" onclick="addToApplied()" id="ats-apply-btn" style="display:none">✓ Mark as Applied → Add to Pipeline</button>
+        <button class="btn btn-ghost" onclick="copyTailored()">Copy Tailored Resume</button>
+      </div>
+
     </div>
   </div>
 
@@ -1952,11 +2034,255 @@ function saveModal() {
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function switchTab(tab, btn) {
-  ['pipeline','scraper','gmail'].forEach(function(t) {
+  ['pipeline','scraper','gmail','ats'].forEach(function(t) {
     document.getElementById('pane-' + t).style.display = t === tab ? '' : 'none';
   });
   document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
+}
+
+// ── ATS Engine ────────────────────────────────────────────────────────────────
+
+var atsState = { jd: '', company: '', role: '', masterResume: '', tailored: '' };
+
+function clearATS() {
+  document.getElementById('ats-jd').value = '';
+  document.getElementById('ats-company').value = '';
+  document.getElementById('ats-role').value = '';
+  document.getElementById('ats-results').style.display = 'none';
+  atsState = { jd: '', company: '', role: '', masterResume: '', tailored: '' };
+}
+
+function copyTailored() {
+  if (!atsState.tailored) return;
+  navigator.clipboard.writeText(atsState.tailored).then(function() {
+    showToast('Tailored resume copied to clipboard');
+  });
+}
+
+function addToApplied() {
+  var company = atsState.company;
+  var role = atsState.role;
+  if (!company || !role) { showToast('Set company and role name first'); return; }
+  // Insert into applications table
+  fetch('/api/data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      table: 'applications',
+      data: {
+        company: company,
+        role: role,
+        status: 'applied',
+        date_applied: new Date().toISOString().split('T')[0],
+        notes: 'Added via ATS Engine'
+      }
+    })
+  }).then(function(r) {
+    if (r.ok) {
+      showToast('Added to pipeline as Applied');
+      switchTab('pipeline', document.querySelector('.tab'));
+      loadPipeline();
+    } else {
+      showToast('Error adding to pipeline');
+    }
+  });
+}
+
+async function runATSAnalysis() {
+  var jd = document.getElementById('ats-jd').value.trim();
+  var company = document.getElementById('ats-company').value.trim();
+  var role = document.getElementById('ats-role').value.trim();
+
+  if (!jd) { showToast('Paste a job description first'); return; }
+  if (!company) { showToast('Enter company name'); return; }
+
+  var btn = document.getElementById('ats-run-btn');
+  btn.disabled = true;
+  btn.textContent = 'Analyzing...';
+
+  atsState.jd = jd;
+  atsState.company = company;
+  atsState.role = role;
+
+  document.getElementById('ats-results').style.display = '';
+  document.getElementById('ats-scores').innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px">Scoring...</div>';
+  document.getElementById('ats-repvue-content').innerHTML = '<span style="color:var(--muted)">Fetching RepVue data...</span>';
+  document.getElementById('ats-tailored-pane').innerHTML = '<span style="color:var(--muted)">Generating tailored resume...</span>';
+  document.getElementById('ats-master-pane').textContent = 'Loading master resume...';
+  document.getElementById('ats-gaps').innerHTML = '';
+  document.getElementById('ats-rewrite-status').textContent = '';
+
+  try {
+    // Fetch master resume from Supabase
+    var resumeResp = await fetch('/api/resume');
+    var resumeData = await resumeResp.json();
+    var masterResume = resumeData && resumeData[0] ? resumeData[0].content : '';
+    atsState.masterResume = masterResume;
+    document.getElementById('ats-master-pane').textContent = masterResume;
+
+    // Run all three analyses in parallel
+    await Promise.all([
+      runKeywordScore(jd, masterResume),
+      runRepVue(company),
+      runRewrite(jd, masterResume, company, role)
+    ]);
+
+    document.getElementById('ats-apply-btn').style.display = '';
+  } catch(e) {
+    showToast('Analysis error: ' + e.message);
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '⚡ Analyze & Score';
+}
+
+async function runKeywordScore(jd, resume) {
+  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: 'You are an ATS scoring engine. Respond ONLY with valid JSON, no markdown, no explanation.',
+      messages: [{
+        role: 'user',
+        content: 'Analyze this resume against this job description. Return JSON with these exact keys:
+{
+  "overall_score": <0-100 integer>,
+  "hard_skill_score": <0-100>,
+  "soft_skill_score": <0-100>,
+  "verbatim_score": <0-100>,
+  "experience_match": <0-100>,
+  "verdict": "strong match" | "moderate match" | "weak match",
+  "missing_hard": [<up to 8 specific missing hard skills/tools>],
+  "missing_soft": [<up to 5 missing soft skill phrases>],
+  "matched_keywords": [<up to 10 keywords present in both>],
+  "experience_gap": "<one sentence on years/seniority match or gap>"
+}
+
+JOB DESCRIPTION:
+' + jd + '
+
+RESUME:
+' + resume
+      }]
+    })
+  });
+  var data = await resp.json();
+  var text = data.content[0].text.replace(/```json|```/g,'').trim();
+  var score = JSON.parse(text);
+
+  // Render score cards
+  var verdictColor = score.verdict === 'strong match' ? 'var(--green)' : score.verdict === 'moderate match' ? 'var(--yellow)' : 'var(--red)';
+  document.getElementById('ats-scores').innerHTML =
+    kpiCard(score.overall_score + '%', 'Overall Match', score.overall_score >= 70 ? 'green' : score.overall_score >= 50 ? 'yellow' : 'red') +
+    kpiCard(score.hard_skill_score + '%', 'Hard Skills') +
+    kpiCard(score.soft_skill_score + '%', 'Soft Skills') +
+    kpiCard(score.verbatim_score + '%', 'Verbatim Match') +
+    kpiCard(score.experience_match + '%', 'Experience Fit');
+
+  // Render gap analysis
+  var gapsHtml =
+    '<div>' +
+      '<div style="font-size:11px;font-weight:600;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Missing Hard Skills</div>' +
+      (score.missing_hard.length ? score.missing_hard.map(function(t){ return '<div style="font-size:11px;background:var(--red-light);color:var(--red);padding:3px 8px;border-radius:4px;margin-bottom:4px">✗ ' + t + '</div>'; }).join('') : '<div style="font-size:11px;color:var(--green)">No hard gaps</div>') +
+    '</div>' +
+    '<div>' +
+      '<div style="font-size:11px;font-weight:600;color:var(--yellow);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Missing Soft Skills</div>' +
+      (score.missing_soft.length ? score.missing_soft.map(function(t){ return '<div style="font-size:11px;background:var(--yellow-light);color:#92400e;padding:3px 8px;border-radius:4px;margin-bottom:4px">⚠ ' + t + '</div>'; }).join('') : '<div style="font-size:11px;color:var(--green)">No soft gaps</div>') +
+    '</div>' +
+    '<div>' +
+      '<div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Matched Keywords</div>' +
+      score.matched_keywords.map(function(t){ return '<div style="font-size:11px;background:var(--green-light);color:#065f46;padding:3px 8px;border-radius:4px;margin-bottom:4px">✓ ' + t + '</div>'; }).join('') +
+    '</div>';
+  document.getElementById('ats-gaps').innerHTML = gapsHtml;
+
+  if (score.experience_gap) {
+    document.getElementById('ats-gaps').innerHTML += '<div style="grid-column:1/-1;font-size:11px;color:var(--sub);border-top:1px solid var(--border);padding-top:10px;margin-top:4px"><strong>Experience note:</strong> ' + score.experience_gap + '</div>';
+  }
+}
+
+function kpiCard(value, label, color) {
+  var bg = color === 'green' ? 'var(--green-light)' : color === 'yellow' ? 'var(--yellow-light)' : color === 'red' ? 'var(--red-light)' : 'var(--surface)';
+  var fg = color === 'green' ? 'var(--green)' : color === 'yellow' ? 'var(--yellow)' : color === 'red' ? 'var(--red)' : 'var(--text)';
+  return '<div class="kpi-card" style="background:' + bg + '">' +
+    '<div class="kpi-value" style="color:' + fg + '">' + value + '</div>' +
+    '<div class="kpi-label">' + label + '</div>' +
+    '</div>';
+}
+
+async function runRepVue(company) {
+  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      system: 'You are a sales org health analyst. Search RepVue for the company and return ONLY a JSON object, no markdown. Keys: { "quota_attainment": "<% or unknown>", "rep_satisfaction": "<score/10 or unknown>", "culture_score": "<score/10 or unknown>", "trend": "improving"|"declining"|"stable"|"unknown", "verdict": "green"|"yellow"|"red", "summary": "<2 sentence plain English summary of org health>", "source": "repvue"|"estimated" }',
+      messages: [{ role: 'user', content: 'Look up ' + company + ' on RepVue. What is their quota attainment rate, rep satisfaction, and overall sales org health? Return the JSON object.' }]
+    })
+  });
+  var data = await resp.json();
+  var textBlocks = data.content.filter(function(b){ return b.type === 'text'; });
+  var text = textBlocks.map(function(b){ return b.text; }).join('').replace(/```json|```/g,'').trim();
+
+  var rv;
+  try { rv = JSON.parse(text); } 
+  catch(e) { 
+    document.getElementById('ats-repvue-content').innerHTML = '<span style="color:var(--muted);font-size:12px">' + text + '</span>';
+    return;
+  }
+
+  var verdictColor = rv.verdict === 'green' ? 'var(--green)' : rv.verdict === 'yellow' ? 'var(--yellow)' : 'var(--red)';
+  var verdictBg = rv.verdict === 'green' ? 'var(--green-light)' : rv.verdict === 'yellow' ? 'var(--yellow-light)' : 'var(--red-light)';
+
+  document.getElementById('ats-repvue-content').innerHTML =
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">' +
+      stat('Quota Attainment', rv.quota_attainment) +
+      stat('Rep Satisfaction', rv.rep_satisfaction) +
+      stat('Culture Score', rv.culture_score) +
+      stat('Trend', rv.trend) +
+      '<div style="background:' + verdictBg + ';color:' + verdictColor + ';border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;align-self:center">' + rv.verdict.toUpperCase() + '</div>' +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--sub);line-height:1.5">' + rv.summary + '</div>' +
+    (rv.source === 'estimated' ? '<div style="font-size:11px;color:var(--muted);margin-top:6px">⚠ RepVue data not found — estimate based on available signals</div>' : '');
+}
+
+function stat(label, value) {
+  return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;min-width:120px">' +
+    '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">' + label + '</div>' +
+    '<div style="font-size:13px;font-weight:600;color:var(--text);margin-top:2px">' + (value || '—') + '</div>' +
+  '</div>';
+}
+
+async function runRewrite(jd, resume, company, role) {
+  document.getElementById('ats-rewrite-status').textContent = 'Generating...';
+  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: 'You are an expert ATS resume optimizer for enterprise SaaS sales roles. Your job is to tailor a resume to a specific job description by: (1) adjusting the summary to mirror JD language, (2) reordering or rewording existing bullets to surface buried keywords — never inventing experience, (3) swapping generic phrasing for the JD's exact terminology where the underlying experience matches. Rules: never fabricate metrics or experience; only reword what is genuinely true; preserve all quantitative achievements; keep the same structure. Return ONLY the full tailored resume text, no explanation, no markdown.',
+      messages: [{ role: 'user', content: 'Tailor this resume for the ' + role + ' role at ' + company + '.
+
+JOB DESCRIPTION:
+' + jd + '
+
+MASER RESUME:
+' + resume + '
+
+Return the full tailored resume text only.' }]
+    })
+  });
+  var data = await resp.json();
+  var tailored = data.content[0].text;
+  atsState.tailored = tailored;
+  document.getElementById('ats-tailored-pane').textContent = tailored;
+  document.getElementById('ats-rewrite-status').textContent = '✓ Ready';
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -1969,4 +2295,5 @@ function showToast(msg) {
 </script>
 </body>
 </html>
+
 
