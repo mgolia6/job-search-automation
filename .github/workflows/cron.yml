@@ -2,8 +2,8 @@ name: Job Scraper Cron
 
 on:
   schedule:
-    # Runs every 30 minutes
-    - cron: '0 11,17,23,3 * * *'
+    # Runs Mon/Wed/Fri/Sun at 13:00 UTC (~9am ET) — ~16 runs/month
+    - cron: '0 13 * * 1,3,5,0'
   workflow_dispatch: # Allows manual trigger from GitHub UI
 
 jobs:
@@ -18,3 +18,4 @@ jobs:
             https://job-search-automation-matthews-projects-fc20f25d.vercel.app/api/cron
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
