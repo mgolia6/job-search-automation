@@ -1,81 +1,83 @@
-# SESSION COMPLETE — May 26, 2026
+# SESSION NOTES — Job Odyssey
+# This file is the FIRST thing Claude reads every session.
+# GitHub is the single source of truth. Never use Google Drive or APPLICATION_LOG.md for current state — Supabase is live data.
 
-## ✅ COMPLETED THIS SESSION:
+## 🔗 CRITICAL LINKS
+- **Live app:** https://job-search-automation-pink.vercel.app
+- **GitHub repo:** https://github.com/mgolia6/job-search-automation
+- **Supabase project:** yaepgxsbjtbdkiidxtmf
+- **GitHub token:** stored in userMemories
+- **Vercel project ID:** prj_eXJT6KOWJpytqAfNGXE3nyYCbqUZ
 
-1. **JSearch API integration** — scraper now pulls from RapidAPI JSearch (replacing Claude web search)
-2. **Salary filter tuned** — lowered to $150K base (catches $300K+ OTE roles)
-3. **Database migration** — added `base_salary`, `estimated_ote`, `status` columns to `jobs` table
-4. **Scraper working** — 28 jobs pulled with full data (base salary, estimated OTE, status)
-5. **Branding updated** — renamed to "Job Odyssey" with username below
-6. **Tab renamed** — Applications → Pipeline
-7. **Toast message fixed** — scraper button now shows accurate "running" message (not fake instant count)
-8. **Sticky header** — already working
-9. **Red closed badges** — already working
+## 📋 SESSION STARTUP — DO THIS EVERY TIME
+1. Read SESSION_NOTES.md from GitHub (you're doing it now)
+2. Query Supabase `applications` table for live pipeline — do NOT use APPLICATION_LOG.md
+3. Scan Gmail: `after:2026/05/[last_session_date] (recruiter OR interview OR application OR rejection OR screening)`
+4. Check `jobs` table for scraper health: last `scraped_at`, counts by status
+5. Report findings, confirm before making changes
 
-## 🚧 REMAINING WORK (PRIORITIZED):
+## 🗂 FILE MAP
+| File | Purpose |
+|---|---|
+| `public/index.html` | Entire frontend — 1968 lines |
+| `api/scraper-jsearch.js` | V1 scraper (JSearch/RapidAPI) — currently wired to cron |
+| `api/scraper-v2.js` | V2 scraper (LinkedIn + Active Jobs DB) — built, NOT yet wired |
+| `api/cron.js` | Cron handler — currently imports scraper-jsearch.js |
+| `api/job-action.js` | Pipeline actions (add, dismiss, backlog) |
+| `api/data.js` | Data API for dashboard |
+| `api/gmail-scan.js` | Gmail scan endpoint |
+| `.github/workflows/cron.yml` | Fires at 11:00, 17:00, 23:00, 03:00 UTC |
 
-### **HIGH PRIORITY — Pipeline Tab Restructure:**
-- **Convert filter buttons → tabs** (All | Active | Interviewing | Offers | Closed | New from Scraper)
-- **New KPIs with icons:**
-  - 📊 Total Applications
-  - 🎯 Active (non-closed)
-  - 💬 Interviewing
-  - 🎁 Offers
-  - ⏱ Avg Age (days since applied)
-- **Expandable table rows** — click row to show notes below
-- **Add job posting URLs** — link in each card/row if URL exists in `applications` table
+## ⚙️ SCRAPER STATE (updated May 28, 2026)
+- **V1 (JSearch):** wired to cron, working — last ran May 28 1:13pm
+- **V2 (LinkedIn + Active Jobs DB):** built, NOT yet tested or wired in
+- **GitHub Actions URL:** `matthews-projects-fc20f25d.vercel.app` — may need updating to `job-search-automation-pink.vercel.app`
+- **Jobs in DB:** 39 total (11 new, 28 dismissed) as of May 28
 
-### **HIGH PRIORITY — Opportunities Tab Restructure:**
-- **Convert salary tier sections → tabs** (All | $300K+ | $250K–$300K | $200K–$250K | Unknown)
-- **Show tier badge on each card** (e.g. "$300K+ OTE")
-- **Add expandable recon section** — RepVue, Glassdoor, gut check data (collapsed by default, click to expand)
+## 📊 APPLICATION PIPELINE (live in Supabase — 46 apps as of May 28, 2026)
 
-### **MEDIUM PRIORITY — Email Consolidation:**
-- **One summary email per scraper run** instead of one per job
-- Email format: table with company, role, OTE, link
-- Dashboard becomes primary workspace (all recon visible there)
+**Status taxonomy (standardized May 28, 2026):**
+- `Applied` — active, waiting (11)
+- `Screening` / `Interviewing` — in process
+- `Closed — Rejected` — reached interviews, human said no (2: #5 Mastercard, #16 Salesforce)
+- `Closed — Role Filled` — human confirmation, went to someone else (1: #18 Twilio)
+- `Closed — Auto-Reject` — ATS/resume screen, never reached human (24)
+- `Closed — Position Closed` — posting pulled or expired (3: #13 Indeed, #22 Microsoft, #26 Salesforce K-12)
+- `Closed — No Response` — went silent
+- `Closed — Pass` — Matthew withdrew (5)
 
-## 📂 KEY FILES & LOCATIONS:
+**Active (Applied):**
+#23 Microsoft Sr AE | #28 Smartsheet Strategic AE | #29 Asana Enterprise AE | #34 Rippling Enterprise AE | #36 Ema Enterprise AE | #38 Qualtrics RTH | #39 Dataiku Strategic AE East | #40 Dataiku Enterprise AE | #42 Onboard Strategic AE | #44 Onboard Strategic AE (warm) | #45 Qualtrics G&S
 
-**Main dashboard:** `/home/claude/job-search-automation/public/index.html` (1,247 lines)  
-**JSearch scraper:** `/home/claude/job-search-automation/api/scraper-jsearch.js`  
-**Job triage API:** `/home/claude/job-search-automation/api/job-action.js`  
-**Data API:** `/home/claude/job-search-automation/api/data.js`  
-**Supabase project ID:** `yaepgxsbjtbdkiidxtmf`  
-**GitHub repo:** https://github.com/mgolia6/job-search-automation  
-**GitHub token:** (stored in userMemories)  
-**Vercel project ID:** `prj_eXJT6KOWJpytqAfNGXE3nyYCbqUZ`  
-**Live URL:** https://job-search-automation-pink.vercel.app
+**Warm paths (priority order):**
+1. Dataiku — Amanda Walt driving referral (highest priority)
+2. Qualtrics — Saurabh Vaish (#38 RTH + #45 G&S active)
+3. Onboard — Chris Wisniewski warm, CRO (Chris Kiene) outreach pending
 
-## ⚙️ CURRENT STATE:
+## 🏗 WHAT'S BUILT & WORKING
+- 3-tab dashboard: Pipeline | Opportunities | Gmail Scan
+- Pipeline: filter tabs, KPIs, table with edit modal, standardized status badges
+- Opportunities: salary tier tabs, job cards with dismiss/backlog/add-to-pipeline
+- Gmail Scan: inbox scan for recruiter activity
+- V1 scraper on cron, storing to Supabase `jobs` table
 
-- **Scraper filter:** "Already applied" filter currently DISABLED (line 99-103 in `scraper-jsearch.js`) — re-enable after testing complete
-- **Jobs in DB:** 28 fresh jobs with full data
-- **Dashboard tabs:** Pipeline (was Applications) | Opportunities (was Scraper Feed) | Gmail Scan
-- **Status badges:** Closed statuses show red (STATUS_CFG lines 800-808)
+## 🚧 NEXT UP (prioritized)
+1. **[HIGH] Test V2 scraper** — run scraper-v2.js endpoints manually, verify LinkedIn + Active Jobs DB return data, then wire into cron.js
+2. **[HIGH] Verify cron URL** — confirm GitHub Actions is hitting the right Vercel deployment
+3. **[HIGH] Pipeline: expandable rows** — click row to show notes inline
+4. **[HIGH] Pipeline: apply_url link** — add posting link column if URL exists
+5. **[MEDIUM] Opportunities: expandable recon** — RepVue/gut check collapsed per card
+6. **[MEDIUM] Batch email** — one summary email per scraper run, not one per job
 
-## 🎯 NEXT SESSION START:
+## 🔧 TECHNICAL NOTES
+- index.html is 1968 lines — use Python/bash for string replacement, not the str_replace tool (path param issues)
+- Applications table cols: `app_number`, `company`, `role`, `status`, `date_applied`, `salary_range`, `warm_contact`, `notes`, `apply_url`
+- Jobs table cols: `job_id`, `company`, `title`, `source`, `salary`, `base_salary`, `estimated_ote`, `status` (new|backlog|dismissed), `location`, `posted_date`, `apply_url`, `scraped_at`, `gut_check`
+- Badge colors: red = Rejected/Role Filled, gray = Auto-Reject/Position Closed/Pass/No Response, blue = Applied, purple = Screening, green = Interviewing
 
-1. **Pull latest from GitHub** (session closed at commit `ff75092`)
-2. **Read this entire context block** before starting
-3. **Rebuild Pipeline tab** — replace lines 840-947 with tab-based filtering + KPIs + expandable rows
-4. **Rebuild Opportunities tab** — replace lines 949-1117 with tab-based tiers + recon data
-5. **Update email logic** — modify `api/scraper-jsearch.js` sendAlert function (lines 122-152) to batch alerts
-
-## 🔧 TECHNICAL NOTES:
-
-- HTML file too large for incremental str_replace — use view + large block replacements
-- Applications table schema: `app_number`, `company`, `role`, `status`, `date_applied`, `salary_range`, `warm_contact`, `notes`, `apply_url` (if exists)
-- Jobs table schema: `job_id`, `company`, `title`, `base_salary`, `estimated_ote`, `status` ('new'|'backlog'|'dismissed'), `location`, `posted_date`, `apply_url`, `scraped_at`, `gut_check`
-- "New Opportunity" status for jobs added via "Add to Pipeline" button (not in DB yet — needs to be added to job-action.js)
-
-## 💡 USER PREFERENCES:
-
-- Matthew wants **tabs not filters** — cleaner, less visual clutter
-- Expandable sections preferred over always-visible walls of text
-- Dashboard = primary workspace, email = notification only
+## 💡 MATTHEW'S PREFERENCES
+- Tabs not filter buttons, expandable not walls of text
+- Dashboard is primary workspace — email is notification only
 - Direct, no fluff, fast execution
-
----
-
-**READY FOR NEXT SESSION. ALL CONTEXT PRESERVED.**
+- AE identity is singular on LinkedIn/cold apps — ops openness only via warm intro
+- Challenge don't validate — flag risks before executing
