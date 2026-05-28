@@ -2,6 +2,10 @@
 # This file is the FIRST thing Claude reads every session.
 # GitHub is the single source of truth. Never use Google Drive or APPLICATION_LOG.md for current state — Supabase is live data.
 
+## 📅 SESSION TRACKING
+- **Last session date:** 2026/05/28
+- **Gmail scan from:** `after:2026/05/28`
+
 ## 🔗 CRITICAL LINKS
 - **Live app:** https://job-search-automation-pink.vercel.app
 - **GitHub repo:** https://github.com/mgolia6/job-search-automation
