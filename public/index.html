@@ -1227,9 +1227,12 @@ textarea.form-control { resize: vertical; min-height: 80px; }
         <option>Screening</option>
         <option>Interviewing</option>
         <option>Offer</option>
-        <option>Closed - Rejected</option>
-        <option>Closed - Withdrew</option>
-        <option>Closed - No Response</option>
+        <option>Closed — Rejected</option>
+        <option>Closed — Role Filled</option>
+        <option>Closed — Auto-Reject</option>
+        <option>Closed — Position Closed</option>
+        <option>Closed — No Response</option>
+        <option>Closed — Pass</option>
       </select>
     </div>
     <div class="form-group">
@@ -1254,15 +1257,16 @@ var searchQ = '';
 var currentApp = null;
 
 var STATUS_CFG = {
-  'Applied':           { color: '#2563eb', bg: '#dbeafe' },
-  'Screening':         { color: '#7c3aed', bg: '#ede9fe' },
-  'Interviewing':      { color: '#059669', bg: '#d1fae5' },
-  'Offer':             { color: '#d97706', bg: '#fef3c7' },
-  'Closed - Rejected': { color: '#dc2626', bg: '#fee2e2' },
-  'Closed - Withdrew': { color: '#dc2626', bg: '#fee2e2' },
-  'Closed - No Response': { color: '#dc2626', bg: '#fee2e2' },
-  'Closed - No':       { color: '#dc2626', bg: '#fee2e2' },
-  'Closed - Pass':     { color: '#dc2626', bg: '#fee2e2' },
+  'Applied':                   { color: '#2563eb', bg: '#dbeafe' },
+  'Screening':                 { color: '#7c3aed', bg: '#ede9fe' },
+  'Interviewing':              { color: '#059669', bg: '#d1fae5' },
+  'Offer':                     { color: '#d97706', bg: '#fef3c7' },
+  'Closed — Rejected':         { color: '#dc2626', bg: '#fee2e2' },
+  'Closed — Role Filled':      { color: '#dc2626', bg: '#fee2e2' },
+  'Closed — Auto-Reject':      { color: '#6b7280', bg: '#f3f4f6' },
+  'Closed — Position Closed':  { color: '#6b7280', bg: '#f3f4f6' },
+  'Closed — Pass':             { color: '#6b7280', bg: '#f3f4f6' },
+  'Closed — No Response':      { color: '#6b7280', bg: '#f3f4f6' },
 };
 
 function badge(status) {
@@ -1965,3 +1969,4 @@ function showToast(msg) {
 </script>
 </body>
 </html>
+
