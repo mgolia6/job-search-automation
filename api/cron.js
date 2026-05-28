@@ -1,4 +1,4 @@
-const { runJobScraper } = require('./scraper-jsearch.js');
+const scraperV2 = require('./scraper-v2.js');
 
 module.exports = async function handler(req, res) {
   console.log('[cron] Triggered', new Date().toISOString());
@@ -8,16 +8,7 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  try {
-    const result = await runJobScraper();
-    return res.status(200).json({
-      success: true,
-      ...result
-    });
-  } catch (err) {
-    console.error('[cron] Error:', err.message);
-    return res.status(500).json({ error: err.message });
-  }
+  return scraperV2(req, res);
 };
 
 module.exports.config = { maxDuration: 300 };
