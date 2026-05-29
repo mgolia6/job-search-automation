@@ -1,36 +1,52 @@
+// api/data.js — pipeline + jobs data, auth-gated
+const { verifyUser } = require('./auth');
+const { createClient } = require('@supabase/supabase-js');
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const base = process.env.SUPABASE_URL;
-  const key  = process.env.SUPABASE_KEY;
-  const headers = {
-    'apikey': key,
-    'Authorization': 'Bearer ' + key,
-    'Content-Type': 'application/json'
-  };
+  const user = await verifyUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const token = req.headers.authorization.replace('Bearer ', '');
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
+    global: { headers: { Authorization: `Bearer ${token}` } }
+  });
 
   if (req.method === 'PATCH') {
     const { id, status, notes } = req.body || {};
-    const r = await fetch(base + '/rest/v1/applications?id=eq.' + id, {
-      method: 'PATCH',
-      headers: { ...headers, 'Prefer': 'return=representation' },
-      body: JSON.stringify({ status, notes, updated_at: new Date() })
-    });
-    return res.status(200).json(await r.json());
+    const { data, error } = await supabase
+      .from('applications')
+      .update({ status, notes, updated_at: new Date() })
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .select();
+
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json(data);
   }
 
-  const [apps, jobs] = await Promise.all([
-    fetch(base + '/rest/v1/applications?order=app_number.asc.nullslast&limit=200', { headers }).then(r => r.json()),
-    fetch(base + '/rest/v1/jobs?status=neq.dismissed&order=estimated_ote.desc.nullslast,scraped_at.desc&limit=100', { headers }).then(r => r.json())
+  const [appsRes, jobsRes] = await Promise.all([
+    supabase
+      .from('applications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('app_number', { ascending: true, nullsFirst: false }),
+    supabase
+      .from('jobs')
+      .select('*')
+      .eq('user_id', user.id)
+      .neq('status', 'dismissed')
+      .order('estimated_ote', { ascending: false, nullsFirst: false })
+      .limit(100)
   ]);
 
   return res.status(200).json({
-    applications: Array.isArray(apps) ? apps : [],
-    jobs: Array.isArray(jobs) ? jobs : []
+    applications: appsRes.data || [],
+    jobs: jobsRes.data || []
   });
 };
 
