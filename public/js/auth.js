@@ -102,7 +102,7 @@ function renderAuthForm(mode) {
   var isLogin = mode === 'login';
   document.getElementById('auth-screen').innerHTML =
     '<div class="auth-card">' +
-      '<div class="auth-logo">⚡ Job Odyssey</div>' +
+      '<div class="auth-logo"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:8px"><polygon points="16,2 19,12 16,14 13,12" fill="#185FA5"/><polygon points="16,30 19,20 16,18 13,20" fill="#85B7EB"/><polygon points="2,16 12,13 14,16 12,19" fill="#85B7EB"/><polygon points="30,16 20,13 18,16 20,19" fill="#85B7EB"/><circle cx="16" cy="16" r="2.5" fill="#185FA5"/><circle cx="16" cy="16" r="13" fill="none" stroke="#185FA5" stroke-width="0.75" stroke-dasharray="2 6" opacity="0.4"/></svg><span style="font-size:22px;font-weight:600;letter-spacing:-0.5px;vertical-align:middle">Job Odyssey</span></div>' +
       '<div class="auth-tagline">Your search. Charted.</div>' +
       '<div class="auth-tabs">' +
         '<button class="auth-tab ' + (isLogin ? 'active' : '') + '" onclick="renderAuthForm(\'login\')">Sign In</button>' +
@@ -180,7 +180,7 @@ async function doSignup(btn) {
       // Email confirmation required
       document.getElementById('auth-screen').innerHTML =
         '<div class="auth-card">' +
-          '<div class="auth-logo">✉️ Check your email</div>' +
+          '<div class="auth-logo"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:8px"><polygon points="16,2 19,12 16,14 13,12" fill="#185FA5"/><polygon points="16,30 19,20 16,18 13,20" fill="#85B7EB"/><polygon points="2,16 12,13 14,16 12,19" fill="#85B7EB"/><polygon points="30,16 20,13 18,16 20,19" fill="#85B7EB"/><circle cx="16" cy="16" r="2.5" fill="#185FA5"/><circle cx="16" cy="16" r="13" fill="none" stroke="#185FA5" stroke-width="0.75" stroke-dasharray="2 6" opacity="0.4"/></svg><span style="font-size:18px;font-weight:600;vertical-align:middle">Check your email</span></div>' +
           '<div class="auth-tagline">We sent a confirmation link to <strong>' + email + '</strong>. Click it to activate your account, then come back to sign in.</div>' +
           '<button class="btn btn-primary auth-btn" onclick="renderAuthForm(\'login\')">Back to Sign In</button>' +
         '</div>';
@@ -205,7 +205,7 @@ async function doForgotPassword() {
     if (!r.ok) throw new Error('Failed to send reset email');
     document.getElementById('auth-screen').innerHTML =
       '<div class="auth-card">' +
-        '<div class="auth-logo">✉️ Check your email</div>' +
+        '<div class="auth-logo"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:8px"><polygon points="16,2 19,12 16,14 13,12" fill="#185FA5"/><polygon points="16,30 19,20 16,18 13,20" fill="#85B7EB"/><polygon points="2,16 12,13 14,16 12,19" fill="#85B7EB"/><polygon points="30,16 20,13 18,16 20,19" fill="#85B7EB"/><circle cx="16" cy="16" r="2.5" fill="#185FA5"/><circle cx="16" cy="16" r="13" fill="none" stroke="#185FA5" stroke-width="0.75" stroke-dasharray="2 6" opacity="0.4"/></svg><span style="font-size:18px;font-weight:600;vertical-align:middle">Check your email</span></div>' +
         '<div class="auth-tagline">We sent a password reset link to <strong>' + email + '</strong>.</div>' +
         '<button class="btn btn-primary auth-btn" onclick="renderAuthForm(\'login\')">Back to Sign In</button>' +
       '</div>';
