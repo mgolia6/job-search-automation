@@ -2162,8 +2162,9 @@ async function runATSAnalysis() {
 
     document.getElementById('ats-apply-btn').style.display = '';
   } catch(e) {
-    showToast('Analysis error: ' + e.message);
     console.error(e);
+    document.getElementById('ats-results').style.display = '';
+    document.getElementById('ats-scores').innerHTML = '<div style="background:var(--red-light);color:var(--red);padding:12px;border-radius:6px;font-size:12px;line-height:1.6"><strong>Analysis error</strong><br><code style="font-size:11px;word-break:break-all">' + e.message + '</code></div>';
   }
 
   btn.disabled = false;
