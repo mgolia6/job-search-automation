@@ -2245,7 +2245,7 @@ async function runRepVue(company) {
       stat('Trend', rv.trend) +
       '<div style="background:' + verdictBg + ';color:' + verdictColor + ';border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;align-self:center">' + rv.verdict.toUpperCase() + '</div>' +
     '</div>' +
-    '<div style="font-size:12px;color:var(--sub);line-height:1.5">' + rv.summary + '</div>' +
+    '<div style="font-size:12px;color:var(--sub);line-height:1.5">' + (rv.summary || '').replace(/\*\*/g,'').replace(/---/g,'').replace(/#+\s/g,'').replace(/^\s*-\s/gm,'• ').trim() + '</div>' +
     (rv.source === 'estimated' ? '<div style="font-size:11px;color:var(--muted);margin-top:6px">⚠ RepVue data not found — estimate based on available signals</div>' : '');
 }
 
