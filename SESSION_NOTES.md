@@ -15,13 +15,25 @@
   - Repo + workflow token: in project instructions (new, use this going forward — expires ~Aug 2026)
 - **Vercel project ID:** prj_eXJT6KOWJpytqAfNGXE3nyYCbqUZ
 
-## 📋 SESSION STARTUP — DO THIS EVERY TIME
-1. Read SESSION_NOTES.md from GitHub (you're doing it now)
-2. From SESSION_NOTES.md, get the `Gmail scan from` date and use it for step 3
-3. Scan Gmail: `after:[date from SESSION_NOTES] (recruiter OR interview OR application OR rejection OR screening)`
-4. Query Supabase `applications` table for live pipeline — do NOT use APPLICATION_LOG.md
-5. Check `jobs` table: last `scraped_at`, counts by status
-6. Report findings, confirm before making changes
+## ⚠️ CRITICAL: SESSION STARTUP — DO THIS EVERY TIME IN ORDER
+
+### Step 1 — Read SESSION_NOTES.md via GitHub API (NOT raw URL)
+```
+GET https://api.github.com/repos/mgolia6/job-search-automation/contents/SESSION_NOTES.md
+Authorization: token [repo+workflow token — stored in Claude project instructions]
+```
+Decode base64 `content` field. **Do NOT use raw.githubusercontent.com** — it caches aggressively and will serve stale content. The API endpoint always returns the current blob.
+
+### Step 2 — Query Supabase for live state
+- `applications` table: current pipeline
+- `jobs` table: count by status, last `scraped_at`
+
+### Step 3 — Check Vercel last deployment status
+
+### Step 4 — Scan Gmail
+Use the `Gmail scan from` date above: `after:2026/05/29 (recruiter OR interview OR application OR rejection OR screening)`
+
+### Step 5 — Report in 5 lines or less, ask for direction before touching anything
 
 ## 🗂 FILE MAP
 | File | Purpose |
@@ -48,7 +60,7 @@
 - **Profile-driven filters:** pulls target_titles, salary_floor_base, remote_preference from profiles table at runtime
 - **Dedup:** job_id only — also checks applications.job_id to prevent resurface of applied roles
 - **Rate limit:** 25 req/month on Active Jobs DB (RapidAPI) — cron fires 16x/month (Mon/Wed/Fri/Sun)
-- **Jobs table:** 1 row (Docusign, dismissed) — 38 rows were wiped at some point, clean slate is fine
+- **Jobs table:** 1 row (Docusign, dismissed) — 38 rows were wiped, clean slate is fine
 - **cron.yml schedule:** ✅ updated to `0 13 * * 1,3,5,0` (Mon/Wed/Fri/Sun 13:00 UTC) — DONE
 - **Scraper NOT yet live-tested** — still pending first manual trigger post-auth
 
@@ -108,6 +120,7 @@
 - Nav: removed duplicate scraper button from header
 
 ## 🔧 TECHNICAL NOTES
+- **SESSION_NOTES must be read via GitHub API** — raw.githubusercontent.com caches aggressively and serves stale content. Always use: `GET https://api.github.com/repos/mgolia6/job-search-automation/contents/SESSION_NOTES.md` with auth header, then base64-decode the `content` field.
 - **Auth pattern:** Frontend gets JWT via Supabase REST auth endpoints directly (no JS SDK) → stores in localStorage → passes as Bearer token on all API calls → server verifies via supabase.auth.getUser(token)
 - **Multi-user architecture decision:** Building for multi-user from the start — no single-user shortcuts
 - **Legacy data:** 46 applications have user_id = NULL — visible to all auth'd users via RLS OR clause, needs cleanup before launch
