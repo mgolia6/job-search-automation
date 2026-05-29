@@ -1,6 +1,10 @@
 # SESSION NOTES — Job Odyssey
 # This file is the FIRST thing Claude reads every session.
 # GitHub is the single source of truth. Supabase is live data. Never reconstruct from docs.
+#
+# 🔒 SESSION_NOTES IS THE ONLY CONTEXT SOURCE FOR PROJECT STATE.
+# Do NOT search past conversations to fill gaps — they are stale and will conflict.
+# If something is unclear, query Supabase or ask Matthew directly.
 
 ## 📅 SESSION TRACKING
 - **Last session date:** 2026/05/29
@@ -42,7 +46,7 @@
 
 ## ⚙️ SCRAPER STATE (updated May 29, 2026)
 - **V2 (Active Jobs DB):** ✅ deployed and firing — confirmed scraped 2026-05-29 00:58:59 UTC
-- **Jobs in DB:** 1 new (verify counts with null status next session)
+- **Jobs in DB:** 1 new (verify null-status counts next session)
 - **Rate limit:** 25 requests/month — cron.yml still fires 4x daily (too many)
 - **cron.yml PENDING:** needs update to `0 13 * * 1,3,5,0` (Mon/Wed/Fri/Sun 9am ET)
   - Requires repo+workflow token — read from project instructions next session
