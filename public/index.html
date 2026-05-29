@@ -2291,7 +2291,7 @@ async function runRepVue(company) {
   // Normalize — model sometimes returns partial JSON
   var rv = data.result || {};
   rv.verdict = (typeof rv.verdict === 'string' ? rv.verdict : 'yellow') || 'yellow';
-  var flatField = function(v) { return v && typeof v === 'object' ? (v.value || v.score || v.percentage || JSON.stringify(v)) : (v || '—'); };
+  var flatField = function(v) { if (!v) return '—'; if (typeof v === 'string') return v; if (typeof v === 'number') return String(v); if (typeof v === 'object') { return v.value || v.score || v.percentage || v.attainment || v.rate || v.text || (Object.values(v)[0] ? String(Object.values(v)[0]) : '—'); } return '—'; };
   rv.quota_attainment = flatField(rv.quota_attainment);
   rv.rep_satisfaction = flatField(rv.rep_satisfaction);
   rv.culture_score = flatField(rv.culture_score);
