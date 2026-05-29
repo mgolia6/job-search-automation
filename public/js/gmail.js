@@ -1,7 +1,7 @@
 // ── Gmail Scan ────────────────────────────────────────────────────────────────
 function runGmailScan(btn) {
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Scanning...';
+  btn.innerHTML = '' + spinnerHTML() + ' Scanning...';
   var resultsEl = document.getElementById('scan-results');
   resultsEl.style.display = 'none';
   resultsEl.innerHTML = '';
