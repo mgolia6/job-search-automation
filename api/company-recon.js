@@ -1,6 +1,9 @@
-// api/company-recon.js — Fetch RepVue and Glassdoor data for company health checks
+// api/company-recon.js — Company health data via AI (RepVue) + deep link (Glassdoor)
 const { createClient } = require('@supabase/supabase-js');
+const Anthropic = require('@anthropic-ai/sdk');
+
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const CACHE_HOURS = 168; // 1 week
 
@@ -22,7 +25,6 @@ module.exports = async function handler(req, res) {
       .eq('company', company)
       .single();
 
-    // Return cached if fresh (within CACHE_HOURS)
     if (cached && cached.last_fetched) {
       const hoursSinceFetch = (Date.now() - new Date(cached.last_fetched).getTime()) / (1000 * 60 * 60);
       if (hoursSinceFetch < CACHE_HOURS) {
@@ -34,30 +36,38 @@ module.exports = async function handler(req, res) {
             available: !!cached.repvue_quota_attainment,
             quotaAttainment: cached.repvue_quota_attainment,
             rating: cached.repvue_rating,
+            summary: cached.repvue_summary,
+            verdict: cached.repvue_verdict,
             url: cached.repvue_url
           },
           glassdoor: {
-            available: !!cached.glassdoor_rating,
+            available: true,
             rating: cached.glassdoor_rating,
-            url: cached.glassdoor_url
+            url: buildGlassdoorUrl(company)
           }
         });
       }
     }
 
-    // Fetch fresh data
-    const [repvueData, glassdoorData] = await Promise.all([
-      fetchRepVue(company),
-      fetchGlassdoor(company)
-    ]);
+    // Fetch fresh RepVue data via Claude AI
+    const repvueData = await fetchRepVueViaAI(company);
+
+    // Build Glassdoor deep link — no API needed
+    const glassdoorData = {
+      available: true,
+      rating: null,
+      url: buildGlassdoorUrl(company)
+    };
 
     // Store in cache
     await supabase.from('company_recon').upsert({
       company,
       repvue_quota_attainment: repvueData.quotaAttainment,
       repvue_rating: repvueData.rating,
+      repvue_summary: repvueData.summary,
+      repvue_verdict: repvueData.verdict,
       repvue_url: repvueData.url,
-      glassdoor_rating: glassdoorData.rating,
+      glassdoor_rating: null,
       glassdoor_url: glassdoorData.url,
       last_fetched: new Date()
     }, { onConflict: 'company' });
@@ -69,87 +79,66 @@ module.exports = async function handler(req, res) {
       repvue: repvueData,
       glassdoor: glassdoorData
     });
+
   } catch (error) {
     console.error('[company-recon]', error);
     return res.status(500).json({ error: error.message });
   }
 };
 
-async function fetchRepVue(company) {
+function buildGlassdoorUrl(company) {
+  // Deep link to Glassdoor search — always works, no API needed
+  const q = encodeURIComponent(company);
+  return `https://www.glassdoor.com/Search/results.htm?keyword=${q}`;
+}
+
+async function fetchRepVueViaAI(company) {
+  const repvueUrl = `https://www.repvue.com/companies/${company.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+
   try {
-    const slug = company.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const url = `https://www.repvue.com/companies/${slug}`;
-    
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
+    const msg = await claude.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `You are a sales org intelligence tool. Based on your training data, provide a RepVue-style assessment for: ${company}
+
+Return ONLY valid JSON, no markdown, no explanation:
+{
+  "quotaAttainment": <number 0-100 or null if unknown>,
+  "rating": <number 1-5 or null>,
+  "verdict": "green" | "yellow" | "red",
+  "summary": "<2-3 sentence assessment of sales org health, quota attainment, rep satisfaction, and culture>",
+  "confidence": "high" | "medium" | "low"
+}
+
+Verdict logic: green = strong sales org (>60% attainment, good culture), yellow = mixed signals or limited data, red = known issues (low attainment, poor culture, layoffs, toxic).
+If you have very limited data on this company, set confidence: "low" and verdict: "yellow".`
+      }]
     });
 
-    if (!response.ok) {
-      return { available: false, url };
-    }
-
-    const html = await response.text();
-    
-    // Extract quota attainment % - look for patterns like "75% quota attainment"
-    const quotaMatch = html.match(/(\d+)%\s+(?:of reps )?(?:hit|hitting|achieve|achieving)?\s*quota/i);
-    const quotaAttainment = quotaMatch ? parseInt(quotaMatch[1]) : null;
-    
-    // Extract overall rating - look for patterns like "4.2/5" or "4.2 out of 5"
-    const ratingMatch = html.match(/(\d+\.?\d*)\s*(?:\/|out of)\s*5/i);
-    const rating = ratingMatch ? parseFloat(ratingMatch[1]) : null;
+    const text = msg.content[0]?.text?.trim() || '{}';
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
 
     return {
       available: true,
-      url,
-      quotaAttainment,
-      rating,
-      scraped: new Date().toISOString()
+      quotaAttainment: parsed.quotaAttainment || null,
+      rating: parsed.rating || null,
+      verdict: parsed.verdict || 'yellow',
+      summary: parsed.summary || 'No data available',
+      confidence: parsed.confidence || 'low',
+      url: repvueUrl,
+      source: 'ai-estimated'
     };
-  } catch (error) {
-    console.error('[repvue]', error.message);
-    return { available: false, error: error.message };
-  }
-}
-
-async function fetchGlassdoor(company) {
-  try {
-    // Search for company first to get ID
-    const searchUrl = new URL('https://glassdoor-real-time.p.rapidapi.com/search');
-    searchUrl.searchParams.append('query', company);
-    
-    const searchResponse = await fetch(searchUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-rapidapi-host': 'glassdoor-real-time.p.rapidapi.com',
-        'x-rapidapi-key': process.env.RAPIDAPI_KEY
-      }
-    });
-
-    if (!searchResponse.ok) {
-      return { available: false };
-    }
-
-    const searchData = await searchResponse.json();
-    const companyResult = searchData.data?.[0] || searchData[0];
-    
-    if (!companyResult) {
-      return { available: false };
-    }
-
-    const rating = parseFloat(companyResult.rating || companyResult.overall_rating);
-    const companyUrl = `https://www.glassdoor.com/Reviews/${company.replace(/\s+/g, '-')}-Reviews-E${companyResult.id || 'unknown'}`;
-
+  } catch (err) {
+    console.error('[repvue-ai]', err.message);
     return {
-      available: rating !== null && !isNaN(rating),
-      rating: rating || null,
-      url: companyUrl,
-      scraped: new Date().toISOString()
+      available: false,
+      verdict: 'yellow',
+      summary: 'Could not retrieve data',
+      url: repvueUrl,
+      source: 'error'
     };
-  } catch (error) {
-    console.error('[glassdoor]', error.message);
-    return { available: false, error: error.message };
   }
 }
