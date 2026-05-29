@@ -71,8 +71,8 @@ async function runATSAnalysis() {
 
   // Show results section, reset all panels
   document.getElementById('ats-results').style.display = '';
-  document.getElementById('ats-scores').innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;padding:8px"><span class="spinner"></span> Scoring resume...</div>';
-  document.getElementById('ats-repvue-content').innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px"><span class="spinner"></span> Fetching RepVue data...</div>';
+  document.getElementById('ats-scores').innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;padding:8px">' + spinnerHTML() + ' Scoring resume...</div>';
+  document.getElementById('ats-repvue-content').innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px">' + spinnerHTML() + ' Fetching RepVue data...</div>';
   document.getElementById('ats-ai-verdict').innerHTML = '<span style="color:var(--muted)">Calculating...</span>';
   document.getElementById('ats-master-pane').textContent = 'Loading master resume...';
   document.getElementById('ats-tailored-pane').innerHTML = '';
@@ -251,7 +251,7 @@ async function generateRewrite(btn) {
   btn.textContent = 'Generating...';
   document.getElementById('ats-rewrite-section').style.display = '';
   document.getElementById('ats-master-pane').textContent = atsState.masterResume;
-  document.getElementById('ats-tailored-pane').innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;padding:8px"><span class="spinner"></span> Generating tailored resume...</div>';
+  document.getElementById('ats-tailored-pane').innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;padding:8px">' + spinnerHTML() + ' Generating tailored resume...</div>';
   document.getElementById('ats-rewrite-status').textContent = '';
 
   try {
@@ -280,10 +280,10 @@ async function runRapidAPICheck(btn) {
   if (!atsState.masterResume) { showToast('No resume loaded yet'); return; }
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner" style="display:inline-block;margin-right:6px"></span>Checking...';
+  btn.innerHTML = '' + spinnerHTML() + 'Checking...';
   document.getElementById('ats-rapidapi-content').innerHTML =
     '<div style="display:flex;align-items:center;gap:10px;padding:16px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">'
-    + '<span class="spinner"></span>'
+    + '' + spinnerHTML() + ''
     + '<div style="font-size:12px;color:var(--muted)">Running literal keyword match...</div>'
     + '</div>';
 
