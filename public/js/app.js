@@ -140,3 +140,40 @@ function triggerScraper(btn) {
 // initAuth in auth.js bootstraps session → onboarding → loadData
 initAuth();
 restoreTab();
+
+// ── Profile dropdown ──────────────────────────────────────────────────────────
+function toggleProfileDropdown() {
+  var dd = document.getElementById('profile-dropdown');
+  if (!dd) return;
+  dd.classList.toggle('open');
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', function(e) {
+  var dd = document.getElementById('profile-dropdown');
+  var btn = document.getElementById('profile-avatar-btn');
+  if (!dd || !btn) return;
+  if (!dd.contains(e.target) && !btn.contains(e.target)) {
+    dd.classList.remove('open');
+  }
+});
+
+// Populate dropdown header from profile
+function updateProfileDropdown(profile) {
+  if (!profile) return;
+  var name = document.getElementById('pd-name');
+  var sub  = document.getElementById('pd-sub');
+  if (name) name.textContent = profile.full_name || '—';
+  if (sub) {
+    var intent = { exploring: 'Just exploring', active: 'Actively looking', urgent: 'Need a job now' };
+    sub.textContent = (profile.seniority_level === 'ic' ? 'Individual Contributor' : profile.seniority_level || '') 
+      + (profile.job_search_intent ? ' · ' + (intent[profile.job_search_intent] || '') : '');
+  }
+  if (profile.photo_url) {
+    var avatarBtn = document.getElementById('profile-avatar-btn');
+    if (avatarBtn) avatarBtn.innerHTML = '<img src="' + profile.photo_url + '" alt="profile">';
+    var pdAvatar = document.getElementById('pd-avatar');
+    if (pdAvatar) pdAvatar.innerHTML = '<img src="' + profile.photo_url + '" alt="profile">';
+  }
+}
+
