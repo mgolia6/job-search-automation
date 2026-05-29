@@ -2290,11 +2290,12 @@ async function runRepVue(company) {
   var data = await resp.json();
   // Normalize — model sometimes returns partial JSON
   var rv = data.result || {};
-  rv.verdict = rv.verdict || 'yellow';
-  rv.quota_attainment = rv.quota_attainment || '—';
-  rv.rep_satisfaction = rv.rep_satisfaction || '—';
-  rv.culture_score = rv.culture_score || '—';
-  rv.trend = rv.trend || 'unknown';
+  rv.verdict = (typeof rv.verdict === 'string' ? rv.verdict : 'yellow') || 'yellow';
+  var flatField = function(v) { return v && typeof v === 'object' ? (v.value || v.score || v.percentage || JSON.stringify(v)) : (v || '—'); };
+  rv.quota_attainment = flatField(rv.quota_attainment);
+  rv.rep_satisfaction = flatField(rv.rep_satisfaction);
+  rv.culture_score = flatField(rv.culture_score);
+  rv.trend = (typeof rv.trend === 'string' ? rv.trend : 'unknown') || 'unknown';
   rv.summary = (rv.summary || data.error || 'No data available').replace(/\*\*/g,'').replace(/---/g,'').trim();
   rv.source = rv.source || 'estimated';
 
