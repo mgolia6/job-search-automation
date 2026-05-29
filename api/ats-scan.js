@@ -1,4 +1,4 @@
-// api/ats-scan.js — Anthropic-powered ATS engine proxy
+// api/ats-scan.js — Anthropic-powered ATS engine proxy + RapidAPI literal scorer
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -10,7 +10,7 @@ module.exports = async function handler(req, res) {
   if (!action || !jd) return res.status(400).json({ error: 'action and jd required' });
 
   const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-  if (!ANTHROPIC_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set' });
+  const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 
   const callClaude = async (system, userMsg, tools) => {
     const body = {
@@ -38,6 +38,42 @@ module.exports = async function handler(req, res) {
   };
 
   try {
+    // ── RapidAPI literal ATS score (15/day — use sparingly) ──────────────────
+    if (action === 'rapidapi') {
+      if (!RAPIDAPI_KEY) return res.status(500).json({ error: 'RAPIDAPI_KEY not set' });
+      if (!resume) return res.status(400).json({ error: 'resume required' });
+
+      const r = await fetch('https://resume-ats-analyzer.p.rapidapi.com/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-RapidAPI-Key': RAPIDAPI_KEY,
+          'X-RapidAPI-Host': 'resume-ats-analyzer.p.rapidapi.com'
+        },
+        body: JSON.stringify({ resume, job_description: jd })
+      });
+
+      if (!r.ok) {
+        const err = await r.text();
+        throw new Error(`RapidAPI ATS ${r.status}: ${err}`);
+      }
+
+      const data = await r.json();
+      // Normalize response — field names vary by version
+      const result = {
+        score: data.score ?? data.match_score ?? data.compatibility_score ?? data.ats_score ?? null,
+        missing_keywords: data.missing_keywords ?? data.keywords_missing ?? data.missingKeywords ?? [],
+        matched_keywords: data.matched_keywords ?? data.keywords_matched ?? data.matchedKeywords ?? [],
+        suggestions: data.suggestions ?? data.recommendations ?? [],
+        formatting_issues: data.formatting_issues ?? data.formattingIssues ?? [],
+        raw: data
+      };
+      return res.status(200).json({ ok: true, result });
+    }
+
+    if (!ANTHROPIC_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set' });
+
+    // ── Claude semantic score ─────────────────────────────────────────────────
     if (action === 'score') {
       const data = await callClaude(
         'You are an ATS scoring engine. Respond ONLY with a valid JSON object. No markdown, no backticks, no explanation. Just the raw JSON.',
@@ -47,6 +83,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true, result: JSON.parse(text) });
     }
 
+    // ── RepVue org health ─────────────────────────────────────────────────────
     if (action === 'repvue') {
       const data = await callClaude(
         'You are a sales org health analyst. Search RepVue for the company. Return ONLY a raw JSON object — no markdown, no bold, no bullet points, no backticks, no explanation outside the JSON. The summary field must be 2 plain sentences of prose, no formatting characters.',
@@ -57,12 +94,12 @@ module.exports = async function handler(req, res) {
       let result;
       try { result = JSON.parse(textBlocks); }
       catch(e) {
-        // Model returned prose instead of JSON — extract what we can
         result = { verdict: 'yellow', summary: textBlocks.replace(/\*\*/g,'').replace(/---/g,'').slice(0,400), source: 'estimated', quota_attainment: 'unknown', rep_satisfaction: 'unknown', culture_score: 'unknown', trend: 'unknown' };
       }
       return res.status(200).json({ ok: true, result });
     }
 
+    // ── Resume rewrite ────────────────────────────────────────────────────────
     if (action === 'rewrite') {
       const data = await callClaude(
         'You are an expert ATS resume optimizer for enterprise SaaS sales roles. Tailor the resume to the job description by adjusting the summary to mirror JD language, rewording existing bullets to surface buried keywords without inventing experience, and swapping generic phrasing for the JD exact terminology where the experience genuinely matches. Never fabricate metrics or experience. Return ONLY the full tailored resume text. No explanation, no markdown, no preamble, no commentary.',
