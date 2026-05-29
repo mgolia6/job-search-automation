@@ -1143,47 +1143,6 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 @keyframes ats-spin {
   to { transform: rotate(360deg); }
 }
-
-/* ── ATS Score Tabs ── */
-.ats-score-tab {
-  padding: 6px 14px;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  font-family: var(--sans);
-  cursor: pointer;
-  background: transparent;
-  color: var(--sub);
-  transition: all .15s;
-}
-.ats-score-tab.active {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 1px 3px rgba(0,0,0,.08);
-}
-.ats-score-tab:hover:not(.active) { color: var(--text); }
-
-/* ── ATS Score grid ── */
-#ats-scores .ats-score-card {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  text-align: center;
-}
-#ats-scores .ats-score-val {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1;
-  margin-bottom: 4px;
-}
-#ats-scores .ats-score-lbl {
-  font-size: 10px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .05em;
-}
 </style>
 </head>
 <body>
@@ -1284,100 +1243,90 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 
   <!-- ATS Engine pane -->
   <div id="pane-ats" style="display:none">
-
-    <!-- Input card -->
-    <div class="card" style="margin-bottom:20px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
-        <div>
-          <div style="font-weight:600;font-size:14px;color:var(--text)">ATS Engine</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Paste a JD to score fit, check org health, and generate a tailored resume</div>
-        </div>
-        <button class="btn btn-ghost" onclick="clearATS()" style="font-size:11px">Clear</button>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <input id="ats-company" placeholder="Company" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:12px;background:var(--bg);color:var(--text)">
-        <input id="ats-role" placeholder="Role title" style="flex:2;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:12px;background:var(--bg);color:var(--text)">
-      </div>
-      <textarea id="ats-jd" rows="6" placeholder="Paste the full job description here..." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:12px;background:var(--bg);color:var(--text);resize:vertical;line-height:1.6"></textarea>
-      <div style="margin-top:12px">
-        <button class="btn btn-primary" onclick="runATSAnalysis()" id="ats-run-btn" style="padding:9px 20px;font-size:13px">⚡ Analyze</button>
+    <div class="scraper-header">
+      <div>
+        <div class="scraper-title">ATS Engine</div>
+        <div class="scraper-sub">Score your resume against a JD, check org health, and generate a tailored rewrite — before you apply.</div>
       </div>
     </div>
 
-    <!-- Results -->
+    <!-- Step 1: JD Input -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-weight:600;font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+        <span style="background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">1</span>
+        Paste Job Description
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input id="ats-company" placeholder="Company name" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:12px;background:var(--bg)">
+        <input id="ats-role" placeholder="Role title" style="flex:2;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:12px;background:var(--bg)">
+      </div>
+      <textarea id="ats-jd" rows="8" placeholder="Paste the full job description here..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:12px;background:var(--bg);resize:vertical;line-height:1.5"></textarea>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="runATSAnalysis()" id="ats-run-btn">⚡ Analyze & Score</button>
+        <button class="btn btn-ghost" onclick="clearATS()">Clear</button>
+      </div>
+    </div>
+
+    <!-- Results: hidden until run -->
     <div id="ats-results" style="display:none">
 
-      <!-- Report Card -->
+      <!-- Score cards row -->
+      <div class="kpi-grid" id="ats-scores" style="margin-bottom:16px"></div>
+
+      <!-- RepVue / Org Health -->
+      <div class="card" style="margin-bottom:16px" id="ats-repvue-card">
+        <div style="font-weight:600;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          <span style="background:var(--purple);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">2</span>
+          Org Health — RepVue
+        </div>
+        <div id="ats-repvue-content" style="color:var(--muted);font-size:12px">Loading...</div>
+      </div>
+
+      <!-- Side-by-side rewrite -->
       <div class="card" style="margin-bottom:16px">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px">Report Card</div>
-
-        <!-- Score tabs -->
-        <div style="display:flex;gap:4px;margin-bottom:16px;background:var(--bg);border-radius:8px;padding:4px;width:fit-content">
-          <button class="ats-score-tab active" onclick="switchScoreTab('fit',this)">Fit Assessment</button>
-          <button class="ats-score-tab" onclick="switchScoreTab('ats',this)">ATS Score <span id="ats-tab-badge" style="display:none;background:var(--green);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px">✓</span></button>
+        <div style="font-weight:600;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          <span style="background:var(--green);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">3</span>
+          Resume Rewrite — Side by Side
+          <span id="ats-rewrite-status" style="font-size:11px;font-weight:400;color:var(--muted);margin-left:auto"></span>
         </div>
-
-        <!-- Fit Assessment tab -->
-        <div id="ats-score-tab-fit">
-          <div id="ats-scores" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px"></div>
-          <div id="ats-verdict-bar" style="margin-bottom:16px"></div>
-        </div>
-
-        <!-- ATS Score tab -->
-        <div id="ats-score-tab-ats" style="display:none">
-          <div id="ats-rapidapi-content">
-            <div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
-              <div style="font-size:12px;color:var(--muted)">Literal keyword match against Workday/Greenhouse-style parsers.</div>
-              <button class="btn btn-primary" onclick="runRapidAPICheck(this)" id="ats-rapidapi-btn" style="white-space:nowrap;flex-shrink:0">Run ATS Check <span style="opacity:.65;font-size:10px">(15/day)</span></button>
-            </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--sub);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Master Resume</div>
+            <div id="ats-master-pane" style="font-size:11px;line-height:1.7;color:var(--text);white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;max-height:600px;overflow-y:auto;font-family:var(--mono)"></div>
           </div>
-        </div>
-
-        <!-- RepVue divider -->
-        <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Org Health — RepVue</div>
-          <div id="ats-repvue-content" style="font-size:12px;color:var(--muted)">Loading...</div>
-        </div>
-
-        <!-- AI Verdict -->
-        <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px">AI Recommendation</div>
-          <div id="ats-ai-verdict" style="font-size:12px;color:var(--muted)">Calculating...</div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Tailored Version</div>
+            <div id="ats-tailored-pane" style="font-size:11px;line-height:1.7;color:var(--text);white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;max-height:600px;overflow-y:auto;font-family:var(--mono)"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Keyword Gap Analysis -->
+      <!-- Gap analysis -->
       <div class="card" style="margin-bottom:16px">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px">Keyword Gap Analysis</div>
+        <div style="font-weight:600;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          <span style="background:var(--yellow);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">4</span>
+          Keyword Gap Analysis
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px" id="ats-gaps"></div>
       </div>
 
-      <!-- Resume Rewrite — gated behind button -->
-      <div class="card" style="margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <div>
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">Tailored Resume</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:3px">Review the analysis above before generating</div>
+      <!-- RapidAPI literal ATS result — shown only after check runs -->
+      <div id="ats-rapidapi-result" style="display:none;margin-bottom:16px">
+        <div class="card">
+          <div style="font-weight:600;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+            <span style="background:#0f172a;color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">⚙</span>
+            Literal ATS Score
+            <span style="font-size:11px;font-weight:400;color:var(--muted)">— byte-for-byte keyword match (what Workday/Greenhouse actually scores)</span>
           </div>
-          <button class="btn btn-primary" onclick="generateRewrite(this)" id="ats-generate-btn">Generate Tailored Resume</button>
+          <div id="ats-rapidapi-content"></div>
         </div>
+      </div>
 
-        <div id="ats-rewrite-section" style="display:none;margin-top:16px">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-            <div>
-              <div style="font-size:11px;font-weight:600;color:var(--sub);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Master</div>
-              <div id="ats-master-pane" style="font-size:11px;line-height:1.8;color:var(--text);white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;max-height:560px;overflow-y:auto;font-family:var(--mono)"></div>
-            </div>
-            <div>
-              <div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:8px">Tailored <span id="ats-rewrite-status" style="font-weight:400;color:var(--muted);font-size:10px"></span></div>
-              <div id="ats-tailored-pane" style="font-size:11px;line-height:1.8;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;max-height:560px;overflow-y:auto;font-family:var(--mono)"></div>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-            <button class="btn btn-primary" onclick="addToApplied()" id="ats-apply-btn" style="display:none">✓ Mark as Applied → Pipeline</button>
-            <button class="btn btn-ghost" onclick="copyTailored()">Copy Tailored Resume</button>
-          </div>
-        </div>
+      <!-- Action bar -->
+      <div style="display:flex;gap:8px;align-items:center;padding:12px 0">
+        <button class="btn btn-primary" onclick="addToApplied()" id="ats-apply-btn" style="display:none">✓ Mark as Applied → Add to Pipeline</button>
+        <button class="btn btn-ghost" onclick="copyTailored()">Copy Tailored Resume</button>
+        <button class="btn btn-ghost" onclick="runRapidAPICheck(this)" id="ats-rapidapi-btn" title="Uses 1 of 15 daily literal ATS checks">⚙ Literal ATS Check <span style="font-size:10px;opacity:.6">(15/day)</span></button>
       </div>
 
     </div>
@@ -2130,33 +2079,7 @@ function switchTab(tab, btn) {
 
 // ── ATS Engine ────────────────────────────────────────────────────────────────
 
-var atsState = { jd: '', company: '', role: '', masterResume: '', tailored: '', scoreData: null };
-
-function switchScoreTab(tab, btn) {
-  document.getElementById('ats-score-tab-fit').style.display = tab === 'fit' ? '' : 'none';
-  document.getElementById('ats-score-tab-ats').style.display = tab === 'ats' ? '' : 'none';
-  document.querySelectorAll('.ats-score-tab').forEach(function(b){ b.classList.remove('active'); });
-  if (btn) btn.classList.add('active');
-}
-
-async function generateRewrite(btn) {
-  if (!atsState.jd || !atsState.masterResume) { showToast('Run analysis first'); return; }
-  btn.disabled = true;
-  btn.textContent = 'Generating...';
-  document.getElementById('ats-rewrite-section').style.display = '';
-  document.getElementById('ats-master-pane').textContent = atsState.masterResume;
-  document.getElementById('ats-tailored-pane').innerHTML = '<div class="ats-generating"><div class="ats-spinner"></div><span>Generating tailored resume...</span></div>';
-  document.getElementById('ats-rewrite-status').textContent = '';
-  try {
-    await runRewrite(atsState.jd, atsState.masterResume, atsState.company, atsState.role);
-    document.getElementById('ats-apply-btn').style.display = '';
-    btn.textContent = 'Regenerate';
-  } catch(e) {
-    document.getElementById('ats-tailored-pane').innerHTML = '<div style="color:var(--red);font-size:12px">Error: ' + e.message + '</div>';
-    btn.textContent = 'Generate Tailored Resume';
-  }
-  btn.disabled = false;
-}
+var atsState = { jd: '', company: '', role: '', masterResume: '', tailored: '' };
 
 function clearATS() {
   document.getElementById('ats-jd').value = '';
@@ -2243,13 +2166,14 @@ async function runATSAnalysis() {
     if (!masterResume) throw new Error('Master resume is empty — check Supabase resume_master table');
     document.getElementById('ats-master-pane').textContent = masterResume;
 
-    // Run scoring and RepVue in parallel — rewrite is on-demand
+    // Run all three analyses in parallel
     await Promise.all([
       runKeywordScore(jd, masterResume),
-      runRepVue(company)
+      runRepVue(company),
+      runRewrite(jd, masterResume, company, role)
     ]);
 
-    renderAIVerdict();
+    document.getElementById('ats-apply-btn').style.display = '';
   } catch(e) {
     console.error(e);
     document.getElementById('ats-results').style.display = '';
@@ -2271,34 +2195,14 @@ async function runKeywordScore(jd, resume) {
   var score = data.result;
 
 
-  // Store for AI verdict
-  atsState.scoreData = score;
-
   // Render score cards
-  var scores = [
-    { val: score.overall_score, lbl: 'Overall' },
-    { val: score.hard_skill_score, lbl: 'Hard Skills' },
-    { val: score.soft_skill_score, lbl: 'Soft Skills' },
-    { val: score.verbatim_score, lbl: 'Verbatim' },
-    { val: score.experience_match, lbl: 'Experience' }
-  ];
-  document.getElementById('ats-scores').innerHTML = scores.map(function(s) {
-    var c = s.val >= 70 ? 'var(--green)' : s.val >= 50 ? 'var(--yellow)' : 'var(--red)';
-    var bg = s.val >= 70 ? 'var(--green-light)' : s.val >= 50 ? 'var(--yellow-light)' : 'var(--red-light)';
-    return '<div class="ats-score-card" style="border-color:' + c + '20">' +
-      '<div class="ats-score-val" style="color:' + c + '">' + s.val + '</div>' +
-      '<div class="ats-score-lbl">' + s.lbl + '</div>' +
-    '</div>';
-  }).join('');
-
-  // Verdict bar
-  var vColor = score.verdict === 'strong match' ? 'var(--green)' : score.verdict === 'moderate match' ? 'var(--yellow)' : 'var(--red)';
-  var vBg = score.verdict === 'strong match' ? 'var(--green-light)' : score.verdict === 'moderate match' ? 'var(--yellow-light)' : 'var(--red-light)';
-  document.getElementById('ats-verdict-bar').innerHTML =
-    '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:' + vBg + ';border-radius:8px">' +
-    '<div style="font-size:13px;font-weight:700;color:' + vColor + '">' + score.verdict.toUpperCase() + '</div>' +
-    (score.experience_gap ? '<div style="font-size:12px;color:var(--sub);border-left:2px solid ' + vColor + ';padding-left:10px">' + score.experience_gap + '</div>' : '') +
-    '</div>';
+  var verdictColor = score.verdict === 'strong match' ? 'var(--green)' : score.verdict === 'moderate match' ? 'var(--yellow)' : 'var(--red)';
+  document.getElementById('ats-scores').innerHTML =
+    atsKpiCard(score.overall_score + '%', 'Overall Match', score.overall_score >= 70 ? 'green' : score.overall_score >= 50 ? 'yellow' : 'red') +
+    atsKpiCard(score.hard_skill_score + '%', 'Hard Skills') +
+    atsKpiCard(score.soft_skill_score + '%', 'Soft Skills') +
+    atsKpiCard(score.verbatim_score + '%', 'Verbatim Match') +
+    atsKpiCard(score.experience_match + '%', 'Experience Fit');
 
   // Render gap analysis
   var gapsHtml =
@@ -2380,33 +2284,6 @@ async function runRewrite(jd, resume, company, role) {
   document.getElementById('ats-rewrite-status').textContent = '✓ Ready';
 }
 
-// ── AI Verdict ────────────────────────────────────────────────────────────────
-
-function renderAIVerdict() {
-  var s = atsState.scoreData;
-  if (!s) return;
-  var overall = s.overall_score || 0;
-  var hardGaps = (s.missing_hard || []).length;
-  var verdict, color, icon;
-
-  if (overall >= 75 && hardGaps <= 2) {
-    verdict = 'Strong fit. The keyword alignment and experience match support applying. Prioritize surfacing deal complexity and multi-stakeholder experience early in the screen.';
-    color = 'var(--green)'; icon = '✓';
-  } else if (overall >= 55) {
-    verdict = 'Moderate fit. ' + (hardGaps > 3 ? hardGaps + ' hard skill gaps need addressing in the tailored resume. ' : '') + 'Review the missing keywords below and check whether the rewrite closes the gap before applying.';
-    color = 'var(--yellow)'; icon = '⚠';
-  } else {
-    verdict = 'Weak fit. ' + hardGaps + ' hard skill gaps and an overall score of ' + overall + '% suggest this role may not be the right target. Check RepVue org health before spending time on tailoring.';
-    color = 'var(--red)'; icon = '✗';
-  }
-
-  document.getElementById('ats-ai-verdict').innerHTML =
-    '<div style="display:flex;gap:10px;align-items:flex-start">' +
-    '<div style="font-size:16px;color:' + color + ';flex-shrink:0;margin-top:1px">' + icon + '</div>' +
-    '<div style="font-size:12px;color:var(--sub);line-height:1.6">' + verdict + '</div>' +
-    '</div>';
-}
-
 // ── RapidAPI Literal ATS Check ────────────────────────────────────────────────
 
 async function runRapidAPICheck(btn) {
@@ -2414,9 +2291,8 @@ async function runRapidAPICheck(btn) {
   if (!atsState.masterResume) { showToast('No resume loaded yet'); return; }
 
   btn.disabled = true;
-  btn.textContent = '⚙ Checking...';
-  document.getElementById('ats-rapidapi-result').style.display = '';
-  document.getElementById('ats-rapidapi-content').innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px"><div class="ats-spinner"></div>Running literal keyword match...</div>';
+  btn.innerHTML = '<div class="ats-spinner" style="display:inline-block;margin-right:6px"></div>Checking...';
+  document.getElementById('ats-rapidapi-content').innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:16px;background:var(--bg);border-radius:8px;border:1px solid var(--border)"><div class="ats-spinner"></div><div style="font-size:12px;color:var(--muted)">Running literal keyword match against job description...</div></div>';
 
   try {
     var resp = await fetch('/api/ats-scan', {
@@ -2431,39 +2307,37 @@ async function runRapidAPICheck(btn) {
     var scoreColor = r.score >= 70 ? 'var(--green)' : r.score >= 50 ? 'var(--yellow)' : 'var(--red)';
     var scoreBg = r.score >= 70 ? 'var(--green-light)' : r.score >= 50 ? 'var(--yellow-light)' : 'var(--red-light)';
 
-    var html = '<div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">';
+    var html = '<div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">';
     if (r.score !== null) {
-      html += '<div style="background:' + scoreBg + ';color:' + scoreColor + ';border-radius:8px;padding:12px 22px;font-size:28px;font-weight:700;line-height:1">' + r.score + '%</div>';
-      html += '<div><div style="font-size:13px;font-weight:600;color:var(--text)">Literal ATS Match</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Simulates Workday, Greenhouse, Lever keyword parsing</div></div>';
+      html += '<div style="background:' + scoreBg + ';color:' + scoreColor + ';border-radius:8px;padding:10px 20px;font-size:24px;font-weight:700">' + r.score + '%</div>';
+      html += '<div style="font-size:12px;color:var(--sub)">Literal keyword match score<br><span style="color:var(--muted);font-size:11px">Simulates how Workday, Greenhouse, Lever score your resume</span></div>';
     } else {
-      html += '<div style="font-size:12px;color:var(--muted)">Score not returned by API — check RapidAPI dashboard</div>';
+      html += '<div style="font-size:12px;color:var(--muted)">Score not returned by API</div>';
     }
     html += '</div>';
 
     if (r.missing_keywords && r.missing_keywords.length) {
-      html += '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--red);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Missing (' + r.missing_keywords.length + ')</div>';
+      html += '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--red);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Missing Keywords (' + r.missing_keywords.length + ')</div>';
       html += '<div style="display:flex;flex-wrap:wrap;gap:4px">' + r.missing_keywords.map(function(k){ return '<span style="background:var(--red-light);color:var(--red);padding:2px 8px;border-radius:4px;font-size:11px">✗ ' + k + '</span>'; }).join('') + '</div></div>';
     }
+
     if (r.matched_keywords && r.matched_keywords.length) {
-      html += '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Matched (' + r.matched_keywords.length + ')</div>';
+      html += '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Matched Keywords (' + r.matched_keywords.length + ')</div>';
       html += '<div style="display:flex;flex-wrap:wrap;gap:4px">' + r.matched_keywords.map(function(k){ return '<span style="background:var(--green-light);color:#065f46;padding:2px 8px;border-radius:4px;font-size:11px">✓ ' + k + '</span>'; }).join('') + '</div></div>';
     }
+
     if (r.suggestions && r.suggestions.length) {
       html += '<div><div style="font-size:11px;font-weight:600;color:var(--sub);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Suggestions</div>';
-      html += r.suggestions.map(function(s){ return '<div style="font-size:11px;color:var(--sub);padding:4px 0;border-bottom:1px solid var(--border)">→ ' + s + '</div>'; }).join('') + '</div>';
+      html += r.suggestions.map(function(s){ return '<div style="font-size:11px;color:var(--sub);padding:3px 0;border-bottom:1px solid var(--border)">→ ' + s + '</div>'; }).join('') + '</div>';
     }
 
     document.getElementById('ats-rapidapi-content').innerHTML = html;
-    // Show badge on tab
-    var badge = document.getElementById('ats-tab-badge');
-    if (badge) badge.style.display = '';
-    switchScoreTab('ats', document.querySelectorAll('.ats-score-tab')[1]);
   } catch(e) {
     document.getElementById('ats-rapidapi-content').innerHTML = '<div style="color:var(--red);font-size:12px">Error: ' + e.message + '</div>';
   }
 
   btn.disabled = false;
-  btn.innerHTML = '⚙ Literal ATS Check <span style="font-size:10px;opacity:.6">(15/day)</span>';
+  btn.innerHTML = '↺ Re-run ATS Check <span style="font-size:10px;opacity:.6">(15/day)</span>';
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
