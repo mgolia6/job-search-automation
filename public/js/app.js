@@ -121,5 +121,6 @@ function triggerScraper(btn) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-loadData();
+// Check for profile first — onboarding.js will call loadData() after completion
+checkOnboarding();
 restoreTab();
