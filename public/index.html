@@ -2166,7 +2166,7 @@ async function runATSAnalysis() {
     if (!masterResume) throw new Error('Master resume is empty — check Supabase resume_master table');
     document.getElementById('ats-master-pane').textContent = masterResume;
 
-    // Sequential to avoid 30K TPM rate limit — score first, then RepVue
+    // Sequential — avoids rate limit, rewrite is on-demand only
     await runKeywordScore(jd, masterResume);
     renderAIVerdict();
     await runRepVue(company);
