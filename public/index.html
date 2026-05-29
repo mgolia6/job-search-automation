@@ -2148,25 +2148,7 @@ async function runKeywordScore(jd, resume) {
       system: 'You are an ATS scoring engine. Respond ONLY with valid JSON, no markdown, no explanation.',
       messages: [{
         role: 'user',
-        content: 'Analyze this resume against this job description. Return JSON with these exact keys:
-{
-  "overall_score": <0-100 integer>,
-  "hard_skill_score": <0-100>,
-  "soft_skill_score": <0-100>,
-  "verbatim_score": <0-100>,
-  "experience_match": <0-100>,
-  "verdict": "strong match" | "moderate match" | "weak match",
-  "missing_hard": [<up to 8 specific missing hard skills/tools>],
-  "missing_soft": [<up to 5 missing soft skill phrases>],
-  "matched_keywords": [<up to 10 keywords present in both>],
-  "experience_gap": "<one sentence on years/seniority match or gap>"
-}
-
-JOB DESCRIPTION:
-' + jd + '
-
-RESUME:
-' + resume
+        content: 'Analyze this resume against this job description. Return JSON with these exact keys: {"overall_score": <0-100 integer>, "hard_skill_score": <0-100>, "soft_skill_score": <0-100>, "verbatim_score": <0-100>, "experience_match": <0-100>, "verdict": "strong match or moderate match or weak match", "missing_hard": [up to 8 missing hard skills], "missing_soft": [up to 5 missing soft skill phrases], "matched_keywords": [up to 10 keywords present in both], "experience_gap": "one sentence on years/seniority match or gap"}. JOB DESCRIPTION: ' + jd + ' RESUME: ' + resume
       }]
     })
   });
@@ -2266,16 +2248,8 @@ async function runRewrite(jd, resume, company, role) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
-      system: 'You are an expert ATS resume optimizer for enterprise SaaS sales roles. Your job is to tailor a resume to a specific job description by: (1) adjusting the summary to mirror JD language, (2) reordering or rewording existing bullets to surface buried keywords — never inventing experience, (3) swapping generic phrasing for the JD's exact terminology where the underlying experience matches. Rules: never fabricate metrics or experience; only reword what is genuinely true; preserve all quantitative achievements; keep the same structure. Return ONLY the full tailored resume text, no explanation, no markdown.',
-      messages: [{ role: 'user', content: 'Tailor this resume for the ' + role + ' role at ' + company + '.
-
-JOB DESCRIPTION:
-' + jd + '
-
-MASER RESUME:
-' + resume + '
-
-Return the full tailored resume text only.' }]
+      system: "You are an expert ATS resume optimizer for enterprise SaaS sales roles. Tailor the resume to the JD by: adjusting the summary to mirror JD language, rewording existing bullets to surface buried keywords without inventing experience, swapping generic phrasing for the JD exact terminology where experience matches. Never fabricate metrics. Return ONLY the full tailored resume text, no explanation, no markdown.",
+      messages: [{ role: 'user', content: 'Tailor this resume for the ' + role + ' role at ' + company + '. JOB DESCRIPTION: ' + jd + ' MASTER RESUME: ' + resume + ' Return the full tailored resume text only.' }]
     })
   });
   var data = await resp.json();
