@@ -2177,11 +2177,11 @@ RESUME:
   // Render score cards
   var verdictColor = score.verdict === 'strong match' ? 'var(--green)' : score.verdict === 'moderate match' ? 'var(--yellow)' : 'var(--red)';
   document.getElementById('ats-scores').innerHTML =
-    kpiCard(score.overall_score + '%', 'Overall Match', score.overall_score >= 70 ? 'green' : score.overall_score >= 50 ? 'yellow' : 'red') +
-    kpiCard(score.hard_skill_score + '%', 'Hard Skills') +
-    kpiCard(score.soft_skill_score + '%', 'Soft Skills') +
-    kpiCard(score.verbatim_score + '%', 'Verbatim Match') +
-    kpiCard(score.experience_match + '%', 'Experience Fit');
+    atsKpiCard(score.overall_score + '%', 'Overall Match', score.overall_score >= 70 ? 'green' : score.overall_score >= 50 ? 'yellow' : 'red') +
+    atsKpiCard(score.hard_skill_score + '%', 'Hard Skills') +
+    atsKpiCard(score.soft_skill_score + '%', 'Soft Skills') +
+    atsKpiCard(score.verbatim_score + '%', 'Verbatim Match') +
+    atsKpiCard(score.experience_match + '%', 'Experience Fit');
 
   // Render gap analysis
   var gapsHtml =
@@ -2204,7 +2204,7 @@ RESUME:
   }
 }
 
-function kpiCard(value, label, color) {
+function atsKpiCard(value, label, color) {
   var bg = color === 'green' ? 'var(--green-light)' : color === 'yellow' ? 'var(--yellow-light)' : color === 'red' ? 'var(--red-light)' : 'var(--surface)';
   var fg = color === 'green' ? 'var(--green)' : color === 'yellow' ? 'var(--yellow)' : color === 'red' ? 'var(--red)' : 'var(--text)';
   return '<div class="kpi-card" style="background:' + bg + '">' +
