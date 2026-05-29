@@ -70,28 +70,20 @@ module.exports = async function handler(req, res) {
       }
 
       const data = await r.json();
-      console.log('[ats-match-scoring] raw response keys:', Object.keys(data));
+      console.log('[ats-match-scoring] raw response:', JSON.stringify(data).slice(0, 1000));
 
-      // Normalize — the API returns various field names; flatten to our standard shape
-      const score = data.score ?? data.match_score ?? data.compatibility_score
-        ?? data.ats_score ?? data['Match Score'] ?? data['ATS Score'] ?? null;
-
-      const missingKw = data.missing_keywords ?? data['Missing Keywords']
-        ?? data.missingKeywords ?? data.keywords_missing ?? [];
-
-      const matchedKw = data.matched_keywords ?? data['Matched Keywords']
-        ?? data.matchedKeywords ?? data.keywords_matched ?? [];
-
-      const suggestions = data.suggestions ?? data['Suggestions']
-        ?? data.recommendations ?? data['Recommendations'] ?? [];
-
+      // DEBUG: always return raw so we can see the actual field names from Vercel logs
+      // Once confirmed, we'll normalize to the correct fields
       return res.status(200).json({
         ok: true,
+        debug: true,
+        raw_keys: Object.keys(data),
+        raw_response: data,
         result: {
-          score: typeof score === 'number' ? Math.round(score) : score,
-          missing_keywords: Array.isArray(missingKw) ? missingKw : [],
-          matched_keywords: Array.isArray(matchedKw) ? matchedKw : [],
-          suggestions: Array.isArray(suggestions) ? suggestions : [],
+          score: null,
+          missing_keywords: [],
+          matched_keywords: [],
+          suggestions: [],
           raw: data
         }
       });
@@ -146,3 +138,4 @@ module.exports = async function handler(req, res) {
 };
 
 module.exports.config = { maxDuration: 60 };
+
