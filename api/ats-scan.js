@@ -14,7 +14,7 @@ module.exports = async function handler(req, res) {
 
   const callClaude = async (system, userMsg, tools) => {
     const body = {
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5-20251001',
       max_tokens: 1500,
       system,
       messages: [{ role: 'user', content: userMsg }]
