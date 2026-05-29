@@ -465,7 +465,12 @@ function finishOnboarding() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   })
-  .then(function(r) { return r.json(); })
+  .then(function(r) {
+    if (!r.ok) {
+      return r.text().then(function(t) { throw new Error(r.status + ': ' + t); });
+    }
+    return r.json();
+  })
   .then(function(d) {
     if (d.success) {
       showToast('Profile saved — welcome to Job Odyssey!');
@@ -473,7 +478,7 @@ function finishOnboarding() {
     } else {
       btn.disabled = false;
       btn.innerHTML = 'Launch Job Odyssey 🚀';
-      showToast('⚠ Save failed: ' + (d.error || 'unknown error'));
+      showToast('⚠ Save failed: ' + (d.error || JSON.stringify(d)));
     }
   })
   .catch(function(err) {
