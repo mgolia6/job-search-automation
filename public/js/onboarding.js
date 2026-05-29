@@ -49,12 +49,16 @@ var TOTAL_STEPS = 6;
 
 // ── Entry point ───────────────────────────────────────────────────────────────
 function checkOnboarding() {
-  fetch('/api/data?check=profile')
+  fetch('/api/profile?user_id=' + STUB_USER_ID)
     .then(function(r) { return r.json(); })
     .catch(function() { return { profile: null }; })
     .then(function(d) {
       if (!d.profile || !d.profile.onboarding_complete) {
         showOnboarding();
+      } else {
+        // Profile exists and complete — store it, load main app
+        window.USER_PROFILE = d.profile;
+        loadData();
       }
     });
 }
