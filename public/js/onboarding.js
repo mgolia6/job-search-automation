@@ -1,8 +1,6 @@
 // ── Onboarding ────────────────────────────────────────────────────────────────
 // Step-by-step profile setup. Runs when no profile exists.
-// Stub user_id for pre-auth development.
-
-var STUB_USER_ID = '00000000-0000-0000-0000-000000000001';
+// user_id comes from window.SESSION_USER set by auth.js
 
 var CANONICAL_TITLES = [
   { title: 'Enterprise Account Executive',    category: 'sales' },
@@ -49,14 +47,13 @@ var TOTAL_STEPS = 6;
 
 // ── Entry point ───────────────────────────────────────────────────────────────
 function checkOnboarding() {
-  fetch('/api/profile?user_id=' + STUB_USER_ID)
+  fetch('/api/profile', { headers: getAuthHeaders() })
     .then(function(r) { return r.json(); })
     .catch(function() { return { profile: null }; })
     .then(function(d) {
       if (!d.profile || !d.profile.onboarding_complete) {
         showOnboarding();
       } else {
-        // Profile exists and complete — store it, load main app
         window.USER_PROFILE = d.profile;
         loadData();
       }
@@ -387,7 +384,7 @@ function handlePDFUpload(file) {
     // Send to API for text extraction
     fetch('/api/resume', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({}, getAuthHeaders(), { 'Content-Type': 'application/json' }),
       body: JSON.stringify({ action: 'extract', pdf_base64: e.target.result.split(',')[1], filename: file.name })
     })
     .then(function(r) { return r.json(); })
@@ -456,13 +453,13 @@ function finishOnboarding() {
   btn.innerHTML = '<span class="spinner"></span> Saving...';
 
   var payload = Object.assign({}, PROFILE_DRAFT, {
-    user_id: STUB_USER_ID,
+    user_id: window.SESSION_USER ? window.SESSION_USER.id : null,
     onboarding_complete: true
   });
 
   fetch('/api/profile', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({}, getAuthHeaders(), { 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload)
   })
   .then(function(r) {
