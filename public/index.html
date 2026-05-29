@@ -2288,25 +2288,30 @@ async function runRepVue(company) {
     body: JSON.stringify({ action: 'repvue', jd: 'n/a', company: company })
   });
   var data = await resp.json();
+  // Normalize — model sometimes returns partial JSON
   var rv = data.result || {};
-  if (!data.ok && !rv.summary) {
-    document.getElementById('ats-repvue-content').innerHTML = '<span style="color:var(--muted);font-size:12px">Could not fetch RepVue data: ' + (data.error||'unknown error') + '</span>';
-    return;
-  }
+  rv.verdict = rv.verdict || 'yellow';
+  rv.quota_attainment = rv.quota_attainment || '—';
+  rv.rep_satisfaction = rv.rep_satisfaction || '—';
+  rv.culture_score = rv.culture_score || '—';
+  rv.trend = rv.trend || 'unknown';
+  rv.summary = (rv.summary || data.error || 'No data available').replace(/\*\*/g,'').replace(/---/g,'').trim();
+  rv.source = rv.source || 'estimated';
 
   var verdictColor = rv.verdict === 'green' ? 'var(--green)' : rv.verdict === 'yellow' ? 'var(--yellow)' : 'var(--red)';
   var verdictBg = rv.verdict === 'green' ? 'var(--green-light)' : rv.verdict === 'yellow' ? 'var(--yellow-light)' : 'var(--red-light)';
+  var verdictLabel = rv.verdict === 'green' ? 'GO' : rv.verdict === 'yellow' ? 'CAUTION' : 'PASS';
 
   document.getElementById('ats-repvue-content').innerHTML =
-    '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">' +
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px">' +
       stat('Quota Attainment', rv.quota_attainment) +
       stat('Rep Satisfaction', rv.rep_satisfaction) +
       stat('Culture Score', rv.culture_score) +
       stat('Trend', rv.trend) +
-      '<div style="background:' + verdictBg + ';color:' + verdictColor + ';border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;align-self:center">' + rv.verdict.toUpperCase() + '</div>' +
+      '<div style="background:' + verdictBg + ';color:' + verdictColor + ';border-radius:6px;padding:8px 16px;font-size:12px;font-weight:700;align-self:center;letter-spacing:.05em">' + verdictLabel + '</div>' +
     '</div>' +
-    '<div style="font-size:12px;color:var(--sub);line-height:1.5">' + rv.summary + '</div>' +
-    (rv.source === 'estimated' ? '<div style="font-size:11px;color:var(--muted);margin-top:6px">⚠ RepVue data not found — estimate based on available signals</div>' : '');
+    '<div style="font-size:12px;color:var(--sub);line-height:1.6;border-top:1px solid var(--border);padding-top:10px">' + rv.summary + '</div>' +
+    (rv.source === 'estimated' ? '<div style="font-size:11px;color:var(--muted);margin-top:6px">⚠ Estimated — RepVue page not found directly</div>' : '');
 }
 
 function stat(label, value) {
