@@ -118,7 +118,7 @@ function renderAuthForm(mode) {
         (isLogin ? 'Sign In' : 'Create Account') +
       '</button>' +
       (isLogin ?
-        '<div class="auth-link" onclick="doMagicLink()">Sign in with magic link instead</div>' : ''
+        '<div class="auth-link" onclick="doForgotPassword()">Forgot password?</div>' : ''
       ) +
     '</div>';
 }
@@ -192,21 +192,21 @@ async function doSignup(btn) {
   }
 }
 
-async function doMagicLink() {
+async function doForgotPassword() {
   var email = document.getElementById('auth-email').value.trim();
-  if (!email) return showAuthError('Enter your email first');
+  if (!email) return showAuthError('Enter your email address first');
 
   try {
-    const r = await fetch(SUPABASE_URL + '/auth/v1/magiclink', {
+    const r = await fetch(SUPABASE_URL + '/auth/v1/recover', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON },
       body: JSON.stringify({ email })
     });
-    if (!r.ok) throw new Error('Failed to send magic link');
+    if (!r.ok) throw new Error('Failed to send reset email');
     document.getElementById('auth-screen').innerHTML =
       '<div class="auth-card">' +
-        '<div class="auth-logo">✉️ Magic link sent</div>' +
-        '<div class="auth-tagline">Check <strong>' + email + '</strong> for your sign-in link.</div>' +
+        '<div class="auth-logo">✉️ Check your email</div>' +
+        '<div class="auth-tagline">We sent a password reset link to <strong>' + email + '</strong>.</div>' +
         '<button class="btn btn-primary auth-btn" onclick="renderAuthForm(\'login\')">Back to Sign In</button>' +
       '</div>';
   } catch(e) {
