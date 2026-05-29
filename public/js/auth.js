@@ -109,9 +109,7 @@ function renderAuthForm(mode) {
         '<button class="auth-tab ' + (!isLogin ? 'active' : '') + '" onclick="renderAuthForm(\'signup\')">Create Account</button>' +
       '</div>' +
       '<div id="auth-error" class="auth-error" style="display:none"></div>' +
-      (isLogin ? '' :
-        '<input id="auth-name" class="auth-input" type="text" placeholder="Full name" />'
-      ) +
+
       '<input id="auth-email" class="auth-input" type="email" placeholder="Email address" />' +
       '<input id="auth-password" class="auth-input" type="password" placeholder="' + (isLogin ? 'Password' : 'Create a password (min 8 chars)') + '" />' +
       '<button class="btn btn-primary auth-btn" onclick="' + (isLogin ? 'doLogin' : 'doSignup') + '(this)">' +
@@ -154,7 +152,6 @@ async function doLogin(btn) {
 }
 
 async function doSignup(btn) {
-  var name     = (document.getElementById('auth-name')?.value || '').trim();
   var email    = document.getElementById('auth-email').value.trim();
   var password = document.getElementById('auth-password').value;
   if (!email || !password) return showAuthError('Email and password required');
@@ -167,7 +164,7 @@ async function doSignup(btn) {
     const r = await fetch(SUPABASE_URL + '/auth/v1/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON },
-      body: JSON.stringify({ email, password, data: { full_name: name } })
+      body: JSON.stringify({ email, password })
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error_description || data.msg || 'Signup failed');
