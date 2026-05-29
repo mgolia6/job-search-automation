@@ -49,7 +49,7 @@ function spinnerHTML() {
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 function loadData() {
-  return fetch('/api/data')
+  return fetch('/api/data', { headers: getAuthHeaders() })
     .then(function (r) { return r.json(); })
     .then(function (d) {
       APPS = Array.isArray(d.applications) ? d.applications : [];
@@ -66,7 +66,7 @@ function loadData() {
 function dbPatch(table, id, body) {
   return fetch('/api/data', {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({}, getAuthHeaders(), { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ id: id, ...body })
   }).then(function (r) { return r.json(); });
 }
@@ -108,7 +108,7 @@ function triggerScraper(btn) {
       btn.innerHTML = orig;
       showToast('⚡ Scraper running — check Opportunities in ~1 min');
       if (data.success) {
-        fetch('/api/data').then(function (r) { return r.json(); }).then(function (d) {
+        fetch('/api/data', { headers: getAuthHeaders() }).then(function (r) { return r.json(); }).then(function (d) {
           JOBS = Array.isArray(d.jobs) ? d.jobs : [];
           renderScraper();
         });
@@ -122,6 +122,6 @@ function triggerScraper(btn) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-// Check for profile first — onboarding.js will call loadData() after completion
-checkOnboarding();
+// initAuth in auth.js bootstraps session → onboarding → loadData
+initAuth();
 restoreTab();
