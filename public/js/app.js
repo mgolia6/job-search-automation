@@ -84,11 +84,12 @@ function switchTab(tab, btn) {
 function restoreTab() {
   var saved = '';
   try { saved = localStorage.getItem('activeTab') || ''; } catch (e) {}
-  if (!saved) return;
+  if (!saved) saved = 'pipeline';
   var btn = Array.from(document.querySelectorAll('.tab')).find(function (b) {
     return b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + saved + "'");
   });
   if (btn) switchTab(saved, btn);
+  else switchTab('pipeline', document.querySelector('.tab'));
 }
 
 // ── Scraper Trigger ───────────────────────────────────────────────────────────
