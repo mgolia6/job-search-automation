@@ -2162,22 +2162,15 @@ async function runATSAnalysis() {
 }
 
 async function runKeywordScore(jd, resume) {
-  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+  var resp = await fetch('/api/ats-scan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      system: 'You are an ATS scoring engine. Respond ONLY with valid JSON, no markdown, no explanation.',
-      messages: [{
-        role: 'user',
-        content: 'Analyze this resume against this job description. Return ONLY a JSON object with these keys: overall_score (0-100), hard_skill_score (0-100), soft_skill_score (0-100), verbatim_score (0-100), experience_match (0-100), verdict (strong match or moderate match or weak match), missing_hard (array of up to 8 missing hard skills), missing_soft (array of up to 5 missing soft skill phrases), matched_keywords (array of up to 10 keywords present in both), experience_gap (one sentence on seniority match). JOB DESCRIPTION: ' + jd + ' RESUME: ' + resume
-      }]
-    })
+    body: JSON.stringify({ action: 'score', jd: jd, resume: resume })
   });
   var data = await resp.json();
-  var text = data.content[0].text.replace(/```json|```/g,'').trim();
-  var score = JSON.parse(text);
+  if (!data.ok) throw new Error('Score failed: ' + (data.error || 'unknown'));
+  var score = data.result;
+
 
   // Render score cards
   var verdictColor = score.verdict === 'strong match' ? 'var(--green)' : score.verdict === 'moderate match' ? 'var(--yellow)' : 'var(--red)';
@@ -2219,25 +2212,15 @@ function atsKpiCard(value, label, color) {
 }
 
 async function runRepVue(company) {
-  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+  var resp = await fetch('/api/ats-scan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      system: 'You are a sales org health analyst. Search RepVue for the company and return ONLY a JSON object, no markdown. Keys: { "quota_attainment": "<% or unknown>", "rep_satisfaction": "<score/10 or unknown>", "culture_score": "<score/10 or unknown>", "trend": "improving"|"declining"|"stable"|"unknown", "verdict": "green"|"yellow"|"red", "summary": "<2 sentence plain English summary of org health>", "source": "repvue"|"estimated" }',
-      messages: [{ role: 'user', content: 'Look up ' + company + ' on RepVue. What is their quota attainment rate, rep satisfaction, and overall sales org health? Return the JSON object.' }]
-    })
+    body: JSON.stringify({ action: 'repvue', jd: 'n/a', company: company })
   });
   var data = await resp.json();
-  var textBlocks = data.content.filter(function(b){ return b.type === 'text'; });
-  var text = textBlocks.map(function(b){ return b.text; }).join('').replace(/```json|```/g,'').trim();
-
-  var rv;
-  try { rv = JSON.parse(text); } 
-  catch(e) { 
-    document.getElementById('ats-repvue-content').innerHTML = '<span style="color:var(--muted);font-size:12px">' + text + '</span>';
+  var rv = data.result || {};
+  if (!data.ok && !rv.summary) {
+    document.getElementById('ats-repvue-content').innerHTML = '<span style="color:var(--muted);font-size:12px">Could not fetch RepVue data: ' + (data.error||'unknown error') + '</span>';
     return;
   }
 
@@ -2265,18 +2248,14 @@ function stat(label, value) {
 
 async function runRewrite(jd, resume, company, role) {
   document.getElementById('ats-rewrite-status').textContent = 'Generating...';
-  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+  var resp = await fetch('/api/ats-scan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      system: "You are an expert ATS resume optimizer for enterprise SaaS sales roles. Tailor the resume to the JD by adjusting the summary to mirror JD language, rewording existing bullets to surface buried keywords without inventing experience, and swapping generic phrasing for the JD exact terminology where experience matches. Never fabricate metrics. Return ONLY the full tailored resume text, no explanation, no markdown.",
-      messages: [{ role: 'user', content: 'Tailor this resume for the ' + role + ' role at ' + company + '. JOB DESCRIPTION: ' + jd + ' MASTER RESUME: ' + resume + ' Return the full tailored resume text only.' }]
-    })
+    body: JSON.stringify({ action: 'rewrite', jd: jd, resume: resume, company: company, role: role })
   });
   var data = await resp.json();
-  var tailored = data.content[0].text;
+  if (!data.ok) throw new Error('Rewrite failed: ' + data.error);
+  var tailored = data.result;
   atsState.tailored = tailored;
   document.getElementById('ats-tailored-pane').textContent = tailored;
   document.getElementById('ats-rewrite-status').textContent = '✓ Ready';
