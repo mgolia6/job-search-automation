@@ -1,4 +1,19 @@
 // ── Shared State ──────────────────────────────────────────────────────────────
+
+// ── Compass Spinner ───────────────────────────────────────────────────────────
+// Returns inline SVG compass rose — use spinnerHTML() instead of spinnerHTML()
+function spinnerHTML(size) {
+  size = size || 18;
+  var h = size, c = size / 2, p1 = size * 0.47, p2 = size * 0.14, p3 = size * 0.08;
+  return '<svg class="spinner-svg" width="' + h + '" height="' + h + '" viewBox="0 0 ' + h + ' ' + h + '" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
+    + '<polygon points="' + c + ',' + (c - p1) + ' ' + (c + p2) + ',' + (c - p3) + ' ' + c + ',' + (c + p3*0.6) + ' ' + (c - p2) + ',' + (c - p3) + '" fill="var(--accent)"/>'
+    + '<polygon points="' + c + ',' + (c + p1) + ' ' + (c + p2) + ',' + (c + p3) + ' ' + c + ',' + (c - p3*0.6) + ' ' + (c - p2) + ',' + (c + p3) + '" fill="var(--sub)"/>'
+    + '<polygon points="' + (c - p1) + ',' + c + ' ' + (c - p3) + ',' + (c + p2) + ' ' + (c + p3*0.6) + ',' + c + ' ' + (c - p3) + ',' + (c - p2) + '" fill="var(--sub)"/>'
+    + '<polygon points="' + (c + p1) + ',' + c + ' ' + (c + p3) + ',' + (c + p2) + ' ' + (c - p3*0.6) + ',' + c + ' ' + (c + p3) + ',' + (c - p2) + '" fill="var(--sub)"/>'
+    + '<circle cx="' + c + '" cy="' + c + '" r="' + (size * 0.07) + '" fill="var(--accent)"/>'
+    + '</svg>';
+}
+
 var CRON_SECRET = 'cron_secret_matthew';
 var APPS = [];
 var JOBS = [];
@@ -44,7 +59,7 @@ function showToast(msg) {
 }
 
 function spinnerHTML() {
-  return '<span class="spinner"></span>';
+  return spinnerHTML();
 }
 
 // ── Data ──────────────────────────────────────────────────────────────────────
