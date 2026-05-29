@@ -103,7 +103,7 @@ function renderAuthForm(mode) {
   document.getElementById('auth-screen').innerHTML =
     '<div class="auth-card">' +
       '<div class="auth-logo">⚡ Job Odyssey</div>' +
-      '<div class="auth-tagline">Your AI-powered job search command center</div>' +
+      '<div class="auth-tagline">Your search. Charted.</div>' +
       '<div class="auth-tabs">' +
         '<button class="auth-tab ' + (isLogin ? 'active' : '') + '" onclick="renderAuthForm(\'login\')">Sign In</button>' +
         '<button class="auth-tab ' + (!isLogin ? 'active' : '') + '" onclick="renderAuthForm(\'signup\')">Create Account</button>' +
