@@ -1143,6 +1143,35 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 @keyframes ats-spin {
   to { transform: rotate(360deg); }
 }
+
+/* ── ATS Score Tabs ── */
+.ats-score-tab {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--sans);
+  cursor: pointer;
+  background: transparent;
+  color: var(--sub);
+  transition: all .15s;
+}
+.ats-score-tab.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.ats-score-tab:hover:not(.active) { color: var(--text); }
+.ats-score-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+.ats-score-val { font-size: 22px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+.ats-score-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 </style>
 </head>
 <body>
@@ -2100,7 +2129,7 @@ function restoreTab() {
 
 // ── ATS Engine ────────────────────────────────────────────────────────────────
 
-var atsState = { jd: '', company: '', role: '', masterResume: '', tailored: '' };
+var atsState = { jd: '', company: '', role: '', masterResume: '', tailored: '', scoreData: null };
 
 function clearATS() {
   document.getElementById('ats-jd').value = '';
@@ -2210,6 +2239,7 @@ async function runKeywordScore(jd, resume) {
   var data = await resp.json();
   if (!data.ok) throw new Error('Score failed: ' + (data.error || 'unknown'));
   var score = data.result;
+  atsState.scoreData = score;
 
 
   // Render score cards
@@ -2355,6 +2385,61 @@ async function runRapidAPICheck(btn) {
 
   btn.disabled = false;
   btn.innerHTML = '↺ Re-run ATS Check <span style="font-size:10px;opacity:.6">(15/day)</span>';
+}
+
+// ── ATS Score Tab Switcher ────────────────────────────────────────────────────
+
+function switchScoreTab(tab, btn) {
+  document.getElementById('ats-score-tab-fit').style.display = tab === 'fit' ? '' : 'none';
+  document.getElementById('ats-score-tab-ats').style.display = tab === 'ats' ? '' : 'none';
+  document.querySelectorAll('.ats-score-tab').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+}
+
+// ── AI Verdict ────────────────────────────────────────────────────────────────
+
+function renderAIVerdict() {
+  var s = atsState.scoreData;
+  if (!s) return;
+  var overall = s.overall_score || 0;
+  var hardGaps = (s.missing_hard || []).length;
+  var verdict, color, icon;
+  if (overall >= 75 && hardGaps <= 2) {
+    verdict = 'Strong fit. Keyword alignment and experience match support applying. Lead with deal complexity and multi-stakeholder orchestration early in the screen.';
+    color = 'var(--green)'; icon = '✓';
+  } else if (overall >= 55) {
+    verdict = 'Moderate fit.' + (hardGaps > 3 ? ' ' + hardGaps + ' hard skill gaps — check whether the tailored resume closes them before applying.' : ' Review missing keywords below before submitting.');
+    color = 'var(--yellow)'; icon = '⚠';
+  } else {
+    verdict = 'Weak fit. ' + hardGaps + ' hard skill gaps and an overall score of ' + overall + '% — consider whether this role is the right target before spending time tailoring.';
+    color = 'var(--red)'; icon = '✗';
+  }
+  document.getElementById('ats-ai-verdict').innerHTML =
+    '<div style="display:flex;gap:10px;align-items:flex-start">' +
+    '<div style="font-size:16px;color:' + color + ';flex-shrink:0">' + icon + '</div>' +
+    '<div style="font-size:12px;color:var(--sub);line-height:1.6">' + verdict + '</div>' +
+    '</div>';
+}
+
+// ── Generate Rewrite (on-demand) ───────────────────────────────────────────────
+
+async function generateRewrite(btn) {
+  if (!atsState.jd || !atsState.masterResume) { showToast('Run analysis first'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  document.getElementById('ats-rewrite-section').style.display = '';
+  document.getElementById('ats-master-pane').textContent = atsState.masterResume;
+  document.getElementById('ats-tailored-pane').innerHTML = '<div class="ats-generating"><div class="ats-spinner"></div><span>Generating tailored resume...</span></div>';
+  document.getElementById('ats-rewrite-status').textContent = '';
+  try {
+    await runRewrite(atsState.jd, atsState.masterResume, atsState.company, atsState.role);
+    document.getElementById('ats-apply-btn').style.display = '';
+    btn.textContent = 'Regenerate';
+  } catch(e) {
+    document.getElementById('ats-tailored-pane').innerHTML = '<div style="color:var(--red);font-size:12px">Error: ' + e.message + '</div>';
+    btn.textContent = 'Generate Tailored Resume';
+  }
+  btn.disabled = false;
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
