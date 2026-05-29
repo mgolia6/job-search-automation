@@ -70,21 +70,55 @@ module.exports = async function handler(req, res) {
       }
 
       const data = await r.json();
-      console.log('[ats-match-scoring] raw response:', JSON.stringify(data).slice(0, 1000));
+      // API returns: { time, code, data: "<JSON string>" }
+      // Must parse data field as string to get actual payload
+      let payload;
+      try {
+        payload = typeof data.data === 'string' ? JSON.parse(data.data) : (data.data || data);
+      } catch(e) {
+        payload = data;
+      }
 
-      // DEBUG: always return raw so we can see the actual field names from Vercel logs
-      // Once confirmed, we'll normalize to the correct fields
+      console.log('[ats-match-scoring] payload keys:', Object.keys(payload));
+
+      const score = payload.ats_score ?? payload.score ?? payload.match_score ?? null;
+
+      // strengths/weaknesses are arrays of strings
+      const strengths = Array.isArray(payload.strengths) ? payload.strengths : [];
+      const weaknesses = Array.isArray(payload.weaknesses) ? payload.weaknesses : [];
+
+      // missing_keywords is array of strings
+      const missingKw = Array.isArray(payload.missing_keywords) ? payload.missing_keywords : [];
+
+      // no matched_keywords field — derive from match_breakdown
+      const matchedKw = payload.match_breakdown
+        ? Object.entries(payload.match_breakdown).map(([k,v]) => `${k.replace(/_/g,' ')}: ${v}%`)
+        : [];
+
+      const suggestions = Array.isArray(payload.improvement_suggestions)
+        ? payload.improvement_suggestions
+        : [];
+
+      const gaps = Array.isArray(payload.gaps) ? payload.gaps : [];
+
+      const rewrites = Array.isArray(payload.ats_optimized_rewrites)
+        ? payload.ats_optimized_rewrites
+        : [];
+
       return res.status(200).json({
         ok: true,
-        debug: true,
-        raw_keys: Object.keys(data),
-        raw_response: data,
         result: {
-          score: null,
-          missing_keywords: [],
-          matched_keywords: [],
-          suggestions: [],
-          raw: data
+          score: typeof score === 'number' ? Math.round(score) : score,
+          match_breakdown: payload.match_breakdown || null,
+          missing_keywords: missingKw,
+          matched_keywords: matchedKw,
+          suggestions,
+          gaps,
+          strengths,
+          weaknesses,
+          rewrites,
+          overall_feedback: payload.overall_feedback || '',
+          raw: payload
         }
       });
     }
@@ -138,4 +172,5 @@ module.exports = async function handler(req, res) {
 };
 
 module.exports.config = { maxDuration: 60 };
+
 
