@@ -2137,11 +2137,20 @@ async function runATSAnalysis() {
   document.getElementById('ats-rewrite-status').textContent = '';
 
   try {
-    // Fetch master resume from Supabase
-    var resumeResp = await fetch('/api/resume');
-    var resumeData = await resumeResp.json();
-    var masterResume = resumeData && resumeData[0] ? resumeData[0].content : '';
-    atsState.masterResume = masterResume;
+    // Fetch master resume (cache after first load)
+    var masterResume = atsState.masterResume || '';
+    if (!masterResume) {
+      var resumeResp = await fetch('/api/resume');
+      if (!resumeResp.ok && resumeResp.status !== 304) throw new Error('Resume fetch failed: ' + resumeResp.status);
+      try {
+        var resumeData = await resumeResp.json();
+        masterResume = resumeData && resumeData[0] ? resumeData[0].content : '';
+      } catch(e) {
+        throw new Error('Resume parse failed — check /api/resume endpoint');
+      }
+      atsState.masterResume = masterResume;
+    }
+    if (!masterResume) throw new Error('Master resume is empty — check Supabase resume_master table');
     document.getElementById('ats-master-pane').textContent = masterResume;
 
     // Run all three analyses in parallel
