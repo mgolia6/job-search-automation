@@ -474,7 +474,10 @@ function finishOnboarding() {
   .then(function(d) {
     if (d.success) {
       showToast('Profile saved — welcome to Job Odyssey!');
-      setTimeout(exitOnboarding, 800);
+      setTimeout(function() {
+        exitOnboarding();
+        switchTab('pipeline', document.querySelector('.tab'));
+      }, 800);
     } else {
       btn.disabled = false;
       btn.innerHTML = 'Launch Job Odyssey 🚀';
