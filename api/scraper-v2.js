@@ -21,16 +21,42 @@ module.exports = async function handler(req, res) {
     console.log('[scraper-v2] START', new Date().toISOString());
 
     const raw = await fetchJobs();
-    console.log(`[scraper-v2] raw results: ${raw.length}`);
+    console.log(`[scraper-v2] raw results from API: ${raw.length}`);
 
     const normalized = raw.map(normalizeJob).filter(Boolean);
     console.log(`[scraper-v2] after normalize+filter: ${normalized.length}`);
 
+    // Log what got filtered out for debugging
+    const filterLog = {
+      noCompanyOrTitle: raw.filter(j => !j.organization || !j.title).length,
+      blockedOrg: raw.filter(j => {
+        const c = (j.organization || '').toLowerCase();
+        return CONFIG.blockedOrgs.some(b => c.includes(b));
+      }).length,
+      nonUS: raw.filter(j => {
+        const countries = j.countries_derived || [];
+        return countries.length > 0 && !countries.includes('United States');
+      }).length,
+      titleNoMatch: raw.filter(j => {
+        const t = (j.title || '').toLowerCase();
+        return !['account executive', 'strategic account'].some(k => t.includes(k));
+      }).length,
+      salaryTooLow: raw.filter(j => {
+        if (!j.salary_raw?.value) return false;
+        const val = j.salary_raw.value;
+        const max = val.maxValue || val.minValue;
+        return max && val.unitText === 'YEAR' && max < CONFIG.minBaseSalary;
+      }).length,
+    };
+    console.log('[scraper-v2] filter breakdown:', JSON.stringify(filterLog));
+
     const deduped = dedupe(normalized);
     console.log(`[scraper-v2] after dedupe: ${deduped.length}`);
 
+    // FIX: only filter by job_id (exact posting seen before)
+    // Company-name filter removed — blocks legit new postings from companies already applied to
     const newJobs = await filterSeen(deduped);
-    console.log(`[scraper-v2] new jobs: ${newJobs.length}`);
+    console.log(`[scraper-v2] after filterSeen (id-only): ${newJobs.length}`);
 
     if (newJobs.length > 0) {
       await storeJobs(newJobs);
@@ -40,6 +66,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       success: true,
       raw: raw.length,
+      filterLog,
       normalized: normalized.length,
       deduped: deduped.length,
       new: newJobs.length
@@ -124,15 +151,13 @@ function normalizeJob(j) {
   // Fall back to description text parsing
   if (!baseSalary && j.description_text) {
     const desc = j.description_text;
-    // Match patterns like $250,000, $250K, 250,000
     const matches = desc.match(/\$([\d,]+)(?:,000)?(?:\s*[-–]\s*\$([\d,]+)(?:,000)?)?/g);
     if (matches) {
       for (const m of matches) {
         const nums = m.replace(/[\$,]/g, '').split(/[-–]/).map(Number);
         const max = Math.max(...nums);
-        // Sanity check — must look like a salary (50k-1M range)
         if (max >= 50000 && max <= 1000000) {
-          baseSalary = max < 10000 ? max * 1000 : max; // handle 250 vs 250000
+          baseSalary = max < 10000 ? max * 1000 : max;
           salaryDisplay = m.trim();
           break;
         }
@@ -182,14 +207,12 @@ function dedupe(jobs) {
 }
 
 async function filterSeen(jobs) {
+  // FIX: only filter by exact job_id — do NOT filter by company name
+  // Rationale: company-name filter permanently blocks all new postings from companies
+  // already in the pipeline (e.g. Microsoft, Salesforce post new roles constantly)
   const { data: existing } = await supabase.from('jobs').select('job_id');
-  const { data: applied }  = await supabase.from('applications').select('company');
-  const seenIds     = new Set((existing || []).map(j => j.job_id));
-  const appliedCos  = new Set((applied  || []).map(a => a.company.toLowerCase()));
-  return jobs.filter(j =>
-    !seenIds.has(j.jobId) &&
-    !appliedCos.has(j.company.toLowerCase())
-  );
+  const seenIds = new Set((existing || []).map(j => j.job_id));
+  return jobs.filter(j => !seenIds.has(j.jobId));
 }
 
 async function storeJobs(jobs) {
