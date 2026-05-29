@@ -1212,3 +1212,37 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   margin-top: 4px;
 }
 .auth-link:hover { text-decoration: underline; }
+
+/* ── Onboarding: Upload check rows ───────────────────────────────────────── */
+.ob-upload-checks { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.ob-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.ob-check-ok {
+  background: color-mix(in srgb, var(--green) 8%, transparent);
+  color: var(--green);
+  border: 1px solid color-mix(in srgb, var(--green) 20%, transparent);
+}
+.ob-check-warn {
+  background: color-mix(in srgb, #f59e0b 8%, transparent);
+  color: #b45309;
+  border: 1px solid color-mix(in srgb, #f59e0b 25%, transparent);
+}
+
+/* ── Onboarding: Intent icon ─────────────────────────────────────────────── */
+.ob-intent-icon { font-size: 24px; color: var(--accent); margin-bottom: 6px; }
+
+/* ── Onboarding: upload message ──────────────────────────────────────────── */
+.ob-upload-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  padding: 10px 0;
+}
