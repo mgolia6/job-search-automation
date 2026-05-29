@@ -75,9 +75,9 @@ Core workflow:
 - Known minor issue: role typeahead category labels (account_management fixed, others may need review)
 
 ## ⚙️ SCRAPER STATE
-- **Jobs table:** 1 job (dismissed) — effectively empty
-- **Root cause:** NOT diagnosed. filterLog added but no clean test run completed
-- **cron.yml:** still needs update to Mon/Wed/Fri/Sun 13:00 UTC — requires repo+workflow token
+- **cron.yml:** ✅ DONE — schedule updated to Mon/Wed/Fri/Sun 13:00 UTC, workflow token confirmed working
+- **Jobs table:** low yield — scraper running but returning near-zero results
+- **Next action:** fix scraper yield — trigger /api/cron manually, pull Vercel logs, read filterLog output
 
 ## 📁 DEPRECATED FILES — IGNORE
 - STATUS.md — tombstoned, redirects to SESSION_NOTES.md
@@ -85,13 +85,12 @@ Core workflow:
 - PROJECT_INSTRUCTIONS.md — rebuilt as lean startup/close protocol doc, not a state file
 
 ## 🚧 NEXT SESSION — START HERE (prioritized)
-1. **[IMMEDIATE] Fix scraper yield** — trigger /api/cron manually, pull Vercel logs, read filterLog, diagnose
+1. **[IMMEDIATE] Fix scraper yield** — trigger /api/cron manually, pull Vercel logs, read filterLog, diagnose and fix
 2. **[HIGH] Wire scraper filters to profile** — replace hardcoded title/salary filters with profile values
 3. **[HIGH] One-click analyze** — Opportunities card → pre-loads JD into ATS engine
 4. **[HIGH] Supabase Auth** — magic link email, replace stub user_id with real auth
-5. **[MEDIUM] Update cron.yml** — Mon/Wed/Fri/Sun 13:00 UTC (needs repo+workflow token)
-6. **[MEDIUM] Settings page** — view/edit profile post-onboarding
-7. **[MEDIUM] Greenhouse + Ashby APIs** — additional job sourcing
+5. **[MEDIUM] Settings page** — view/edit profile post-onboarding
+6. **[MEDIUM] Greenhouse + Ashby APIs** — additional job sourcing
 
 ## 🔧 TECHNICAL NOTES
 - index.html edits: use Python/bash, not str_replace tool
