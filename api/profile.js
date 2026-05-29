@@ -48,6 +48,11 @@ module.exports = async function handler(req, res) {
       soft_skills:        body.soft_skills || [],
       resume_keywords:    body.resume_keywords || [],
       job_search_intent:  body.job_search_intent || null,
+      phone:              body.phone || null,
+      career_summary:     body.career_summary || null,
+      looking_for:        body.looking_for || null,
+      working_style:      body.working_style || null,
+      photo_url:          body.photo_url || null,
       onboarding_complete: body.onboarding_complete || false,
       updated_at:         new Date()
     };
