@@ -1,102 +1,55 @@
-# SESSION NOTES — Job Odyssey
-# This file is the FIRST thing Claude reads every session.
-# GitHub is the single source of truth. Supabase is live data. Never reconstruct from docs.
+# Job Odyssey — Session Notes
 
-## 📅 SESSION TRACKING
-- **Last session date:** 2026/05/28
-- **Gmail scan from:** `after:2026/05/28`
+## Gmail Scan From Date
+after:2026/05/29
 
-## 🔗 CRITICAL LINKS
-- **Live app:** https://job-search-automation-pink.vercel.app
-- **GitHub repo:** https://github.com/mgolia6/job-search-automation
-- **Supabase project:** yaepgxsbjtbdkiidxtmf
-- **GitHub tokens:** stored in userMemories and project instructions
-  - Repo-only token: `ghp_dDY5...` (old, still works for non-workflow files)
-  - Repo + workflow token: in project instructions (new, use this going forward — expires ~Aug 2026)
-- **Vercel project ID:** prj_eXJT6KOWJpytqAfNGXE3nyYCbqUZ
+## Last Session: May 28-29, 2026
 
-## 📋 SESSION STARTUP — DO THIS EVERY TIME
-1. Read SESSION_NOTES.md from GitHub (you're doing it now)
-2. From SESSION_NOTES.md, get the `Gmail scan from` date and use it for step 3
-3. Scan Gmail: `after:[date from SESSION_NOTES] (recruiter OR interview OR application OR rejection OR screening)`
-4. Query Supabase `applications` table for live pipeline — do NOT use APPLICATION_LOG.md
-5. Check `jobs` table: last `scraped_at`, counts by status
-6. Report findings, confirm before making changes
+### What Was Done
+- Wiped jobs table clean for fresh scraper start
+- Fixed cron schedule to Mon/Wed/Fri/Sun at 13:00 UTC (~16 runs/month)
+- Built ATS Engine tab end-to-end:
+  - Fit Assessment (Claude semantic scoring — overall, hard skills, soft skills, verbatim, experience)
+  - RepVue org health (quota attainment, rep satisfaction, culture score, trend, verdict)
+  - Keyword Gap Analysis (missing hard, missing soft, matched keywords)
+  - AI Recommendation (weighs in on whether to apply based on scores)
+  - Gated rewrite — "Generate Tailored Resume" button, side-by-side layout
+  - RapidAPI literal ATS check (15/day) — tabbed alongside Fit Assessment
+- Master resume seeded to Supabase (resume_master table)
+- All Anthropic API calls proxied server-side via /api/ats-scan
+- Tab persistence added (localStorage saves active tab across refreshes)
+- Sequential execution (score then RepVue) to avoid 30K TPM rate limit
 
-## 🗂 FILE MAP
-| File | Purpose |
-|---|---|
-| `public/index.html` | Entire frontend — 1968 lines |
-| `api/scraper-v2.js` | ✅ ACTIVE scraper — Active Jobs DB, single call, correct field mapping |
-| `api/scraper-jsearch.js` | Old V1 scraper — deprecated, do not use |
-| `api/cron.js` | ✅ Updated — now calls scraper-v2.js |
-| `api/job-action.js` | Pipeline actions (add, dismiss, backlog) |
-| `api/data.js` | Data API for dashboard |
-| `api/gmail-scan.js` | Gmail scan endpoint |
-| `.github/workflows/cron.yml` | ⚠️ NEEDS UPDATE — still on old schedule, requires repo+workflow token to edit |
+### Known Issues Going Into Next Session
+- RapidAPI 503s — their Heroku backend is flaky, needs retry logic or fallback
+- Quota Attainment field occasionally returns [object Object] — needs server-side normalization in ats-scan.js
+- Rewrite diff highlighting not built — side-by-side shows but no change tracking
+- Scraper jobs table is empty — verify cron fired correctly after reset
 
-## ⚙️ SCRAPER STATE (updated May 28, 2026)
-- **V2 (Active Jobs DB):** ✅ deployed and wired into cron.js — NOT YET TESTED live
-- **API:** `active-ats-24h` endpoint, single call
-- **Title filter:** `'enterprise account executive' | 'strategic account executive'`
-- **Location filter:** `"United States"` (no remote filter — too many false negatives)
-- **Rate limit:** 25 requests/month — currently cron fires 4x daily (too many)
-- **cron.yml PENDING:** needs update to Mon/Wed/Fri/Sun 13:00 UTC (~16/month)
-  - Requires repo+workflow token — read from project instructions next session and push immediately
-- **Jobs in DB:** 39 total (11 new, 28 dismissed) as of May 28
+### Next Session Priorities
+1. REFACTOR FIRST — split index.html monolith into separate files:
+   - public/css/styles.css
+   - public/js/pipeline.js
+   - public/js/scraper.js
+   - public/js/ats.js
+   - public/js/gmail.js
+   - public/js/app.js
+   - public/index.html (lean shell only)
+2. Wire in RapidAPI /api/analyze/generate-optimized-resume to replace Claude rewrite
+3. Server-side normalization of RepVue fields in ats-scan.js
+4. Add retry logic for RapidAPI 503s
+5. Rewrite diff highlighting (changed lines marked green/red)
+6. Confirm cron is firing and scraper is populating jobs table
 
-## 📊 APPLICATION PIPELINE (live in Supabase — 46 apps as of May 28, 2026)
+### Architecture Notes
+- Supabase project: yaepgxsbjtbdkiidxtmf
+- Tables: applications (pipeline), jobs (scraper), resume_master (ATS engine)
+- API endpoints: /api/data, /api/resume, /api/ats-scan, /api/cron, /api/company-recon, /api/gmail-scan, /api/job-action
+- ATS Engine flow: Paste JD → Analyze (score + RepVue sequential) → Review Report Card → Generate Tailored Resume (on-demand)
+- RapidAPI key in Vercel env as RAPIDAPI_KEY (confirmed working for auth)
+- Anthropic API key in Vercel env as ANTHROPIC_API_KEY
+- Model: claude-sonnet-4-6
 
-**Status taxonomy (standardized May 28, 2026 — em dashes throughout):**
-- `Applied` — active, waiting (11)
-- `Screening` / `Interviewing` — in process
-- `Closed — Rejected` — reached interviews, human said no (2: #5 Mastercard, #16 Salesforce)
-- `Closed — Role Filled` — human confirmation, went to someone else (1: #18 Twilio)
-- `Closed — Auto-Reject` — ATS screen, never reached human (24)
-- `Closed — Position Closed` — posting pulled or expired (3: #13 Indeed, #22 Microsoft, #26 Salesforce K-12)
-- `Closed — No Response` — went silent
-- `Closed — Pass` — Matthew withdrew (5)
-
-**Active (Applied):**
-#23 Microsoft Sr AE | #28 Smartsheet Strategic AE | #29 Asana Enterprise AE | #34 Rippling Enterprise AE | #36 Ema Enterprise AE | #38 Qualtrics RTH | #39 Dataiku Strategic AE East | #40 Dataiku Enterprise AE | #42 Onboard Strategic AE | #44 Onboard Strategic AE (warm) | #45 Qualtrics G&S
-
-**Warm paths (priority order):**
-1. Dataiku — Amanda Walt driving referral (highest priority)
-2. Qualtrics — Saurabh Vaish (#38 RTH + #45 G&S active)
-3. Onboard — Chris Wisniewski warm, CRO (Chris Kiene) outreach pending
-
-## 🏗 WHAT'S BUILT & WORKING
-- 3-tab dashboard: Pipeline | Opportunities | Gmail Scan
-- Pipeline: filter tabs, KPIs, table with edit modal
-- Status badges: red = Rejected/Role Filled, gray = Auto-Reject/Position Closed/Pass, blue = Applied
-- Opportunities: salary tier tabs, job cards with dismiss/backlog/add-to-pipeline
-- Gmail scan tab working
-- V2 scraper deployed, cron.js updated — awaiting first live test
-
-## 🚧 NEXT SESSION — START HERE (prioritized)
-1. **[IMMEDIATE] Read repo+workflow token from project instructions → store to userMemories**
-2. **[IMMEDIATE] Push cron.yml** — change schedule to `0 13 * * 1,3,5,0` (Mon/Wed/Fri/Sun 9am ET)
-3. **[IMMEDIATE] Trigger manual scraper test** — hit /api/cron, check Vercel logs, verify jobs land in Supabase
-4. **[HIGH] Pipeline: expandable rows** — click row to show notes inline
-5. **[HIGH] Pipeline: apply_url link** — add posting link if URL exists in applications table
-6. **[MEDIUM] Glassdoor health check** — button exists in UI but API not working, needs fix
-7. **[MEDIUM] ATS resume screener** — new workflow: paste JD → score against master resume
-8. **[MEDIUM] Opportunities: expandable recon** — RepVue/gut check collapsed per card
-9. **[MEDIUM] Batch email** — already built in v2 (one email per run), verify it works
-
-## 🔧 TECHNICAL NOTES
-- index.html is 1968 lines — use Python/bash for edits, not str_replace tool (path issues)
-- Applications table: `app_number`, `company`, `role`, `status`, `date_applied`, `salary_range`, `warm_contact`, `notes`, `apply_url`
-- Jobs table: `job_id`, `company`, `title`, `source`, `salary`, `base_salary`, `estimated_ote`, `status` (new|backlog|dismissed), `location`, `posted_date`, `apply_url`, `scraped_at`, `gut_check`
-- V2 scraper filters: blocks staffing agencies by org name, blocks Jobgether by source, US country filter, $150K base floor
-- Salary extraction: uses `salary_raw.value` first, falls back to description text regex
-- Already-applied filter: re-enabled in V2 (checks both `jobs` table IDs and `applications` company names)
-- Email: one summary email per run (not per job) — subject includes count and date
-
-## 💡 MATTHEW'S PREFERENCES
-- Tabs not filter buttons, expandable not walls of text
-- Dashboard is primary workspace — email is notification only
-- Direct, no fluff, fast execution
-- AE identity is singular on LinkedIn/cold apps — ops openness only via warm intro
-- Challenge don't validate — flag risks before executing
-- Token expires ~Aug 26, 2026 — remind Matthew to regenerate around Aug 16
+### Pipeline State (as of session end)
+- Query Supabase applications table for current state — do not reconstruct from docs
+- Jobs table: 0 rows (wiped for fresh start, cron should have populated by next session)
