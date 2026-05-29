@@ -1,15 +1,10 @@
-// api/scraper-v2.js — Active Jobs DB (RapidAPI) single-call scraper
+// api/scraper-v2.js — Active Jobs DB (RapidAPI), profile-driven
 const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-const CONFIG = {
-  emailTo: 'mgolia6@gmail.com',
-  minBaseSalary: 150000, // $150K base ~ $300K OTE
-  // Orgs to skip — staffing agencies and job board wrappers
-  blockedOrgs: ['staffing', 'recruiting', 'talent', 'search group', 'jobgether', 'foresight works'],
-  // ATS sources to skip — pure aggregators
-  blockedSources: ['jobgether']
-};
+const BLOCKED_ORGS    = ['staffing', 'recruiting', 'talent', 'search group', 'jobgether', 'foresight works'];
+const BLOCKED_SOURCES = ['jobgether'];
+const PROFILE_ID      = '00000000-0000-0000-0000-000000000001';
 
 module.exports = async function handler(req, res) {
   const auth = req.headers.authorization;
@@ -20,56 +15,50 @@ module.exports = async function handler(req, res) {
   try {
     console.log('[scraper-v2] START', new Date().toISOString());
 
-    const raw = await fetchJobs();
-    console.log(`[scraper-v2] raw results from API: ${raw.length}`);
+    // Pull user profile — all filter params come from here
+    const { data: profile, error: profileErr } = await supabase
+      .from('profiles')
+      .select('target_titles, salary_floor_base, salary_floor_ote, remote_preference, target_locations, email')
+      .eq('user_id', PROFILE_ID)
+      .single();
 
-    const normalized = raw.map(normalizeJob).filter(Boolean);
+    if (profileErr || !profile) throw new Error('Failed to load profile: ' + (profileErr?.message || 'not found'));
+
+    const minBase   = profile.salary_floor_base || 125000;
+    const emailTo   = profile.email || 'mgolia6@gmail.com';
+    const remoteOnly = profile.remote_preference === 'remote';
+
+    // Build title filter from profile — OR join with pipe
+    const titles = (profile.target_titles || ['Enterprise Account Executive', 'Strategic Account Executive'])
+      .map(t => `'${t.toLowerCase()}'`)
+      .join(' | ');
+
+    console.log(`[scraper-v2] profile loaded — minBase: $${minBase}, remote: ${remoteOnly}, titles: ${titles}`);
+
+    const raw = await fetchJobs(titles);
+    console.log(`[scraper-v2] raw results: ${raw.length}`);
+
+    const normalized = raw.map(j => normalizeJob(j, minBase, remoteOnly)).filter(Boolean);
     console.log(`[scraper-v2] after normalize+filter: ${normalized.length}`);
 
-    // Log what got filtered out for debugging
-    const filterLog = {
-      noCompanyOrTitle: raw.filter(j => !j.organization || !j.title).length,
-      blockedOrg: raw.filter(j => {
-        const c = (j.organization || '').toLowerCase();
-        return CONFIG.blockedOrgs.some(b => c.includes(b));
-      }).length,
-      nonUS: raw.filter(j => {
-        const countries = j.countries_derived || [];
-        return countries.length > 0 && !countries.includes('United States');
-      }).length,
-      titleNoMatch: raw.filter(j => {
-        const t = (j.title || '').toLowerCase();
-        return !['account executive', 'strategic account'].some(k => t.includes(k));
-      }).length,
-      salaryTooLow: raw.filter(j => {
-        if (!j.salary_raw?.value) return false;
-        const val = j.salary_raw.value;
-        const max = val.maxValue || val.minValue;
-        return max && val.unitText === 'YEAR' && max < CONFIG.minBaseSalary;
-      }).length,
-    };
-    console.log('[scraper-v2] filter breakdown:', JSON.stringify(filterLog));
-
     const deduped = dedupe(normalized);
-    console.log(`[scraper-v2] after dedupe: ${deduped.length}`);
+    console.log(`[scraper-v2] after in-batch dedupe: ${deduped.length}`);
 
-    // FIX: only filter by job_id (exact posting seen before)
-    // Company-name filter removed — blocks legit new postings from companies already applied to
     const newJobs = await filterSeen(deduped);
-    console.log(`[scraper-v2] after filterSeen (id-only): ${newJobs.length}`);
+    console.log(`[scraper-v2] after filterSeen (job_id only): ${newJobs.length}`);
 
     if (newJobs.length > 0) {
       await storeJobs(newJobs);
-      await sendSummaryEmail(newJobs);
+      await sendSummaryEmail(newJobs, emailTo);
     }
 
     return res.status(200).json({
       success: true,
       raw: raw.length,
-      filterLog,
       normalized: normalized.length,
       deduped: deduped.length,
-      new: newJobs.length
+      new: newJobs.length,
+      config: { minBase, remoteOnly, titles }
     });
 
   } catch (err) {
@@ -78,9 +67,9 @@ module.exports = async function handler(req, res) {
   }
 };
 
-async function fetchJobs() {
+async function fetchJobs(titleFilter) {
   const url = new URL('https://active-jobs-db.p.rapidapi.com/active-ats-24h');
-  url.searchParams.append('title_filter', "'enterprise account executive' | 'strategic account executive'");
+  url.searchParams.append('title_filter', titleFilter);
   url.searchParams.append('location_filter', '"United States"');
   url.searchParams.append('description_type', 'text');
 
@@ -102,56 +91,45 @@ async function fetchJobs() {
   return Array.isArray(data) ? data : (data.data || data.jobs || []);
 }
 
-function normalizeJob(j) {
+function normalizeJob(j, minBase, remoteOnly) {
   const company = (j.organization || '').trim();
   const title   = (j.title || '').trim();
   const url     = j.url || '';
   const source  = j.source || 'unknown';
 
-  // Must have company and title
   if (!company || !title) return null;
 
-  // Block staffing agencies and aggregator wrappers
   const companyLower = company.toLowerCase();
-  if (CONFIG.blockedOrgs.some(b => companyLower.includes(b))) {
-    console.log(`[filter] blocked org: ${company}`);
-    return null;
-  }
-  if (CONFIG.blockedSources.includes(source.toLowerCase())) {
-    console.log(`[filter] blocked source: ${source}`);
-    return null;
-  }
+  if (BLOCKED_ORGS.some(b => companyLower.includes(b))) return null;
+  if (BLOCKED_SOURCES.includes(source.toLowerCase())) return null;
 
-  // Must be in United States
   const countries = j.countries_derived || [];
-  if (countries.length > 0 && !countries.includes('United States')) {
-    console.log(`[filter] non-US: ${company} — ${countries.join(', ')}`);
-    return null;
-  }
+  if (countries.length > 0 && !countries.includes('United States')) return null;
 
-  // Title must match AE keywords
+  // Remote filter — only applied if user wants remote only
+  if (remoteOnly && j.remote_derived === false) return null;
+
+  // Title match against AE keywords (broad catch — titles come from profile but API filter isn't exact)
   const titleLower = title.toLowerCase();
-  const aeMatch = ['account executive', 'strategic account'].some(k => titleLower.includes(k));
+  const aeMatch = ['account executive', 'strategic account', 'account manager'].some(k => titleLower.includes(k));
   if (!aeMatch) return null;
 
-  // Parse salary — try salary_raw first, then description text
+  // Salary parsing
   let baseSalary = null;
   let salaryDisplay = 'Not listed';
 
-  if (j.salary_raw && j.salary_raw.value) {
+  if (j.salary_raw?.value) {
     const val = j.salary_raw.value;
     const max = val.maxValue || val.minValue;
     const min = val.minValue || val.maxValue;
-    if (max && j.salary_raw.value.unitText === 'YEAR') {
+    if (max && val.unitText === 'YEAR') {
       baseSalary = max;
       salaryDisplay = `$${Math.round(min / 1000)}K–$${Math.round(max / 1000)}K`;
     }
   }
 
-  // Fall back to description text parsing
   if (!baseSalary && j.description_text) {
-    const desc = j.description_text;
-    const matches = desc.match(/\$([\d,]+)(?:,000)?(?:\s*[-–]\s*\$([\d,]+)(?:,000)?)?/g);
+    const matches = j.description_text.match(/\$([\d,]+)(?:,000)?(?:\s*[-–]\s*\$([\d,]+)(?:,000)?)?/g);
     if (matches) {
       for (const m of matches) {
         const nums = m.replace(/[\$,]/g, '').split(/[-–]/).map(Number);
@@ -165,30 +143,21 @@ function normalizeJob(j) {
     }
   }
 
-  // Apply salary floor — only filter if we actually found a salary
-  if (baseSalary && baseSalary < CONFIG.minBaseSalary) {
-    console.log(`[filter] salary too low ($${baseSalary}): ${company} — ${title}`);
-    return null;
-  }
+  // Only filter on salary if we found one — don't exclude unknowns
+  if (baseSalary && baseSalary < minBase) return null;
 
-  // Location
-  const location = (j.locations_derived && j.locations_derived[0])
-    ? j.locations_derived[0]
-    : (j.locations_alt_raw && j.locations_alt_raw[0])
-    ? j.locations_alt_raw[0]
-    : 'United States';
-
-  const remote = j.remote_derived === true;
+  const location = (j.locations_derived?.[0]) || (j.locations_alt_raw?.[0]) || 'United States';
+  const remote   = j.remote_derived === true;
 
   return {
     jobId:        `activejobs-${j.id}`,
-    source:       source,
-    title:        title,
-    company:      company,
-    location:     location,
-    remote:       remote,
+    source,
+    title,
+    company,
+    location,
+    remote,
     salary:       salaryDisplay,
-    baseSalary:   baseSalary,
+    baseSalary,
     estimatedOTE: baseSalary ? Math.round(baseSalary * 2) : null,
     applyUrl:     url,
     postedDate:   j.date_posted ? new Date(j.date_posted) : new Date(),
@@ -207,11 +176,18 @@ function dedupe(jobs) {
 }
 
 async function filterSeen(jobs) {
-  // FIX: only filter by exact job_id — do NOT filter by company name
-  // Rationale: company-name filter permanently blocks all new postings from companies
-  // already in the pipeline (e.g. Microsoft, Salesforce post new roles constantly)
-  const { data: existing } = await supabase.from('jobs').select('job_id');
-  const seenIds = new Set((existing || []).map(j => j.job_id));
+  // job_id only — never filter by company name (blocks legit new postings)
+  // Also check applications table so applied jobs don't resurface as leads
+  const [{ data: seenJobs }, { data: appliedJobs }] = await Promise.all([
+    supabase.from('jobs').select('job_id'),
+    supabase.from('applications').select('job_id').not('job_id', 'is', null)
+  ]);
+
+  const seenIds = new Set([
+    ...(seenJobs  || []).map(j => j.job_id),
+    ...(appliedJobs || []).map(a => a.job_id)
+  ]);
+
   return jobs.filter(j => !seenIds.has(j.jobId));
 }
 
@@ -234,13 +210,13 @@ async function storeJobs(jobs) {
   if (error) console.error('[store] error:', error.message);
 }
 
-async function sendSummaryEmail(jobs) {
+async function sendSummaryEmail(jobs, emailTo) {
   const rows = jobs.map(j =>
     `${j.company} | ${j.title} | ${j.salary} | ${j.location}${j.remote ? ' (Remote)' : ''}\n${j.applyUrl}`
   ).join('\n\n');
 
-  const subject = `[Job Odyssey] ${jobs.length} new role${jobs.length > 1 ? 's' : ''} — ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-  const text = `${jobs.length} new enterprise AE role${jobs.length > 1 ? 's' : ''} found:\n\n${rows}\n\n---\nReview in dashboard: https://job-search-automation-pink.vercel.app`;
+  const subject = `[Job Odyssey] ${jobs.length} new lead${jobs.length > 1 ? 's' : ''} — ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  const text = `${jobs.length} new enterprise AE lead${jobs.length > 1 ? 's' : ''} found:\n\n${rows}\n\n---\nReview in dashboard: https://job-search-automation-pink.vercel.app`;
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -250,7 +226,7 @@ async function sendSummaryEmail(jobs) {
     },
     body: JSON.stringify({
       from: 'Job Odyssey <onboarding@resend.dev>',
-      to: [CONFIG.emailTo],
+      to: [emailTo],
       subject,
       text
     })
@@ -258,5 +234,5 @@ async function sendSummaryEmail(jobs) {
 
   const data = await res.json();
   if (!res.ok) console.error('[email] error:', JSON.stringify(data));
-  else console.log(`[email] sent — ${jobs.length} jobs`);
+  else console.log(`[email] sent — ${jobs.length} leads`);
 }
