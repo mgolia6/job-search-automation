@@ -2166,13 +2166,10 @@ async function runATSAnalysis() {
     if (!masterResume) throw new Error('Master resume is empty — check Supabase resume_master table');
     document.getElementById('ats-master-pane').textContent = masterResume;
 
-    // Run all three analyses in parallel
-    await Promise.all([
-      runKeywordScore(jd, masterResume),
-      runRepVue(company)
-    ]);
-
-    document.getElementById('ats-apply-btn').style.display = '';
+    // Sequential to avoid 30K TPM rate limit — score first, then RepVue
+    await runKeywordScore(jd, masterResume);
+    renderAIVerdict();
+    await runRepVue(company);
   } catch(e) {
     console.error(e);
     document.getElementById('ats-results').style.display = '';
