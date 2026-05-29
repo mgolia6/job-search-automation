@@ -43,21 +43,19 @@ module.exports = async function handler(req, res) {
       if (!RAPIDAPI_KEY) return res.status(500).json({ error: 'RAPIDAPI_KEY not set' });
       if (!resume) return res.status(400).json({ error: 'resume required' });
 
-      // API requires multipart/form-data with resume as a file blob
-      const { FormData, Blob } = await import('node:buffer').catch(() => ({}));
-      const formData = new (globalThis.FormData || require('form-data'))();
-      // Create a text file blob from resume text
-      const resumeBlob = new Blob([resume], { type: 'text/plain' });
-      formData.append('resume', resumeBlob, 'resume.txt');
-      if (jd && jd !== 'n/a') formData.append('job_description', jd.slice(0, 3000));
+      // Send as URL-encoded form fields
+      const formBody = new URLSearchParams();
+      formBody.append('resume', resume.slice(0, 5000));
+      if (jd && jd !== 'n/a') formBody.append('job_description', jd.slice(0, 3000));
 
       const r = await fetch('https://resume-ats-analyzer.p.rapidapi.com/api/analyze', {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
           'X-RapidAPI-Key': RAPIDAPI_KEY,
           'X-RapidAPI-Host': 'resume-ats-analyzer.p.rapidapi.com'
         },
-        body: formData
+        body: formBody.toString()
       });
 
       if (!r.ok) {
