@@ -752,17 +752,39 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   font-family: var(--mono);
 }
 
-/* ── Spinner ── */
+/* ── Spinner — compass rose ── */
 .spinner {
-  width: 14px; height: 14px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin .6s linear infinite;
+  width: 18px;
+  height: 18px;
   display: inline-block;
   flex-shrink: 0;
+  vertical-align: middle;
+  animation: compass-seek 1.6s ease-in-out infinite;
+  background: none;
+  border: none;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+.spinner::before {
+  content: '';
+  display: none;
+}
+
+/* Inject SVG spinner via JS — .spinner gets replaced with inline SVG */
+@keyframes compass-seek {
+  0%   { transform: rotate(0deg); }
+  30%  { transform: rotate(20deg); }
+  60%  { transform: rotate(-20deg); }
+  80%  { transform: rotate(8deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes compass-spin {
+  to { transform: rotate(360deg); }
+}
+.spinner-svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  animation: compass-seek 1.8s ease-in-out infinite;
+}
 
 /* ── Toast ── */
 .toast {
