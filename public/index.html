@@ -1120,6 +1120,29 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   main { padding: 16px; }
   .stats { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── ATS Engine loading states ── */
+.ats-generating {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-family: var(--sans);
+  padding: 8px 0;
+}
+.ats-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: ats-spin .7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes ats-spin {
+  to { transform: rotate(360deg); }
+}
 </style>
 </head>
 <body>
@@ -2106,9 +2129,9 @@ async function runATSAnalysis() {
   atsState.role = role;
 
   document.getElementById('ats-results').style.display = '';
-  document.getElementById('ats-scores').innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px">Scoring...</div>';
-  document.getElementById('ats-repvue-content').innerHTML = '<span style="color:var(--muted)">Fetching RepVue data...</span>';
-  document.getElementById('ats-tailored-pane').innerHTML = '<span style="color:var(--muted)">Generating tailored resume...</span>';
+  document.getElementById('ats-scores').innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;padding:8px"><div class="ats-spinner"></div>Scoring resume...</div>';
+  document.getElementById('ats-repvue-content').innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px"><div class="ats-spinner"></div>Fetching RepVue data...</div>';
+  document.getElementById('ats-tailored-pane').innerHTML = '<div class="ats-generating"><div class="ats-spinner"></div><span>Generating tailored resume...</span></div>';
   document.getElementById('ats-master-pane').textContent = 'Loading master resume...';
   document.getElementById('ats-gaps').innerHTML = '';
   document.getElementById('ats-rewrite-status').textContent = '';
@@ -2148,7 +2171,7 @@ async function runKeywordScore(jd, resume) {
       system: 'You are an ATS scoring engine. Respond ONLY with valid JSON, no markdown, no explanation.',
       messages: [{
         role: 'user',
-        content: 'Analyze this resume against this job description. Return JSON with these exact keys: {"overall_score": <0-100 integer>, "hard_skill_score": <0-100>, "soft_skill_score": <0-100>, "verbatim_score": <0-100>, "experience_match": <0-100>, "verdict": "strong match or moderate match or weak match", "missing_hard": [up to 8 missing hard skills], "missing_soft": [up to 5 missing soft skill phrases], "matched_keywords": [up to 10 keywords present in both], "experience_gap": "one sentence on years/seniority match or gap"}. JOB DESCRIPTION: ' + jd + ' RESUME: ' + resume
+        content: 'Analyze this resume against this job description. Return ONLY a JSON object with these keys: overall_score (0-100), hard_skill_score (0-100), soft_skill_score (0-100), verbatim_score (0-100), experience_match (0-100), verdict (strong match or moderate match or weak match), missing_hard (array of up to 8 missing hard skills), missing_soft (array of up to 5 missing soft skill phrases), matched_keywords (array of up to 10 keywords present in both), experience_gap (one sentence on seniority match). JOB DESCRIPTION: ' + jd + ' RESUME: ' + resume
       }]
     })
   });
@@ -2248,7 +2271,7 @@ async function runRewrite(jd, resume, company, role) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
-      system: "You are an expert ATS resume optimizer for enterprise SaaS sales roles. Tailor the resume to the JD by: adjusting the summary to mirror JD language, rewording existing bullets to surface buried keywords without inventing experience, swapping generic phrasing for the JD exact terminology where experience matches. Never fabricate metrics. Return ONLY the full tailored resume text, no explanation, no markdown.",
+      system: "You are an expert ATS resume optimizer for enterprise SaaS sales roles. Tailor the resume to the JD by adjusting the summary to mirror JD language, rewording existing bullets to surface buried keywords without inventing experience, and swapping generic phrasing for the JD exact terminology where experience matches. Never fabricate metrics. Return ONLY the full tailored resume text, no explanation, no markdown.",
       messages: [{ role: 'user', content: 'Tailor this resume for the ' + role + ' role at ' + company + '. JOB DESCRIPTION: ' + jd + ' MASTER RESUME: ' + resume + ' Return the full tailored resume text only.' }]
     })
   });
