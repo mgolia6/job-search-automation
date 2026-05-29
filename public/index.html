@@ -2169,8 +2169,7 @@ async function runATSAnalysis() {
     // Run all three analyses in parallel
     await Promise.all([
       runKeywordScore(jd, masterResume),
-      runRepVue(company),
-      runRewrite(jd, masterResume, company, role)
+      runRepVue(company)
     ]);
 
     document.getElementById('ats-apply-btn').style.display = '';
