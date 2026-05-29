@@ -36,7 +36,7 @@
 | `public/js/ats.js` | ATS engine tab |
 | `api/auth.js` | ✅ NEW — verifyUser(req) helper used by all protected routes |
 | `api/scraper-v2.js` | ✅ ACTIVE — profile-driven filters, dedup via job_id + applications table |
-| `api/cron.js` | Calls scraper-v2.js — schedule updated to Mon/Wed/Fri/Sun 13:00 UTC |
+| `api/cron.js` | ✅ Calls scraper-v2.js — schedule updated to Mon/Wed/Fri/Sun 13:00 UTC (~16/month) ✅ DONE |
 | `api/job-action.js` | ✅ Auth-gated — dismiss/backlog/add_to_pipeline, scoped by user_id |
 | `api/data.js` | ✅ Auth-gated — returns applications + jobs scoped to user |
 | `api/profile.js` | ✅ Auth-gated — GET/POST profile, uses JWT not query param |
@@ -49,6 +49,7 @@
 - **Dedup:** job_id only — also checks applications.job_id to prevent resurface of applied roles
 - **Rate limit:** 25 req/month on Active Jobs DB (RapidAPI) — cron fires 16x/month (Mon/Wed/Fri/Sun)
 - **Jobs table:** 1 row (Docusign, dismissed) — 38 rows were wiped at some point, clean slate is fine
+- **cron.yml schedule:** ✅ updated to `0 13 * * 1,3,5,0` (Mon/Wed/Fri/Sun 13:00 UTC) — DONE
 - **Scraper NOT yet live-tested** — still pending first manual trigger post-auth
 
 ## 🔐 AUTH STATE (as of May 29, 2026)
