@@ -25,7 +25,7 @@ var CATEGORY_LABELS = {
   sales_management: 'Sales Management',
   sales_leadership: 'Sales Leadership',
   sales_ops: 'Sales Operations',
-  account_management: 'Account Management',
+  account_management: 'Account Manager',
   cs: 'Customer Success',
   sdr: 'Sales Development',
   presales: 'Pre-Sales',
