@@ -41,9 +41,8 @@
 | `.github/workflows/cron.yml` | ⚠️ STILL PENDING — needs schedule update + repo+workflow token |
 
 ## ⚙️ SCRAPER STATE (updated May 29, 2026)
-- **V2 (Active Jobs DB):** ✅ deployed and wired into cron.js — fired overnight May 28-29
-- **Last scraped:** 2026-05-29 00:58:59 UTC
-- **Jobs in DB:** 1 new (39 total — need to verify counts with null status)
+- **V2 (Active Jobs DB):** ✅ deployed and firing — confirmed scraped 2026-05-29 00:58:59 UTC
+- **Jobs in DB:** 1 new (verify counts with null status next session)
 - **Rate limit:** 25 requests/month — cron.yml still fires 4x daily (too many)
 - **cron.yml PENDING:** needs update to `0 13 * * 1,3,5,0` (Mon/Wed/Fri/Sun 9am ET)
   - Requires repo+workflow token — read from project instructions next session
@@ -53,10 +52,10 @@
 **Status taxonomy (em dashes throughout):**
 - `Applied` — active, waiting (11)
 - `Screening` / `Interviewing` — in process
-- `Closed — Rejected` — reached interviews, human said no (2)
-- `Closed — Role Filled` — went to someone else (1)
+- `Closed — Rejected` — reached interviews, human said no (2: #5 Mastercard, #16 Salesforce)
+- `Closed — Role Filled` — went to someone else (1: #18 Twilio)
 - `Closed — Auto-Reject` — ATS screen (24)
-- `Closed — Position Closed` — posting pulled (3)
+- `Closed — Position Closed` — posting pulled (3: #13 Indeed, #22 Microsoft, #26 Salesforce K-12)
 - `Closed — No Response` — went silent
 - `Closed — Pass` — Matthew withdrew (5)
 
@@ -74,26 +73,25 @@
 - Pipeline: KPIs, filter sub-tabs, expandable rows (notes + apply_url), edit modal
 - Opportunities: salary tier sub-tabs, job cards, recon toggle, dismiss modal
 - ATS Engine: JD paste → keyword score → RepVue → tailored resume (on-demand)
-- V2 scraper deployed and firing
+- V2 scraper deployed and confirmed firing
 
 ## 🚧 NEXT SESSION — START HERE (prioritized)
-1. **[IMMEDIATE]** Read repo+workflow token from project instructions → push cron.yml schedule fix (`0 13 * * 1,3,5,0`)
-2. **[IMMEDIATE]** Verify live app loads correctly after refactor — open https://job-search-automation-pink.vercel.app and check all 4 tabs
+1. **[IMMEDIATE]** Verify live app loads correctly after refactor — open https://job-search-automation-pink.vercel.app and confirm all 4 tabs work
+2. **[IMMEDIATE]** Read repo+workflow token from project instructions → push cron.yml to `0 13 * * 1,3,5,0`
 3. **[HIGH]** Wire RapidAPI `/api/analyze/generate-optimized-resume` to replace Claude rewrite in ats.js
 4. **[HIGH]** Server-side normalization of RepVue fields in ats-scan.js (quota attainment returns [object Object] sometimes)
 5. **[MEDIUM]** Diff highlighting in tailored resume pane (changed lines marked green/red)
 6. **[MEDIUM]** Glassdoor check fix — button exists but API not working
-7. **[MEDIUM]** Batch email verify — one email per scraper run, check it fires
+7. **[MEDIUM]** Batch email verify — one email per scraper run
 
 ## 🔧 TECHNICAL NOTES
-- Frontend is now modular — edit individual JS files, not the monolith
+- Frontend is now modular — edit individual JS files, not index.html
 - Script load order in index.html: app.js → pipeline.js → opportunities.js → gmail.js → ats.js
-  (app.js must be first — it defines APPS, JOBS, shared utils)
-- Bug fixed: `addToApplied()` was calling `loadPipeline()` (undefined) → now calls `loadData()`
-- Bug fixed: `atsKpiCard()` was using `.kpi-value` class → now uses `.kpi-num` (matches CSS)
-- Bug fixed: `.card` class was undefined → now defined in styles.css
-- Duplicate `.filter-btn` definitions merged into one
-- Duplicate spinner class merged into one `.spinner`
+  (app.js must be first — defines APPS, JOBS, shared utils)
+- Bug fixed: `addToApplied()` was calling `loadPipeline()` (undefined) → now `loadData()`
+- Bug fixed: `atsKpiCard()` was using `.kpi-value` class → now `.kpi-num` (matches CSS)
+- Bug fixed: `.card` class was undefined in old monolith → now defined in styles.css
+- Duplicate `.filter-btn` CSS merged, duplicate spinner merged
 - Applications table: `app_number`, `company`, `role`, `status`, `date_applied`, `salary_range`, `warm_contact`, `notes`, `apply_url`
 - Jobs table: `job_id`, `company`, `title`, `source`, `salary`, `base_salary`, `estimated_ote`, `status` (new|backlog|dismissed), `location`, `posted_date`, `apply_url`, `scraped_at`, `gut_check`
 
