@@ -44,6 +44,10 @@ module.exports = async function handler(req, res) {
       salary_floor_ote:   body.salary_floor_ote || null,
       seniority_level:    body.seniority_level || 'ic',
       resume_text:        body.resume_text || null,
+      hard_skills:        body.hard_skills || [],
+      soft_skills:        body.soft_skills || [],
+      resume_keywords:    body.resume_keywords || [],
+      job_search_intent:  body.job_search_intent || null,
       onboarding_complete: body.onboarding_complete || false,
       updated_at:         new Date()
     };
@@ -55,7 +59,7 @@ module.exports = async function handler(req, res) {
       .single();
 
     if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json({ profile: data });
+    return res.status(200).json({ success: true, profile: data });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
