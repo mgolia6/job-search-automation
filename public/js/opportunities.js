@@ -318,7 +318,7 @@ function submitDismiss(jobId, submitEvent) {
 
 function jobAction(event, jobId, action, jobData, justification) {
   event.target.disabled = true;
-  event.target.innerHTML = '<span class="spinner"></span>';
+  event.target.innerHTML = '' + spinnerHTML() + '';
 
   fetch('/api/job-action', {
     method: 'POST',
