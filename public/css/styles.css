@@ -798,3 +798,239 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .tabs { flex-wrap: wrap; }
 }
+
+
+/* ── Onboarding Overlay ──────────────────────────────────────────────────────*/
+#onboarding-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+#onboarding-content {
+  width: 100%;
+  max-width: 560px;
+}
+
+.ob-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+/* Progress bar */
+.ob-progress-bar {
+  height: 3px;
+  background: var(--border);
+}
+.ob-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+.ob-step-label {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--mono);
+  padding: 12px 24px 0;
+}
+
+/* Header */
+.ob-header { padding: 24px 24px 0; }
+.ob-icon { font-size: 32px; margin-bottom: 10px; }
+.ob-title { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.ob-sub { font-size: 13px; color: var(--sub); line-height: 1.6; }
+
+/* Body */
+.ob-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+
+/* Fields */
+.ob-field { display: flex; flex-direction: column; gap: 5px; }
+.ob-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ob-label { font-size: 12px; font-weight: 500; color: var(--text); }
+.ob-optional { font-weight: 400; color: var(--muted); }
+.ob-hint { font-size: 11px; color: var(--muted); }
+
+.ob-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: var(--sans);
+  color: var(--text);
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.ob-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+
+.ob-input-prefix-wrap { position: relative; }
+.ob-prefix {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.ob-input-prefix { padding-left: 22px; }
+
+/* Role search */
+.ob-search-wrap { position: relative; }
+.ob-suggestions {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  z-index: 200;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.ob-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.ob-suggestion:hover { background: var(--accent-light); }
+.ob-sug-title { font-size: 13px; color: var(--text); }
+.ob-sug-cat { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+/* Chips */
+.ob-chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+.ob-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid var(--blue-light);
+  border-radius: 20px;
+  padding: 3px 10px 3px 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.ob-chip-remove {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.6;
+}
+.ob-chip-remove:hover { opacity: 1; }
+
+/* Toggle group */
+.ob-toggle-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.ob-toggle {
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--sub);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ob-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.ob-toggle-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* Resume tabs */
+.ob-resume-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+.ob-res-tab {
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--sub);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.15s;
+}
+.ob-res-tab:hover { color: var(--text); }
+.ob-res-tab-active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.ob-textarea {
+  width: 100%;
+  min-height: 160px;
+  resize: vertical;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-family: var(--mono);
+  line-height: 1.6;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+}
+.ob-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+
+/* Drop zone */
+.ob-drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ob-drop-zone:hover, .ob-drop-over { border-color: var(--accent); background: var(--accent-light); }
+.ob-drop-icon { font-size: 28px; margin-bottom: 8px; }
+.ob-drop-label { font-size: 13px; color: var(--sub); margin-bottom: 4px; }
+.ob-drop-sub { font-size: 11px; color: var(--muted); }
+.ob-file-link { color: var(--accent); cursor: pointer; text-decoration: underline; }
+.ob-upload-msg, .ob-upload-success, .ob-upload-error {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 12px;
+}
+.ob-upload-msg { background: var(--yellow-light); color: #92400e; }
+.ob-upload-success { background: var(--green-light); color: #065f46; }
+.ob-upload-error { background: var(--red-light); color: #991b1b; }
+
+/* Review grid */
+.ob-review-grid { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.ob-review-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.ob-review-row:last-child { border-bottom: none; }
+.ob-review-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+.ob-review-value { font-size: 12px; color: var(--text); font-weight: 500; }
+
+/* Actions row */
+.ob-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
