@@ -1,72 +1,74 @@
+// api/job-action.js — lead triage actions, auth-gated
 const { createClient } = require('@supabase/supabase-js');
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+const { verifyUser } = require('./auth');
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const user = await verifyUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const token = req.headers.authorization.replace('Bearer ', '');
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
+    global: { headers: { Authorization: `Bearer ${token}` } }
+  });
 
   const { action, jobId, jobData, justification } = req.body;
 
   try {
     if (action === 'backlog') {
-      // Mark job as backlogged with justification
       const { error } = await supabase
         .from('jobs')
-        .update({ 
-          status: 'backlog', 
-          justification: justification || null,
-          updated_at: new Date() 
-        })
-        .eq('job_id', jobId);
-      
+        .update({ status: 'backlog', justification: justification || null, updated_at: new Date() })
+        .eq('job_id', jobId)
+        .eq('user_id', user.id);
       if (error) throw error;
-      return res.status(200).json({ success: true, message: 'Job moved to backlog' });
+      return res.status(200).json({ success: true });
     }
 
     if (action === 'dismiss') {
-      // Mark job as dismissed with justification
       const { error } = await supabase
         .from('jobs')
-        .update({ 
-          status: 'dismissed', 
-          justification: justification || null,
-          updated_at: new Date() 
-        })
-        .eq('job_id', jobId);
-      
+        .update({ status: 'dismissed', justification: justification || null, updated_at: new Date() })
+        .eq('job_id', jobId)
+        .eq('user_id', user.id);
       if (error) throw error;
-      return res.status(200).json({ success: true, message: 'Job dismissed' });
+      return res.status(200).json({ success: true });
     }
 
     if (action === 'add_to_pipeline') {
-      // Add to applications table
+      // Write job_id and apply_url into applications now that schema supports it
       const { error: insertError } = await supabase.from('applications').insert({
-        company: jobData.company,
-        role: jobData.title,
-        status: 'Researching',
-        date_applied: null,
-        source: 'Scraper',
-        notes: `Base: ${jobData.salary} | Est OTE: $${Math.round(jobData.estimated_ote / 1000)}K\n${jobData.apply_url}`,
+        user_id:    user.id,
+        company:    jobData.company,
+        role:       jobData.title,
+        status:     'Researching',
+        source:     'Scraper',
+        job_id:     jobId,
+        apply_url:  jobData.apply_url,
+        notes:      `Base: ${jobData.salary} | Est OTE: $${Math.round((jobData.estimated_ote || 0) / 1000)}K`,
         created_at: new Date()
       });
-
       if (insertError) throw insertError;
 
-      // Mark job as dismissed (remove from scraper feed)
+      // Remove from leads feed
       const { error: updateError } = await supabase
         .from('jobs')
         .update({ status: 'dismissed', updated_at: new Date() })
-        .eq('job_id', jobId);
-
+        .eq('job_id', jobId)
+        .eq('user_id', user.id);
       if (updateError) throw updateError;
 
-      return res.status(200).json({ success: true, message: 'Added to pipeline' });
+      return res.status(200).json({ success: true });
     }
 
     return res.status(400).json({ error: 'Invalid action' });
-  } catch (error) {
-    console.error('[job-action]', error);
-    return res.status(500).json({ error: error.message });
+  } catch (err) {
+    console.error('[job-action]', err);
+    return res.status(500).json({ error: err.message });
   }
 };
