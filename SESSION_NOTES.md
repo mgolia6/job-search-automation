@@ -147,3 +147,10 @@ Use the `Gmail scan from` date above: `after:2026/05/29 (recruiter OR interview 
 - AE identity is singular on LinkedIn/cold apps — ops openness only via warm intro
 - Challenge don't validate — flag risks before executing
 - Token expires ~Aug 26, 2026 — remind Matthew to regenerate around Aug 16
+
+## 🎨 BRAND COPY — SCRATCH PAD
+- **Current tagline (placeholder):** "Your search. Charted."
+- **Candidate tagline:** "Let the search for your next career be epic in all the right ways"
+- **Logo direction:** B1 — compass rose (4-point star, N point accented, dashed orbit ring)
+- **Spinner:** Compass rose oscillation (needle-seeking animation)
+- Logo also doubles as loading spinner — brand coherence intentional
