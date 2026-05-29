@@ -113,7 +113,7 @@ function renderAuthForm(mode) {
         '<input id="auth-name" class="auth-input" type="text" placeholder="Full name" />'
       ) +
       '<input id="auth-email" class="auth-input" type="email" placeholder="Email address" />' +
-      '<input id="auth-password" class="auth-input" type="password" placeholder="Password (min 8 characters)" />' +
+      '<input id="auth-password" class="auth-input" type="password" placeholder="' + (isLogin ? 'Password' : 'Create a password (min 8 chars)') + '" />' +
       '<button class="btn btn-primary auth-btn" onclick="' + (isLogin ? 'doLogin' : 'doSignup') + '(this)">' +
         (isLogin ? 'Sign In' : 'Create Account') +
       '</button>' +
