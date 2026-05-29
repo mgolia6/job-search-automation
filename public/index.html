@@ -6,27 +6,66 @@
 <title>Job Odyssey</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 </head>
 <body>
 
 <header>
   <div class="logo">
-    <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
-      <polygon points="16,2 19,12 16,14 13,12" fill="#185FA5"/>
-      <polygon points="16,30 19,20 16,18 13,20" fill="#85B7EB"/>
-      <polygon points="2,16 12,13 14,16 12,19" fill="#85B7EB"/>
-      <polygon points="30,16 20,13 18,16 20,19" fill="#85B7EB"/>
-      <circle cx="16" cy="16" r="2.5" fill="#185FA5"/>
-      <circle cx="16" cy="16" r="13" fill="none" stroke="#185FA5" stroke-width="0.75" stroke-dasharray="2 6" opacity="0.4"/>
+    <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="16,2 19,12 16,14 13,12" fill="#e8b84b"/>
+      <polygon points="16,30 19,20 16,18 13,20" fill="#4a6080"/>
+      <polygon points="2,16 12,13 14,16 12,19" fill="#4a6080"/>
+      <polygon points="30,16 20,13 18,16 20,19" fill="#4a6080"/>
+      <circle cx="16" cy="16" r="2.5" fill="#e8b84b"/>
+      <circle cx="16" cy="16" r="13" fill="none" stroke="#e8b84b" stroke-width="0.75" stroke-dasharray="2 6" opacity="0.35"/>
     </svg>
-    <div>
-      <div class="logo-name">Job Odyssey</div>
-      <div class="logo-sub">Your search. Charted.</div>
-    </div>
   </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('pipeline', this)">
+      <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
+      Pipeline
+    </button>
+    <button class="tab" onclick="switchTab('scraper', this)">
+      <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
+      Leads
+    </button>
+    <button class="tab" onclick="switchTab('ats', this)">
+      <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+      ATS Engine
+    </button>
+  </div>
+
   <div class="header-actions">
+    <button class="profile-avatar-btn" id="profile-avatar-btn" onclick="toggleProfileDropdown()" aria-label="Profile">
+      <i class="ti ti-user" style="font-size:15px"></i>
+    </button>
   </div>
 </header>
+
+<!-- Profile dropdown -->
+<div class="profile-dropdown" id="profile-dropdown">
+  <div class="pd-head">
+    <div class="pd-avatar" id="pd-avatar">
+      <i class="ti ti-user"></i>
+    </div>
+    <div class="pd-name" id="pd-name">—</div>
+    <div class="pd-sub" id="pd-sub">Job Odyssey</div>
+  </div>
+  <div class="pd-body">
+    <div class="pd-item" onclick="switchTab('profile', null); toggleProfileDropdown()">
+      <i class="ti ti-user-circle"></i> Edit profile
+    </div>
+    <div class="pd-item" onclick="switchTab('profile', null); toggleProfileDropdown()">
+      <i class="ti ti-file-text"></i> My resume
+    </div>
+    <hr class="pd-divider">
+    <div class="pd-item signout" onclick="signOut()">
+      <i class="ti ti-logout"></i> Sign out
+    </div>
+  </div>
+</div>
 
 
 <div id="auth-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:1000;align-items:center;justify-content:center;font-family:inherit">
@@ -71,18 +110,8 @@
     </div>
   </div>
 
-  <!-- Gmail Scan -->
-  <div id="pane-gmail" style="display:none">
-    <div class="scan-panel">
-      <div class="scan-panel-title">Scan Gmail for recruiter updates</div>
-      <div class="scan-panel-sub">Searches your inbox for replies, rejections, interview requests, and status changes since your last session.</div>
-      <button class="btn btn-primary" id="gmail-scan-btn" onclick="runGmailScan(this)">Scan Inbox</button>
-      <div class="scan-results" id="scan-results"></div>
-    </div>
-    <div style="color:var(--muted);font-size:12px;padding:4px 0">
-      Any status changes can be applied to your pipeline from the Pipeline tab.
-    </div>
-  </div>
+  <!-- Gmail Scan — hidden until rework -->
+  <div id="pane-gmail" style="display:none"></div>
 
   <!-- ATS Engine -->
   <div id="pane-ats" style="display:none">
@@ -178,6 +207,8 @@
     </div>
   </div>
 
+  <!-- Profile -->
+  <div id="pane-profile" style="display:none"></div>
 </main>
 
 <!-- Edit Modal -->
@@ -220,6 +251,7 @@
 <script src="/js/auth.js"></script>
 <script src="/js/onboarding.js"></script>
 <script src="/js/app.js"></script>
+<script src="/js/profile.js"></script>
 <script src="/js/pipeline.js"></script>
 <script src="/js/opportunities.js"></script>
 <script src="/js/gmail.js"></script>
