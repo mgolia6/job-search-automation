@@ -10,7 +10,12 @@ module.exports = async function handler(req, res) {
   if (!action || !jd) return res.status(400).json({ error: 'action and jd required' });
 
   const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-  const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
+
+  // JWT for ats-match-scoring.p.rapidapi.com (stored as env var)
+  const ATS_JWT = process.env.ATS_SCORING_JWT ||
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTc3NzI0MDM2MzY2MCwidXNlciI6ImlkLTE3MTMzODgxMDIwMDAiLCJ0aW1lIjoxNzc3MjQwNDYyNzMzLCJpYXQiOjE3NzcyNDA0NjJ9.mkLU7gZspO3G2nitY_rd4_NtApoh9AO_0BWJ4uYzF1A';
+  const ATS_RAPIDAPI_KEY = process.env.RAPIDAPI_KEY ||
+    'fc5506e25bmsh683a2461cf98c6fp135b99jsnd8b39b27f377';
 
   const callClaude = async (system, userMsg, tools) => {
     const body = {
@@ -38,49 +43,64 @@ module.exports = async function handler(req, res) {
   };
 
   try {
-    // ── RapidAPI literal ATS score (15/day — use sparingly) ──────────────────
+    // ── RapidAPI literal ATS score (ats-match-scoring) ────────────────────────
     if (action === 'rapidapi') {
-      if (!RAPIDAPI_KEY) return res.status(500).json({ error: 'RAPIDAPI_KEY not set' });
       if (!resume) return res.status(400).json({ error: 'resume required' });
 
-      // Send as URL-encoded form fields
-      const formBody = new URLSearchParams();
-      formBody.append('resume', resume.slice(0, 5000));
-      if (jd && jd !== 'n/a') formBody.append('job_description', jd.slice(0, 3000));
-
-      const r = await fetch('https://resume-ats-analyzer.p.rapidapi.com/api/analyze', {
+      const r = await fetch('https://ats-match-scoring.p.rapidapi.com/', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-RapidAPI-Key': RAPIDAPI_KEY,
-          'X-RapidAPI-Host': 'resume-ats-analyzer.p.rapidapi.com'
+          'Authorization': `Bearer ${ATS_JWT}`,
+          'Content-Type': 'application/json',
+          'x-rapidapi-host': 'ats-match-scoring.p.rapidapi.com',
+          'x-rapidapi-key': ATS_RAPIDAPI_KEY
         },
-        body: formBody.toString()
+        body: JSON.stringify({
+          data: {
+            'Resume Data': resume.slice(0, 6000),
+            'Job Offer Data': jd.slice(0, 4000),
+            'Response Language': 'English'
+          }
+        })
       });
 
       if (!r.ok) {
         const err = await r.text();
-        throw new Error(`RapidAPI ATS ${r.status}: ${err}`);
+        throw new Error(`ATS Scoring API ${r.status}: ${err.slice(0, 300)}`);
       }
 
       const data = await r.json();
-      // Normalize response — field names vary by version
-      const result = {
-        score: data.score ?? data.match_score ?? data.compatibility_score ?? data.ats_score ?? null,
-        missing_keywords: data.missing_keywords ?? data.keywords_missing ?? data.missingKeywords ?? [],
-        matched_keywords: data.matched_keywords ?? data.keywords_matched ?? data.matchedKeywords ?? [],
-        suggestions: data.suggestions ?? data.recommendations ?? [],
-        formatting_issues: data.formatting_issues ?? data.formattingIssues ?? [],
-        raw: data
-      };
-      return res.status(200).json({ ok: true, result });
+      console.log('[ats-match-scoring] raw response keys:', Object.keys(data));
+
+      // Normalize — the API returns various field names; flatten to our standard shape
+      const score = data.score ?? data.match_score ?? data.compatibility_score
+        ?? data.ats_score ?? data['Match Score'] ?? data['ATS Score'] ?? null;
+
+      const missingKw = data.missing_keywords ?? data['Missing Keywords']
+        ?? data.missingKeywords ?? data.keywords_missing ?? [];
+
+      const matchedKw = data.matched_keywords ?? data['Matched Keywords']
+        ?? data.matchedKeywords ?? data.keywords_matched ?? [];
+
+      const suggestions = data.suggestions ?? data['Suggestions']
+        ?? data.recommendations ?? data['Recommendations'] ?? [];
+
+      return res.status(200).json({
+        ok: true,
+        result: {
+          score: typeof score === 'number' ? Math.round(score) : score,
+          missing_keywords: Array.isArray(missingKw) ? missingKw : [],
+          matched_keywords: Array.isArray(matchedKw) ? matchedKw : [],
+          suggestions: Array.isArray(suggestions) ? suggestions : [],
+          raw: data
+        }
+      });
     }
 
     if (!ANTHROPIC_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set' });
 
     // ── Claude semantic score ─────────────────────────────────────────────────
     if (action === 'score') {
-      // Trim to stay under rate limits (30K TPM)
       const jdTrimmed = jd.slice(0, 3000);
       const resumeTrimmed = resume.slice(0, 4000);
       const data = await callClaude(
