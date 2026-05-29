@@ -297,31 +297,75 @@ async function runRapidAPICheck(btn) {
     if (!data.ok) throw new Error(data.error || 'RapidAPI check failed');
     var r = data.result;
 
-    var scoreColor = r.score >= 70 ? 'var(--green)' : r.score >= 50 ? 'var(--yellow)' : 'var(--red)';
-    var scoreBg    = r.score >= 70 ? 'var(--green-light)' : r.score >= 50 ? 'var(--yellow-light)' : 'var(--red-light)';
+    var scoreColor = !r.score ? 'var(--muted)' : r.score >= 70 ? 'var(--green)' : r.score >= 50 ? 'var(--yellow)' : 'var(--red)';
+    var scoreBg    = !r.score ? 'var(--surface)' : r.score >= 70 ? 'var(--green-light)' : r.score >= 50 ? 'var(--yellow-light)' : 'var(--red-light)';
 
-    var html = '<div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">';
-    if (r.score !== null) {
-      html += '<div style="background:' + scoreBg + ';color:' + scoreColor + ';border-radius:8px;padding:10px 20px;font-size:24px;font-weight:700">' + r.score + '%</div>'
-        + '<div style="font-size:12px;color:var(--sub)">Literal keyword match<br><span style="color:var(--muted);font-size:11px">Simulates Workday / Greenhouse / Lever parsers</span></div>';
+    var html = '<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">';
+    if (r.score !== null && r.score !== undefined) {
+      html += '<div style="background:' + scoreBg + ';color:' + scoreColor + ';border-radius:8px;padding:10px 24px;font-size:28px;font-weight:700">' + r.score + '%</div>';
+      html += '<div style="font-size:12px;color:var(--sub)">';
+      // Match breakdown sub-scores
+      if (r.match_breakdown) {
+        Object.entries(r.match_breakdown).forEach(function(e) {
+          var label = e[0].replace(/_/g,' ');
+          var val = e[1];
+          var c = val >= 70 ? 'var(--green)' : val >= 50 ? 'var(--yellow)' : 'var(--red)';
+          html += '<span style="margin-right:10px"><span style="color:' + c + ';font-weight:600">' + val + '%</span> ' + label + '</span>';
+        });
+      }
+      html += '</div>';
     } else {
-      html += '<div style="font-size:12px;color:var(--muted)">Score not returned by API</div>';
+      html += '<div style="font-size:12px;color:var(--muted)">Score not returned</div>';
     }
     html += '</div>';
 
+    // Strengths
+    if (r.strengths && r.strengths.length) {
+      html += '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Strengths</div>';
+      html += r.strengths.map(function(s) { return '<div style="font-size:12px;color:var(--sub);padding:4px 0;border-bottom:1px solid var(--border)">✓ ' + s + '</div>'; }).join('') + '</div>';
+    }
+
+    // Weaknesses
+    if (r.weaknesses && r.weaknesses.length) {
+      html += '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--yellow);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Weaknesses</div>';
+      html += r.weaknesses.map(function(s) { return '<div style="font-size:12px;color:var(--sub);padding:4px 0;border-bottom:1px solid var(--border)">⚠ ' + s + '</div>'; }).join('') + '</div>';
+    }
+
+    // Missing keywords
     if (r.missing_keywords && r.missing_keywords.length) {
-      html += '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--red);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Missing Keywords (' + r.missing_keywords.length + ')</div>';
-      html += '<div style="display:flex;flex-wrap:wrap;gap:4px">' + r.missing_keywords.map(function (k) { return '<span class="ats-gap-tag missing-hard">✗ ' + k + '</span>'; }).join('') + '</div></div>';
+      html += '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--red);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Missing Keywords (' + r.missing_keywords.length + ')</div>';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:4px">' + r.missing_keywords.map(function(k) { return '<span class="ats-gap-tag missing-hard">✗ ' + k + '</span>'; }).join('') + '</div></div>';
     }
 
-    if (r.matched_keywords && r.matched_keywords.length) {
-      html += '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Matched Keywords (' + r.matched_keywords.length + ')</div>';
-      html += '<div style="display:flex;flex-wrap:wrap;gap:4px">' + r.matched_keywords.map(function (k) { return '<span class="ats-gap-tag matched">✓ ' + k + '</span>'; }).join('') + '</div></div>';
+    // Gaps
+    if (r.gaps && r.gaps.length) {
+      html += '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--sub);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Gaps</div>';
+      html += r.gaps.map(function(g) { return '<div style="font-size:12px;color:var(--sub);padding:4px 0;border-bottom:1px solid var(--border)">→ ' + g + '</div>'; }).join('') + '</div>';
     }
 
+    // Improvement suggestions
     if (r.suggestions && r.suggestions.length) {
-      html += '<div><div style="font-size:11px;font-weight:600;color:var(--sub);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Suggestions</div>';
-      html += r.suggestions.map(function (s) { return '<div style="font-size:11px;color:var(--sub);padding:3px 0;border-bottom:1px solid var(--border)">→ ' + s + '</div>'; }).join('') + '</div>';
+      html += '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--sub);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Improvement Suggestions</div>';
+      html += r.suggestions.map(function(s) { return '<div style="font-size:12px;color:var(--sub);padding:4px 0;border-bottom:1px solid var(--border)">→ ' + s + '</div>'; }).join('') + '</div>';
+    }
+
+    // ATS-optimized rewrites
+    if (r.rewrites && r.rewrites.length) {
+      html += '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">ATS-Optimized Rewrites</div>';
+      html += r.rewrites.map(function(rw) {
+        return '<div style="margin-bottom:10px;padding:10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">'
+          + '<div style="font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Original</div>'
+          + '<div style="font-size:12px;color:var(--sub);margin-bottom:8px;line-height:1.5">' + rw.original + '</div>'
+          + '<div style="font-size:11px;color:var(--green);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Optimized</div>'
+          + '<div style="font-size:12px;color:var(--text);line-height:1.5;font-weight:500">' + rw.optimized + '</div>'
+          + '</div>';
+      }).join('') + '</div>';
+    }
+
+    // Overall feedback
+    if (r.overall_feedback) {
+      html += '<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Overall Feedback</div>'
+        + '<div style="font-size:12px;color:var(--sub);line-height:1.6">' + r.overall_feedback + '</div></div>';
     }
 
     document.getElementById('ats-rapidapi-content').innerHTML = html;
@@ -340,3 +384,4 @@ function switchScoreTab(tab, btn) {
   document.querySelectorAll('.ats-score-tab').forEach(function (b) { b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
 }
+
