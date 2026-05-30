@@ -80,7 +80,7 @@ function renderScraper() {
     + oppTab('unknown',   'Unknown (' + tierUnknown.length + ')',  SCRAPER_FILTER === 'unknown')
     + '<div class="tab-divider"></div>'
     + oppTab('backlog',   'Backlog (' + backlogJobs.length + ')',  SCRAPER_FILTER === 'backlog')
-    + oppTab('dismissed', 'Dismissed',                             SCRAPER_FILTER === 'dismissed')
+    + oppTab('dismissed', 'Dismissed (' + dismissedJobs.length + ')', SCRAPER_FILTER === 'dismissed')
     + '</div>';
 
   // ATS History panel trigger
@@ -238,6 +238,7 @@ function toggleJD(jobId) {
 }
 
 function fetchAndStoreJD(job) {
+  console.log('[JD fetch] url:', job.apply_url, 'token:', !!window.SESSION_TOKEN);
   fetch('/api/ats-scan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SESSION_TOKEN },
@@ -245,6 +246,7 @@ function fetchAndStoreJD(job) {
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
+    console.log('[JD fetch] result:', data.ok, 'length:', data.text && data.text.length);
     if (!data.ok || !data.text || data.text.length < 100) {
       job.full_description = job.description || 'Could not fetch job description.';
     } else {
@@ -707,3 +709,4 @@ function selectATSRun(id) {
   ATS_SELECTED_RUN = ATS_RUNS.find(function(r) { return r.id === id; }) || null;
   renderATSPanel();
 }
+
