@@ -35,8 +35,13 @@ module.exports = async function handler(req, res) {
     const remoteOnly = profile.remote_preference === 'remote';
 
     // Build title filter from profile — OR join with pipe
-    const titles = (profile.target_titles || ['Enterprise Account Executive', 'Strategic Account Executive'])
-      .map(t => `'${t.toLowerCase()}'`)
+    const rawTitles = profile.target_titles && profile.target_titles.length
+      ? profile.target_titles
+      : ['Enterprise Account Executive', 'Strategic Account Executive'];
+    // Capitalize each title for API matching, join with OR pipe
+    const titles = rawTitles
+      .map(t => t.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '))
+      .map(t => `'${t}'`)
       .join(' | ');
 
     console.log(`[scraper-v2] profile loaded — minBase: $${minBase}, remote: ${remoteOnly}, titles: ${titles}`);
