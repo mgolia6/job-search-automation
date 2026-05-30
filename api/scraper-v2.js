@@ -40,10 +40,11 @@ module.exports = async function handler(req, res) {
       ? profile.target_titles
       : ['Enterprise Account Executive', 'Strategic Account Executive'];
     // Capitalize each title for API matching, join with OR pipe
+    // advanced_title_filter uses OR syntax: "Title One" OR "Title Two"
     const titles = rawTitles
       .map(t => t.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '))
-      .map(t => `'${t}'`)
-      .join(' | ');
+      .map(t => `"${t}"`)
+      .join(' OR ');
 
     console.log(`[scraper-v2] profile loaded — minBase: $${minBase}, remote: ${remoteOnly}, titles: ${titles}`);
 
@@ -81,7 +82,7 @@ module.exports = async function handler(req, res) {
 
 async function fetchJobs(titleFilter) {
   const url = new URL('https://active-jobs-db.p.rapidapi.com/active-ats-24h');
-  url.searchParams.append('title_filter', titleFilter);
+  url.searchParams.append('advanced_title_filter', titleFilter);
   url.searchParams.append('location_filter', '"United States"');
   url.searchParams.append('description_type', 'text');
 
@@ -248,5 +249,6 @@ async function sendSummaryEmail(jobs, emailTo) {
   if (!res.ok) console.error('[email] error:', JSON.stringify(data));
   else console.log(`[email] sent — ${jobs.length} leads`);
 }
+
 
 
