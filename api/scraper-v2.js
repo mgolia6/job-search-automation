@@ -40,11 +40,9 @@ module.exports = async function handler(req, res) {
       ? profile.target_titles
       : ['Enterprise Account Executive', 'Strategic Account Executive'];
     // Capitalize each title for API matching, join with OR pipe
-    // advanced_title_filter uses OR syntax: "Title One" OR "Title Two"
-    const titles = rawTitles
-      .map(t => t.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '))
-      .map(t => `"${t}"`)
-      .join(' OR ');
+    // title_filter: plain text, first title only (API does keyword match, not exact)
+    const titles = rawTitles[0]
+      .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 
     console.log(`[scraper-v2] profile loaded — minBase: $${minBase}, remote: ${remoteOnly}, titles: ${titles}`);
 
@@ -82,7 +80,7 @@ module.exports = async function handler(req, res) {
 
 async function fetchJobs(titleFilter) {
   const url = new URL('https://active-jobs-db.p.rapidapi.com/active-ats-24h');
-  url.searchParams.append('advanced_title_filter', titleFilter);
+  url.searchParams.append('title_filter', titleFilter);
   url.searchParams.append('location_filter', '"United States"');
   url.searchParams.append('description_type', 'text');
 
@@ -119,8 +117,7 @@ function normalizeJob(j, minBase, remoteOnly) {
   const countries = j.countries_derived || [];
   if (countries.length > 0 && !countries.includes('United States')) return null;
 
-  // Remote filter — only applied if user wants remote only
-  if (remoteOnly && j.remote_derived === false) return null;
+  // Don't hard-filter on remote — too few 24h postings. Tag it and let user filter in UI.
 
   // Title match against AE keywords (broad catch — titles come from profile but API filter isn't exact)
   const titleLower = title.toLowerCase();
@@ -249,6 +246,7 @@ async function sendSummaryEmail(jobs, emailTo) {
   if (!res.ok) console.error('[email] error:', JSON.stringify(data));
   else console.log(`[email] sent — ${jobs.length} leads`);
 }
+
 
 
 
