@@ -3,6 +3,37 @@ var SCRAPER_FILTER = 'all';
 var expandedJD = {};
 var SCRAPER_SORT = 'ote';
 var expandedRecon = {};
+var FIT_RESULTS = {}; // jobId → { score, gaps, matched, verdict, jdText, jdSource }
+
+// ── Compass Overlay Spinner ───────────────────────────────────────────────────
+function showCompassSpinner(msg) {
+  if (document.getElementById('compass-overlay')) return;
+  var overlay = document.createElement('div');
+  overlay.id = 'compass-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,28,0.82);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(2px);';
+  overlay.innerHTML = '<svg width="72" height="72" viewBox="0 0 72 72" style="animation:compassSpin 1.1s linear infinite;">'
+    + '<circle cx="36" cy="36" r="32" fill="none" stroke="rgba(245,158,11,0.18)" stroke-width="2"/>'
+    + '<circle cx="36" cy="36" r="32" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="50 150" stroke-linecap="round"/>'
+    + '<polygon points="36,8 39,34 36,38 33,34" fill="#f59e0b"/>'
+    + '<polygon points="36,64 33,38 36,34 39,38" fill="rgba(245,158,11,0.35)"/>'
+    + '<polygon points="8,36 34,33 38,36 34,39" fill="rgba(245,158,11,0.35)"/>'
+    + '<polygon points="64,36 38,39 34,36 38,33" fill="rgba(245,158,11,0.35)"/>'
+    + '<circle cx="36" cy="36" r="3" fill="#f59e0b"/>'
+    + '</svg>'
+    + '<div style="color:#94a3b8;font-size:0.9em;margin-top:16px;letter-spacing:0.04em;">' + (msg || 'Analyzing fit...') + '</div>';
+  if (!document.getElementById('compass-spin-style')) {
+    var style = document.createElement('style');
+    style.id = 'compass-spin-style';
+    style.textContent = '@keyframes compassSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+    document.head.appendChild(style);
+  }
+  document.body.appendChild(overlay);
+}
+
+function hideCompassSpinner() {
+  var overlay = document.getElementById('compass-overlay');
+  if (overlay) overlay.remove();
+}
 
 // ── Render ────────────────────────────────────────────────────────────────────
 function renderScraper() {
@@ -189,14 +220,51 @@ function renderJobCard(j) {
       + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + jobId + '\', \'add_to_pipeline\', ' + jobJson + ')">Add to Pipeline</button>'
       + (!isBacklog ? '<button class="action-btn action-backlog" onclick="promptJobAction(event, \'' + jobId + '\', \'backlog\')">Backlog</button>' : '')
       + '<button class="action-btn action-dismiss" onclick="promptJobAction(event, \'' + jobId + '\', \'dismiss\')">Not a Fit</button>'
-      + '<button class="action-btn action-ats" onclick="scoreWithATS(event, \'' + jobId + '\')">'
-        + (j.ats_score ? '✓ ' + j.ats_score + '%' : 'Score → ATS')
+      + '<span style="position:relative;display:inline-flex;align-items:center;gap:4px;">'
+      + '<button class="action-btn action-ats" onclick="runFitCheck(event, \'' + jobId + '\')">'
+        + (j.fit_result ? '✓ ' + j.fit_result.score + '% Fit' : 'AI Fit Check')
         + '</button>'
+      + '<span class="fit-info-icon" title="" onclick="toggleFitTooltip(event, \'' + jobId + '\')" style="cursor:pointer;color:#64748b;font-size:0.82em;user-select:none;" aria-label="What is AI Fit Check?">ⓘ</span>'
+      + '<span id="fit-tip-' + jobId + '" style="display:none;position:absolute;bottom:calc(100% + 6px);left:0;width:240px;background:#1e293b;border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:10px 12px;font-size:0.78em;color:#cbd5e1;line-height:1.5;z-index:500;box-shadow:0 4px 16px rgba(0,0,0,0.4);">AI Fit Check gives a quick signal on role alignment based on your profile. It is not a keyword ATS scan — use <strong style=\"color:#f59e0b;\">Analyze &amp; Tailor</strong> for full keyword analysis and resume tailoring.</span>'
+      + '</span>'
       + (j.apply_url ? '<a href="' + j.apply_url + '" target="_blank" class="action-btn action-apply">Apply →</a>' : '')
       + '</div>';
   } else {
     card += '<div class="job-card-actions" style="margin-top:12px;">'
       + '<a href="' + (j.apply_url || '#') + '" target="_blank" class="action-btn action-apply">View Posting →</a>'
+      + '</div>';
+  }
+
+  // Inline fit result (expands below action buttons)
+  var fitRes = FIT_RESULTS[j.job_id];
+  if (fitRes) {
+    var fitColor = fitRes.score >= 70 ? '#22c55e' : fitRes.score >= 50 ? '#f59e0b' : '#ef4444';
+    var verdictLabel = fitRes.verdict ? (' <span style="color:#94a3b8;font-size:0.82em;">— ' + fitRes.verdict + '</span>') : '';
+    card += '<div style="margin-top:12px;padding:14px 16px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.07);">'
+      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+      + '<span style="font-size:1.4em;font-weight:700;color:' + fitColor + ';">' + fitRes.score + '%</span>'
+      + '<span style="font-size:0.82em;font-weight:600;color:' + fitColor + ';">AI Fit Score</span>'
+      + verdictLabel
+      + (fitRes.jdSource === 'snippet' ? '<span style="font-size:0.75em;color:#f59e0b;margin-left:auto;">⚠ snippet JD</span>' : '<span style="font-size:0.75em;color:#64748b;margin-left:auto;">✓ full JD</span>')
+      + '</div>'
+      + (fitRes.experienceGap ? '<div style="font-size:0.82em;color:#94a3b8;margin-bottom:8px;line-height:1.4;">' + fitRes.experienceGap + '</div>' : '')
+      + (fitRes.gaps && fitRes.gaps.length ? '<div style="margin-bottom:8px;">'
+          + '<div style="font-size:0.75em;font-weight:600;color:#f59e0b;margin-bottom:4px;letter-spacing:0.04em;">GAPS TO ADDRESS</div>'
+          + fitRes.gaps.slice(0, 6).map(function(g) {
+              return '<span style="display:inline-block;background:rgba(239,68,68,0.12);color:#fca5a5;padding:2px 8px;border-radius:4px;font-size:0.78em;margin:2px;">' + g + '</span>';
+            }).join('')
+          + '</div>' : '')
+      + (fitRes.matched && fitRes.matched.length ? '<div style="margin-bottom:10px;">'
+          + '<div style="font-size:0.75em;font-weight:600;color:#22c55e;margin-bottom:4px;letter-spacing:0.04em;">MATCHED</div>'
+          + fitRes.matched.slice(0, 6).map(function(m) {
+              return '<span style="display:inline-block;background:rgba(34,197,94,0.1);color:#86efac;padding:2px 8px;border-radius:4px;font-size:0.78em;margin:2px;">' + m + '</span>';
+            }).join('')
+          + '</div>' : '')
+      + '<button onclick="sendToATSEngine(\'' + j.job_id + '\')" style="'
+          + 'background:linear-gradient(135deg,#f59e0b,#d97706);color:#0a0f1e;border:none;border-radius:6px;'
+          + 'padding:8px 16px;font-size:0.82em;font-weight:700;cursor:pointer;letter-spacing:0.02em;width:100%;">'
+          + '✦ Analyze &amp; Tailor Resume →'
+          + '</button>'
       + '</div>';
   }
 
@@ -458,58 +526,94 @@ function renderFilterSummary() {
 
 
 
-// ── ATS Score helper (shared by scoreWithATS and cached path) ─────────────
-function doScoreWithJD(jdResult, job, resume, btn, forcedSource) {
-  var jdText, jdSource;
-  if (jdResult.ok && jdResult.text && jdResult.text.length > 100) {
-    jdText = jdResult.text;
-    jdSource = forcedSource || 'full';
-  } else {
-    jdText = job.description || '';
-    jdSource = 'snippet';
+// ── Fit Check tooltip toggle ─────────────────────────────────────────────────
+function toggleFitTooltip(e, jobId) {
+  e.stopPropagation();
+  var tip = document.getElementById('fit-tip-' + jobId);
+  if (!tip) return;
+  tip.style.display = tip.style.display === 'none' ? 'block' : 'none';
+  // Close on outside click
+  if (tip.style.display === 'block') {
+    setTimeout(function() {
+      document.addEventListener('click', function closeTip() {
+        tip.style.display = 'none';
+        document.removeEventListener('click', closeTip);
+      });
+    }, 10);
   }
+}
 
-  if (!jdText || jdText.length < 20) {
-    btn.textContent = 'No JD available';
-    btn.disabled = false;
-    return Promise.resolve();
-  }
+// ── Fit Check — runs AI match, shows inline result, stores to ats_runs ────────
+function runFitCheck(e, jobId) {
+  e.stopPropagation();
+  var job = JOBS.find(function(j) { return j.job_id === jobId; });
+  if (!job) return;
 
-  btn.textContent = 'Scoring...';
+  var resume = window.USER_PROFILE && window.USER_PROFILE.resume_text;
+  if (!resume) { showToast('Upload your resume in Profile first.'); return; }
 
-  return fetch('/api/ats-scan', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SESSION_TOKEN },
-    body: JSON.stringify({ action: 'score', jd: jdText, resume: resume, company: job.company, role: job.title })
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    if (!data.ok || !data.result) throw new Error(data.error || 'Score failed');
-    var score = data.result.overall_score || data.result.score;
-    var missing = data.result.missing_hard || data.result.missing_keywords || [];
+  showCompassSpinner('Checking fit...');
 
-    return fetch(window.SUPABASE_URL + '/rest/v1/jobs?job_id=eq.' + encodeURIComponent(job.job_id), {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': window.SUPABASE_ANON_KEY,
-        'Authorization': 'Bearer ' + window.SESSION_TOKEN,
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({
-        ats_score: score,
-        ats_missing_keywords: missing,
-        ats_analyzed_at: new Date().toISOString(),
-        ats_jd_source: jdSource
-      })
+  var applyUrl = job.apply_url || '';
+  var jdPromise;
+
+  // Use stored full JD if available, else fetch it, else fall back to snippet
+  if (job.full_description && job.full_description.length > 100) {
+    jdPromise = Promise.resolve({ ok: true, text: job.full_description, source: 'full' });
+  } else if (applyUrl) {
+    jdPromise = fetch('/api/ats-scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SESSION_TOKEN },
+      body: JSON.stringify({ action: 'fetch_jd', jd: '', url: applyUrl })
     })
-    .then(function() {
-      job.ats_score = score;
-      job.ats_missing_keywords = missing;
-      job.ats_jd_source = jdSource;
-      // Store run to ats_runs history
-      fetch(window.SUPABASE_URL + '/rest/v1/ats_runs', {
-        method: 'POST',
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.ok && res.text && res.text.length > 100) {
+        return { ok: true, text: res.text, source: 'full' };
+      }
+      return { ok: true, text: job.description || '', source: 'snippet' };
+    })
+    .catch(function() { return { ok: true, text: job.description || '', source: 'snippet' }; });
+  } else {
+    jdPromise = Promise.resolve({ ok: true, text: job.description || '', source: 'snippet' });
+  }
+
+  jdPromise.then(function(jdRes) {
+    var jdText = jdRes.text || '';
+    var jdSource = jdRes.source || 'snippet';
+
+    if (!jdText || jdText.length < 20) {
+      hideCompassSpinner();
+      showToast('No job description available for this role.');
+      return;
+    }
+
+    return fetch('/api/ats-scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SESSION_TOKEN },
+      body: JSON.stringify({ action: 'score', jd: jdText, resume: resume, company: job.company, role: job.title })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      hideCompassSpinner();
+      if (!data.ok || !data.result) throw new Error(data.error || 'Fit check failed');
+
+      var result = data.result;
+      var score = result.overall_score || result.score || 0;
+      var gaps = result.missing_hard || result.missing_keywords || [];
+      var matched = result.matched_keywords || [];
+      var verdict = result.verdict || '';
+
+      // Store in local state for inline render
+      FIT_RESULTS[job.job_id] = {
+        score: score, gaps: gaps, matched: matched,
+        verdict: verdict, jdText: jdText, jdSource: jdSource,
+        experienceGap: result.experience_gap || ''
+      };
+
+      // Also store to jobs row and ats_runs
+      fetch(window.SUPABASE_URL + '/rest/v1/jobs?job_id=eq.' + encodeURIComponent(job.job_id), {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'apikey': window.SUPABASE_ANON_KEY,
@@ -517,63 +621,84 @@ function doScoreWithJD(jdResult, job, resume, btn, forcedSource) {
           'Prefer': 'return=minimal'
         },
         body: JSON.stringify({
-          user_id: window.SESSION_USER && window.SESSION_USER.id,
-          job_id: job.job_id,
-          company: job.company,
-          role: job.title,
-          score: score,
-          jd_source: jdSource,
-          missing_keywords: missing,
-          result: data.result
+          ats_score: score,
+          ats_missing_keywords: gaps,
+          ats_analyzed_at: new Date().toISOString(),
+          ats_jd_source: jdSource
         })
-      }).catch(function() {});
+      });
+
+      if (window.SESSION_USER && window.SESSION_USER.id) {
+        fetch(window.SUPABASE_URL + '/rest/v1/ats_runs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': window.SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + window.SESSION_TOKEN,
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            user_id: window.SESSION_USER.id,
+            job_id: job.job_id,
+            company: job.company,
+            role: job.title,
+            score: score,
+            jd_source: jdSource,
+            missing_keywords: gaps,
+            result: result
+          })
+        })
+        .then(function(r) {
+          if (!r.ok) r.text().then(function(t) { console.error('[ats_runs insert]', r.status, t); });
+        })
+        .catch(function(err) { console.error('[ats_runs insert]', err); });
+      } else {
+        console.warn('[ats_runs] SESSION_USER not set — run not saved');
+      }
+
       renderScraper();
     });
+  })
+  .catch(function(err) {
+    hideCompassSpinner();
+    console.error('[runFitCheck]', err);
+    showToast('Fit check failed: ' + err.message);
   });
 }
 
-
-// ── ATS Scoring from Lead Card ─────────────────────────────────────────────
-function scoreWithATS(e, jobId) {
-  e.stopPropagation();
+// ── Send job to ATS Engine tab (pre-populate + run) ───────────────────────────
+function sendToATSEngine(jobId) {
   var job = JOBS.find(function(j) { return j.job_id === jobId; });
   if (!job) return;
 
-  var resume = window.USER_PROFILE && window.USER_PROFILE.resume_text;
-  if (!resume) { alert('Upload your resume in Profile first.'); return; }
+  var fitRes = FIT_RESULTS[jobId];
+  var jdText = (fitRes && fitRes.jdText) || job.full_description || job.description || '';
 
-  var btn = e.target;
-  btn.textContent = 'Fetching JD...';
-  btn.disabled = true;
+  if (!jdText) { showToast('No job description available — open the JD first.'); return; }
 
-  var applyUrl = job.apply_url || '';
+  // Switch to ATS tab
+  var atsTab = document.querySelector('.tab[onclick*="ats"]');
+  if (atsTab) switchTab('ats', atsTab);
 
-  // If we already have the full JD stored, use it directly
-  if (job.full_description && job.full_description.length > 100) {
-    btn.textContent = 'Scoring...';
-    // Skip fetch_jd, go straight to scoring
-    Promise.resolve({ ok: true, text: job.full_description })
-      .then(function(jdResult) {
-        return doScoreWithJD(jdResult, job, resume, btn, 'full');
-      });
-    return;
+  // Pre-populate ATS fields
+  var jdEl      = document.getElementById('ats-jd');
+  var companyEl = document.getElementById('ats-company');
+  var roleEl    = document.getElementById('ats-role');
+
+  if (jdEl)      jdEl.value = jdText;
+  if (companyEl) companyEl.value = job.company || '';
+  if (roleEl)    roleEl.value = job.title || '';
+
+  // Sync atsState
+  if (window.atsState !== undefined) {
+    window.atsState = { jd: jdText, company: job.company || '', role: job.title || '', masterResume: '', tailored: '', scoreData: null };
   }
 
-  // Step 1: try to fetch full JD from ATS URL
-  fetch('/api/ats-scan', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SESSION_TOKEN },
-    body: JSON.stringify({ action: 'fetch_jd', jd: '', url: applyUrl })
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(jdResult) {
-    return doScoreWithJD(jdResult, job, resume, btn, null);
-  })
-  .catch(function(err) {
-    console.error('[scoreWithATS]', err);
-    btn.textContent = 'Score failed';
-    btn.disabled = false;
-  });
+  // Small delay so tab renders before running
+  setTimeout(function() {
+    if (typeof runATSAnalysis === 'function') runATSAnalysis();
+    else showToast('ATS Engine loaded — click Analyze to run.');
+  }, 150);
 }
 
 
@@ -600,7 +725,8 @@ function closeATSPanel() {
 }
 
 function loadATSRuns() {
-  fetch(window.SUPABASE_URL + '/rest/v1/ats_runs?order=created_at.desc&limit=30', {
+  var uid = window.SESSION_USER && window.SESSION_USER.id;
+  fetch(window.SUPABASE_URL + '/rest/v1/ats_runs?user_id=eq.' + (uid || 'none') + '&order=created_at.desc&limit=30', {
     headers: {
       'apikey': window.SUPABASE_ANON_KEY,
       'Authorization': 'Bearer ' + window.SESSION_TOKEN
@@ -626,7 +752,7 @@ function renderATSPanel() {
   };
 
   var listHTML = ATS_RUNS.length === 0
-    ? '<div style="color:#94a3b8;padding:24px;text-align:center;">No ATS runs yet.<br>Click Score → ATS on any lead.</div>'
+    ? '<div style="color:#94a3b8;padding:24px;text-align:center;">No fit checks yet.<br>Click <strong>AI Fit Check</strong> on any lead.</div>'
     : ATS_RUNS.map(function(run) {
         var isSelected = ATS_SELECTED_RUN && ATS_SELECTED_RUN.id === run.id;
         return '<div onclick="selectATSRun(\'' + run.id + '\')" style="'
@@ -693,7 +819,7 @@ function renderATSPanel() {
 
     // Header
     + '<div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">'
-    + '<div style="font-weight:700;font-size:1em;">ATS Run History</div>'
+    + '<div style="font-weight:700;font-size:1em;">Fit Check History</div>'
     + '<button onclick="closeATSPanel()" style="background:none;border:none;color:#94a3b8;font-size:1.2em;cursor:pointer;padding:4px;">✕</button>'
     + '</div>'
 
@@ -723,5 +849,6 @@ function selectATSRun(id) {
   ATS_SELECTED_RUN = ATS_RUNS.find(function(r) { return r.id === id; }) || null;
   renderATSPanel();
 }
+
 
 
