@@ -1466,3 +1466,16 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 /* ── Tab icon sizing fix ─────────────────────────────────────────────────── */
 .tab-icon { display: flex; align-items: center; }
 .tab-icon svg { flex-shrink: 0; }
+
+/* ── Profile badge ───────────────────────────────────────────────────────── */
+.prof-badge-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--green);
+  background: var(--green-light);
+  padding: 3px 9px;
+  border-radius: 12px;
+}
