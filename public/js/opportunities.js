@@ -116,7 +116,7 @@ function renderScraper() {
 
   // ATS History panel trigger
   html += '<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">'
-    + '<button onclick="openATSPanel()" style="'
+    + '<button style="display:none" style="'
     + 'background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);'
     + 'color:#f59e0b;padding:6px 14px;border-radius:6px;font-size:0.82em;cursor:pointer;">'
     + '📋 ATS History</button>'
@@ -154,11 +154,8 @@ function setScraperSort(s) { SCRAPER_SORT = s; renderScraper(); }
 // ── Job Card ──────────────────────────────────────────────────────────────────
 function getTierBadge(ote) {
   if (!ote) return '<span class="tier-badge tier-unknown">OTE unlisted</span>';
-  if (ote >= 300000) return '<span class="tier-badge tier-high">$300K+ OTE</span>';
-  if (ote >= 250000) return '<span class="tier-badge tier-med">$250K–$300K OTE</span>';
-  if (ote >= 200000) return '<span class="tier-badge tier-low">$200K–$250K OTE</span>';
-  if (ote >= 150000) return '<span class="tier-badge tier-low">$150K–$200K OTE</span>';
-  return '<span class="tier-badge tier-unknown">Sub-$150K OTE</span>';
+  var k = Math.round(ote / 1000);
+  return '<span class="tier-badge tier-ote">$' + k + 'K OTE</span>';
 }
 
 function renderJobCard(j) {
@@ -692,9 +689,27 @@ function sendToATSEngine(jobId) {
   if (companyEl) companyEl.value = job.company || '';
   if (roleEl)    roleEl.value = job.title || '';
 
-  // Sync atsState
+  // Sync atsState — pass scoreData from fit check so ATS tab skips re-score
   if (window.atsState !== undefined) {
-    window.atsState = { jd: jdText, company: job.company || '', role: job.title || '', masterResume: '', tailored: '', scoreData: null };
+    var existingResume = window.atsState.masterResume || '';
+    window.atsState = {
+      jd: jdText,
+      scoredJD: fitRes ? jdText : '',
+      company: job.company || '',
+      role: job.title || '',
+      masterResume: existingResume,
+      tailored: '',
+      scoreData: fitRes ? {
+        overall_score: fitRes.score,
+        hard_skill_score: null,
+        soft_skill_score: null,
+        verbatim_score: null,
+        missing_hard: fitRes.gaps || [],
+        matched_keywords: fitRes.matched || [],
+        verdict: fitRes.verdict,
+        experience_gap: fitRes.experienceGap || ''
+      } : null
+    };
   }
 
   // Small delay so tab renders before running
