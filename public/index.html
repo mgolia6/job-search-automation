@@ -198,25 +198,70 @@
 <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-title" id="modal-title">Edit Application</div>
-    <div class="form-group">
-      <label class="form-label">Status</label>
-      <select id="modal-status" class="form-control">
-        <option>Applied</option>
-        <option>Screening</option>
-        <option>Interviewing</option>
-        <option>Offer</option>
-        <option>Closed — Rejected</option>
-        <option>Closed — Role Filled</option>
-        <option>Closed — Auto-Reject</option>
-        <option>Closed — Position Closed</option>
-        <option>Closed — No Response</option>
-        <option>Closed — Pass</option>
-      </select>
+
+    <!-- Row 1: Status + Date Applied -->
+    <div class="modal-row-2">
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select id="modal-status" class="form-control">
+          <option>Researching</option>
+          <option>Applied</option>
+          <option>Screening</option>
+          <option>Interviewing</option>
+          <option>Offer</option>
+          <option>Closed — Rejected</option>
+          <option>Closed — Role Filled</option>
+          <option>Closed — Auto-Reject</option>
+          <option>Closed — Position Closed</option>
+          <option>Closed — No Response</option>
+          <option>Closed — Pass</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date Applied</label>
+        <input type="date" id="modal-date-applied" class="form-control"/>
+      </div>
     </div>
+
+    <!-- Row 2: Resume version + CL version -->
+    <div class="modal-row-2">
+      <div class="form-group">
+        <label class="form-label">Resume Version</label>
+        <input type="text" id="modal-resume" class="form-control" placeholder="e.g. Dataiku_SAE_053025"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cover Letter Version</label>
+        <input type="text" id="modal-cl" class="form-control" placeholder="e.g. Dataiku_CL_v1"/>
+      </div>
+    </div>
+
+    <!-- Row 3: Recruiter + Warm Contact -->
+    <div class="modal-row-2">
+      <div class="form-group">
+        <label class="form-label">Recruiter</label>
+        <input type="text" id="modal-recruiter" class="form-control" placeholder="Name / email"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Warm Contact</label>
+        <input type="text" id="modal-warm" class="form-control" placeholder="Referral name"/>
+      </div>
+    </div>
+
+    <!-- Row 4: Salary Range -->
+    <div class="form-group">
+      <label class="form-label">Salary Range</label>
+      <input type="text" id="modal-salary" class="form-control" placeholder="e.g. $130K base / $260K OTE"/>
+    </div>
+
+    <!-- Row 5: Notes -->
     <div class="form-group">
       <label class="form-label">Notes</label>
-      <textarea id="modal-notes" class="form-control" placeholder="Recruiter name, next steps, feedback..."></textarea>
+      <textarea id="modal-notes" class="form-control" rows="3" placeholder="Next steps, feedback, interview prep..."></textarea>
     </div>
+
+    <!-- Meta: date added + ATS score (read-only) -->
+    <div id="modal-meta" style="display:flex;gap:16px;font-size:11px;color:var(--sub);margin-bottom:16px;flex-wrap:wrap;"></div>
+
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveModal()">Save</button>
