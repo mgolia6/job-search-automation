@@ -48,6 +48,7 @@ function checkOnboarding() {
         showOnboarding();
       } else {
         window.USER_PROFILE = d.profile;
+        if (typeof updateProfileDropdown === 'function') updateProfileDropdown(d.profile);
         loadData();
       }
     });
