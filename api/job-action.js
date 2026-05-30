@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
     if (action === 'backlog') {
       const { error } = await supabase
         .from('jobs')
-        .update({ status: 'backlog', justification: justification || null, updated_at: new Date() })
+        .update({ status: 'backlog', justification: justification || null, updated_at: new Date().toISOString() })
         .eq('job_id', jobId)
         .eq('user_id', user.id);
       if (error) throw error;
@@ -33,7 +33,7 @@ module.exports = async function handler(req, res) {
     if (action === 'dismiss') {
       const { error } = await supabase
         .from('jobs')
-        .update({ status: 'dismissed', justification: justification || null, updated_at: new Date() })
+        .update({ status: 'dismissed', justification: justification || null, updated_at: new Date().toISOString() })
         .eq('job_id', jobId)
         .eq('user_id', user.id);
       if (error) throw error;
@@ -51,14 +51,14 @@ module.exports = async function handler(req, res) {
         job_id:     jobId,
         apply_url:  jobData.apply_url,
         notes:      `Base: ${jobData.salary} | Est OTE: $${Math.round((jobData.estimated_ote || 0) / 1000)}K`,
-        created_at: new Date()
+        created_at: new Date().toISOString()
       });
       if (insertError) throw insertError;
 
       // Remove from leads feed
       const { error: updateError } = await supabase
         .from('jobs')
-        .update({ status: 'dismissed', updated_at: new Date() })
+        .update({ status: 'dismissed', updated_at: new Date().toISOString() })
         .eq('job_id', jobId)
         .eq('user_id', user.id);
       if (updateError) throw updateError;
@@ -72,3 +72,4 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 };
+
