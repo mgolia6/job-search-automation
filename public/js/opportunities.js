@@ -274,38 +274,43 @@ function renderJobCard(j) {
     };
   }
   if (fitRes) {
-    var fitColor = fitRes.score >= 70 ? '#22c55e' : fitRes.score >= 50 ? '#f59e0b' : '#ef4444';
-    var verdictLabel = fitRes.verdict ? (' <span style="color:#94a3b8;font-size:0.82em;">— ' + fitRes.verdict + '</span>') : '';
-    card += '<div style="margin-top:12px;padding:14px 16px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.07);">'
-      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
-      + '<span style="font-size:1.4em;font-weight:700;color:' + fitColor + ';">' + fitRes.score + '%</span>'
-      + '<span style="font-size:0.82em;font-weight:600;color:' + fitColor + ';">AI Fit Score</span>'
-      + verdictLabel
-      + (fitRes.isAutoScore ? '<span style="font-size:0.75em;color:#94a3b8;margin-left:auto;">auto-scored</span>'
-        : fitRes.jdSource === 'snippet' ? '<span style="font-size:0.75em;color:#f59e0b;margin-left:auto;">&#9888; snippet JD</span>'
-        : '<span style="font-size:0.75em;color:#64748b;margin-left:auto;">&#10003; full JD</span>')
+    var fitColor = fitRes.score >= 75 ? '#22c55e' : fitRes.score >= 50 ? '#f59e0b' : '#ef4444';
+    var verdictLabel = fitRes.verdict ? (' — ' + fitRes.verdict) : '';
+    var fitDetailId = 'fit-detail-' + j.job_id;
+    var sourceLabel = fitRes.isAutoScore ? 'auto-scored'
+      : fitRes.jdSource === 'snippet' ? '&#9888; snippet'
+      : '&#10003; full JD';
+
+    card += '<div style="margin-top:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">'
+      + '<div onclick="toggleFitDetail(\'' + j.job_id + '\')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.03);cursor:pointer;">'
+      + '<span style="font-size:1.15em;font-weight:700;color:' + fitColor + ';">' + fitRes.score + '%</span>'
+      + '<span style="font-size:0.78em;font-weight:600;color:' + fitColor + ';">AI Fit</span>'
+      + '<span style="font-size:0.78em;color:#94a3b8;">' + verdictLabel + '</span>'
+      + '<span style="font-size:0.72em;color:#64748b;margin-left:auto;">' + sourceLabel + '</span>'
+      + '<span id="fit-chevron-' + j.job_id + '" style="color:#64748b;font-size:10px;margin-left:6px;transition:transform 0.2s;">&#9660;</span>'
       + '</div>'
+      + '<div id="' + fitDetailId + '" style="display:none;padding:12px 14px;border-top:1px solid rgba(255,255,255,0.06);">'
       + (fitRes.experienceGap ? '<div style="font-size:0.82em;color:#94a3b8;margin-bottom:8px;line-height:1.4;">' + fitRes.experienceGap + '</div>' : '')
       + (fitRes.gaps && fitRes.gaps.length ? '<div style="margin-bottom:8px;">'
-          + '<div style="font-size:0.75em;font-weight:600;color:#f59e0b;margin-bottom:4px;letter-spacing:0.04em;">GAPS TO ADDRESS</div>'
+          + '<div style="font-size:0.72em;font-weight:600;color:#f59e0b;margin-bottom:4px;letter-spacing:0.04em;">GAPS</div>'
           + fitRes.gaps.slice(0, 6).map(function(g) {
-              return '<span style="display:inline-block;background:rgba(239,68,68,0.12);color:#fca5a5;padding:2px 8px;border-radius:4px;font-size:0.78em;margin:2px;">' + g + '</span>';
+              return '<span style="display:inline-block;background:rgba(239,68,68,0.12);color:#fca5a5;padding:2px 8px;border-radius:4px;font-size:0.76em;margin:2px;">' + g + '</span>';
             }).join('')
           + '</div>' : '')
       + (fitRes.matched && fitRes.matched.length ? '<div style="margin-bottom:10px;">'
-          + '<div style="font-size:0.75em;font-weight:600;color:#22c55e;margin-bottom:4px;letter-spacing:0.04em;">MATCHED</div>'
+          + '<div style="font-size:0.72em;font-weight:600;color:#22c55e;margin-bottom:4px;letter-spacing:0.04em;">MATCHED</div>'
           + fitRes.matched.slice(0, 6).map(function(m) {
-              return '<span style="display:inline-block;background:rgba(34,197,94,0.1);color:#86efac;padding:2px 8px;border-radius:4px;font-size:0.78em;margin:2px;">' + m + '</span>';
+              return '<span style="display:inline-block;background:rgba(34,197,94,0.1);color:#86efac;padding:2px 8px;border-radius:4px;font-size:0.76em;margin:2px;">' + m + '</span>';
             }).join('')
           + '</div>' : '')
       + '<button onclick="sendToATSEngine(\'' + j.job_id + '\')" style="'
           + 'background:linear-gradient(135deg,#f59e0b,#d97706);color:#0a0f1e;border:none;border-radius:6px;'
           + 'padding:8px 16px;font-size:0.82em;font-weight:700;cursor:pointer;letter-spacing:0.02em;width:100%;">'
-          + '✦ Analyze &amp; Tailor Resume →'
+          + '✶ Analyze &amp; Tailor Resume →'
           + '</button>'
+      + '</div>'
       + '</div>';
   }
-
   return card + '</div>';
 }
 
@@ -561,6 +566,26 @@ function renderFilterSummary() {
 }
 
 
+
+// ── Fit detail expand/collapse ────────────────────────────────────────────────
+function toggleFitDetail(jobId) {
+  var detail = document.getElementById('fit-detail-' + jobId);
+  var chevron = document.getElementById('fit-chevron-' + jobId);
+  if (!detail) return;
+  var isOpen = detail.style.display !== 'none';
+  detail.style.display = isOpen ? 'none' : 'block';
+  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+// ── Leads sticky filter toggle ────────────────────────────────────────────────
+function toggleLeadsFilter() {
+  var body = document.getElementById('leads-filter-body');
+  var chevron = document.getElementById('leads-filter-chevron');
+  if (!body) return;
+  var isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
 
 // ── Fit Check tooltip toggle ─────────────────────────────────────────────────
 function toggleFitTooltip(e, jobId) {
@@ -923,5 +948,6 @@ function toggleFilterInfo(e) {
     }, 10);
   }
 }
+
 
 
