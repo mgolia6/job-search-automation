@@ -18,16 +18,6 @@ module.exports = async function handler(req, res) {
   const { action, jobId, jobData, justification } = req.body;
 
   try {
-    if (action === 'backlog') {
-      const { error } = await supabase
-        .from('jobs')
-        .update({ status: 'backlog', justification: justification || null, updated_at: new Date().toISOString() })
-        .eq('job_id', jobId)
-        .eq('user_id', user.id);
-      if (error) throw error;
-      return res.status(200).json({ success: true });
-    }
-
     if (action === 'dismiss') {
       const { error } = await supabase
         .from('jobs')
@@ -39,7 +29,6 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'add_to_pipeline') {
-      // Write job_id and apply_url into applications now that schema supports it
       const { error: insertError } = await supabase.from('applications').insert({
         user_id:    user.id,
         company:    jobData.company,
@@ -53,7 +42,6 @@ module.exports = async function handler(req, res) {
       });
       if (insertError) throw insertError;
 
-      // Remove from leads feed
       const { error: updateError } = await supabase
         .from('jobs')
         .update({ status: 'added', updated_at: new Date().toISOString() })
@@ -69,5 +57,3 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 };
-
-
