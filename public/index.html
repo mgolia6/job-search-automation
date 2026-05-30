@@ -80,7 +80,13 @@
         <div style="font-size:15px;font-weight:600">Leads</div>
         <div style="font-size:12px;color:var(--sub);margin-top:2px">New roles from automated scraper — review and add to pipeline</div>
       </div>
-      <button class="btn btn-primary" onclick="triggerScraper(this)">Run Now</button>
+      <button class="btn btn-primary" onclick="triggerScraper(this)" id="scraper-run-btn">
+        <i class="ti ti-sparkles" style="font-size:13px"></i> Generate Leads
+      </button>
+    </div>
+    <div id="scraper-filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--muted)">
+      <i class="ti ti-filter" style="color:var(--amber);font-size:14px"></i>
+      <span id="scraper-filter-summary">Loading filters...</span>
     </div>
     <div class="kpi-grid" id="scraper-kpis"></div>
     <div id="scraper-content">
