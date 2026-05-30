@@ -116,9 +116,11 @@ function normalizeJob(j) {
   if (!aeMatch) return null;
 
   const location = j.location?.display_name || 'United States';
-  const baseSalary = j.salary_max ? Math.floor(j.salary_max) : j.salary_min ? Math.floor(j.salary_min) : null;
-  const salaryDisplay = baseSalary
-    ? `$${Math.round((j.salary_min || baseSalary) / 1000)}K–$${Math.round(baseSalary / 1000)}K`
+  // Adzuna posts OTE range for AE roles: salary_min=base, salary_max=OTE
+  const estimatedOTE = j.salary_max ? Math.floor(j.salary_max) : null;
+  const baseSalary   = j.salary_min ? Math.floor(j.salary_min) : (estimatedOTE ? Math.floor(estimatedOTE * 0.5) : null);
+  const salaryDisplay = estimatedOTE
+    ? `$${Math.round((j.salary_min || 0) / 1000)}K–$${Math.round(estimatedOTE / 1000)}K OTE`
     : 'Not listed';
 
   return {
@@ -130,7 +132,7 @@ function normalizeJob(j) {
     remote: titleLower.includes('remote') || location.toLowerCase().includes('remote'),
     salary: salaryDisplay,
     baseSalary,
-    estimatedOTE: baseSalary ? Math.round(baseSalary * 2) : null,
+    estimatedOTE: estimatedOTE,
     applyUrl: url,
     postedDate: j.created ? new Date(j.created).toISOString() : new Date().toISOString(),
     description: (j.description || '').slice(0, 500)
@@ -180,5 +182,6 @@ async function storeJobs(jobs, userId) {
   })));
   if (error) throw new Error('[store] insert failed: ' + error.message);
 }
+
 
 
