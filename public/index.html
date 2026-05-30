@@ -37,35 +37,30 @@
     </button>
   </div>
 
-  <div class="header-actions">
+  <div class="header-actions" style="position:relative">
     <button class="profile-avatar-btn" id="profile-avatar-btn" onclick="toggleProfileDropdown(event)" aria-label="Profile">
       <i class="ti ti-user" style="font-size:15px"></i>
     </button>
+    <div class="profile-dropdown" id="profile-dropdown">
+      <div class="pd-head">
+        <div class="pd-avatar" id="pd-avatar">
+          <i class="ti ti-user"></i>
+        </div>
+        <div class="pd-name" id="pd-name">—</div>
+        <div class="pd-sub" id="pd-sub">Job Odyssey</div>
+      </div>
+      <div class="pd-body">
+        <div class="pd-item" onclick="switchTab('profile', null); toggleProfileDropdown(event)">
+          <i class="ti ti-user-circle"></i> Profile &amp; settings
+        </div>
+        <hr class="pd-divider">
+        <div class="pd-item signout" onclick="signOut()">
+          <i class="ti ti-logout"></i> Sign out
+        </div>
+      </div>
+    </div>
   </div>
 </header>
-
-<!-- Profile dropdown -->
-<div class="profile-dropdown" id="profile-dropdown">
-  <div class="pd-head">
-    <div class="pd-avatar" id="pd-avatar">
-      <i class="ti ti-user"></i>
-    </div>
-    <div class="pd-name" id="pd-name">—</div>
-    <div class="pd-sub" id="pd-sub">Job Odyssey</div>
-  </div>
-  <div class="pd-body">
-    <div class="pd-item" onclick="switchTab('profile', null); toggleProfileDropdown()">
-      <i class="ti ti-user-circle"></i> Edit profile
-    </div>
-    <div class="pd-item" onclick="switchTab('profile', null); toggleProfileDropdown()">
-      <i class="ti ti-file-text"></i> My resume
-    </div>
-    <hr class="pd-divider">
-    <div class="pd-item signout" onclick="signOut()">
-      <i class="ti ti-logout"></i> Sign out
-    </div>
-  </div>
-</div>
 
 
 <div id="auth-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:1000;align-items:center;justify-content:center;font-family:inherit">
