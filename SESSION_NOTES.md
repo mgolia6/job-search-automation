@@ -238,3 +238,39 @@ If missing, that's the whole problem.
 
 ### Gmail scan from next session
 after:2026/05/30 (recruiter OR interview OR application OR rejection OR screening)
+
+
+---
+## SESSION UPDATE — 2026/05/30 (session 2)
+
+### Gmail scan from next session
+after:2026/05/30 (recruiter OR interview OR application OR rejection OR screening)
+
+### What was fixed this session
+- **Root cause 1 — RLS blocking scraper:** `SUPABASE_KEY` was anon key, so server-side profile query returned 0 rows. Fixed by adding `SUPABASE_SERVICE_KEY` (service role) to Vercel env vars and updating scraper to use it.
+- **Root cause 2 — Date objects:** `posted_date` and `scraped_at` were passing raw JS Date objects to Supabase insert → "cannot coerce object to single json packet". Fixed with `.toISOString()`.
+- **Root cause 3 — Wrong title filter param:** Was using `title_filter` with pipe/OR syntax that doesn't work on that param. Confirmed via RapidAPI console that `title_filter` takes plain text. Switched to `advanced_title_filter` with single-quote pipe syntax: `'Enterprise Account Executive' | 'Strategic Account Executive'`.
+- **Root cause 4 — Hard remote filter:** `remoteOnly: true` was dropping all jobs where `remote_derived === false`. Too aggressive for 24h window. Removed hard filter — remote is now a tag, not a gate.
+- **Profile titles updated in Supabase:** `["Enterprise Account Executive", "Strategic Account Executive", "Senior Account Executive"]`
+- **RapidAPI quota hit 100%** from test calls this session — resets tomorrow.
+
+### Scraper current state
+- `advanced_title_filter` with `'Enterprise Account Executive' | 'Strategic Account Executive' | 'Senior Account Executive'`
+- No hard remote filter — jobs tagged remote/not-remote but all pass through
+- Service role key in use — RLS bypassed for server-side queries
+- **NOT YET CONFIRMED WORKING** — quota exhausted before final test
+
+### Next session priorities (in order)
+1. **[IMMEDIATE] Test scraper** — quota resets, hit Generate Leads, confirm `raw > 0`
+2. If `raw: 0` still → fall back to plain `title_filter: Account Executive` (confirmed working in RapidAPI console)
+3. If `advanced_title_filter` works → keep it, update profile titles via UI
+4. Resume dissection view — keyword highlights, strengths/gaps
+5. Leads → ATS one-click flow
+6. Profile skills refresh trigger for existing users
+
+### Standing rules (do not forget)
+- ALWAYS syntax check JS before pushing: `node --check /tmp/file.js`
+- ALWAYS fetch live deployed file to verify push landed
+- ALWAYS get fresh SHA before PUT to GitHub
+- Model string for Claude API calls: `claude-sonnet-4-6`
+- RapidAPI quota: 25 req/month, resets monthly — be conservative with test calls
