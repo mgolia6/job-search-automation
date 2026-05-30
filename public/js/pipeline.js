@@ -52,7 +52,7 @@ function renderPipeline() {
 
   // Table
   html += '<div class="table-wrap"><table>'
-    + '<thead><tr><th class="col-num">#</th><th class="col-co">Company</th><th class="col-role hide-mobile">Role</th><th class="col-status">Status</th><th class="col-date hide-mobile">Applied</th><th class="col-sal hide-mobile">Salary</th><th class="col-warm hide-mobile">Contact</th><th class="col-edit"></th></tr></thead>'
+    + '<thead><tr><th class="col-src hide-mobile">Source</th><th class="col-co">Company</th><th class="col-role hide-mobile">Role</th><th class="col-status">Status</th><th class="col-date hide-mobile">Applied</th><th class="col-sal hide-mobile">Salary</th><th class="col-warm hide-mobile">Contact</th><th class="col-edit"></th></tr></thead>'
     + '<tbody id="app-tbody"></tbody></table></div>';
 
   document.getElementById('pane-pipeline').innerHTML = html;
@@ -108,7 +108,7 @@ function renderRows() {
     var escaped = JSON.stringify(a).replace(/'/g, "\\'");
 
     html += '<tr class="app-row' + (isExpanded ? ' expanded' : '') + '" onclick="toggleRow(\'' + rowId + '\')" style="cursor:pointer">'
-      + '<td class="num-cell">' + (a.app_number || '—') + '</td>'
+      + '<td class="col-src hide-mobile"><span class="src-badge src-' + (a.source || 'manual').toLowerCase().replace(/[^a-z]/g,'') + '">' + (a.source || 'Manual') + '</span></td>'
       + '<td class="col-co"><div class="co-name">' + (a.company || '') + '</div><div class="co-sub-mobile">' + (a.role || '') + (a.salary_range ? ' · ' + a.salary_range : '') + '</div></td>'
       + '<td class="role-cell hide-mobile">' + (a.role || '') + '</td>'
       + '<td>' + badge(a.status) + '</td>'
@@ -132,6 +132,9 @@ function renderRows() {
       }
       if (a.recruiter) {
         html += '<div class="notes-section"><span class="notes-label">Recruiter:</span> ' + a.recruiter + '</div>';
+      }
+      if (a.source) {
+        html += '<div class="notes-section"><span class="notes-label">Source:</span> ' + a.source + '</div>';
       }
       html += '</div></td></tr>';
     }
