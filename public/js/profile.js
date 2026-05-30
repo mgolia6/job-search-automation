@@ -52,7 +52,7 @@ function buildProfileHTML(p) {
     + '<div class="prof-section-title"><i class="ti ti-address-book"></i> Contact</div>'
     + '<div class="prof-field-grid">'
     + profField('Email', 'email', p.email || '', 'email', 'you@email.com')
-    + profField('Phone', 'phone', p.phone || '', 'tel', '+1 (555) 000-0000')
+    + profFieldPhone('Phone', 'phone', p.phone || '')
     + profFieldZip('Zip code', 'zip_code', p.zip_code || '')
     + '</div>'
     + '</div>'
@@ -115,6 +115,14 @@ function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+function formatPhone(val) {
+  // Format raw digits to (xxx) xxx-xxxx
+  var d = String(val || '').replace(/\D/g, '');
+  if (d.length === 11 && d[0] === '1') d = d.slice(1);
+  if (d.length === 10) return '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
+  return val; // return as-is if not 10 digits
+}
+
 function profField(label, key, val, type, placeholder) {
   return '<div class="prof-field">'
     + '<label class="prof-label">' + label + '</label>'
@@ -149,12 +157,17 @@ function markDirty(key, val) {
 function handleProfilePhoto(input) {
   var file = input.files[0];
   if (!file) return;
+  if (file.size > 500000) { showToast('Photo too large — keep it under 500KB'); return; }
   var reader = new FileReader();
   reader.onload = function(e) {
+    var dataUrl = e.target.result;
     var display = document.getElementById('prof-photo-display');
-    if (display) display.innerHTML = '<img src="' + e.target.result + '" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
-    PROFILE_EDIT_DRAFT.photo_data = e.target.result;
+    if (display) display.innerHTML = '<img src="' + dataUrl + '" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    // Store data URL directly as photo_url
+    PROFILE_EDIT_DRAFT.photo_url = dataUrl;
     PROFILE_DIRTY = true;
+    // Auto-save photo immediately
+    saveProfile(function() { showToast('Photo saved'); });
   };
   reader.readAsDataURL(file);
 }
@@ -225,11 +238,15 @@ function saveProfile(cb) {
   var status = document.getElementById('prof-save-status');
   if (btn) { btn.disabled = true; btn.innerHTML = spinnerHTML(13) + ' Saving...'; }
 
-  var payload = Object.assign({}, PROFILE_EDIT_DRAFT, {
-    user_id:             window.SESSION_USER ? window.SESSION_USER.id : null,
-    onboarding_complete: true,
-    updated_at:          new Date()
+  // Build payload — omit empty arrays so API doesn't wipe existing skill data
+  var payload = { onboarding_complete: true };
+  Object.keys(PROFILE_EDIT_DRAFT).forEach(function(k) {
+    var v = PROFILE_EDIT_DRAFT[k];
+    // Skip empty arrays — don't overwrite existing DB data with nothing
+    if (Array.isArray(v) && v.length === 0) return;
+    payload[k] = v;
   });
+  payload.user_id = window.SESSION_USER ? window.SESSION_USER.id : null;
 
   var headers = { 'Authorization': 'Bearer ' + window.SESSION_TOKEN, 'Content-Type': 'application/json' };
   fetch('/api/profile', { method: 'POST', headers: headers, body: JSON.stringify(payload) })
