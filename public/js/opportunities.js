@@ -43,7 +43,7 @@ function renderScraper() {
   }
 
   if (!JOBS.length) {
-    el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--muted)">No jobs scraped yet. Hit ⚡ Run Now to find new roles.</div>';
+    el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--muted)">No jobs scraped yet. Hit Run Now to find new roles.</div>';
     return;
   }
 
