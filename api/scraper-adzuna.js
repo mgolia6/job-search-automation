@@ -116,7 +116,7 @@ function normalizeJob(j) {
   if (!aeMatch) return null;
 
   const location = j.location?.display_name || 'United States';
-  const baseSalary = j.salary_max || j.salary_min || null;
+  const baseSalary = j.salary_max ? Math.floor(j.salary_max) : j.salary_min ? Math.floor(j.salary_min) : null;
   const salaryDisplay = baseSalary
     ? `$${Math.round((j.salary_min || baseSalary) / 1000)}K–$${Math.round(baseSalary / 1000)}K`
     : 'Not listed';
@@ -180,4 +180,5 @@ async function storeJobs(jobs, userId) {
   })));
   if (error) throw new Error('[store] insert failed: ' + error.message);
 }
+
 
