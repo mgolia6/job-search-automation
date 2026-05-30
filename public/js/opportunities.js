@@ -1,5 +1,6 @@
 // ── Opportunities State ───────────────────────────────────────────────────────
 var SCRAPER_FILTER = 'all';
+var expandedJD = {};
 var SCRAPER_SORT = 'ote';
 var expandedRecon = {};
 
@@ -157,6 +158,11 @@ function renderJobCard(j) {
     + '</div>'
     + (isExpanded ? renderReconSection(j) : '');
 
+  // JD section — lazy fetch full description, collapsed by default
+  var jdId = 'jd-' + jobId;
+  var jdExpanded = expandedJD[jobId] || false;
+  card += '<div class="recon-toggle" onclick="toggleJD(\'' + jobId + '\')">'    + (jdExpanded ? '▼' : '▶') + ' Job Description'    + (j.full_description ? '' : ' <span style="color:#94a3b8;font-size:0.8em;">(fetching...)</span>')    + '</div>';  if (jdExpanded) {    if (j.full_description) {      card += '<div class="recon-section" id="' + jdId + '" style="white-space:pre-wrap;font-size:0.85em;color:#cbd5e1;max-height:400px;overflow-y:auto;">'        + j.full_description.slice(0, 5000)        + '</div>';    } else {      card += '<div class="recon-section" id="' + jdId + '"><div class="recon-loading">Loading job description...</div></div>';    }  }
+
   if (!isDismissed) {
     card += '<div class="job-card-actions">'
       + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + jobId + '\', \'add_to_pipeline\', ' + jobJson + ')">Add to Pipeline</button>'
@@ -211,6 +217,48 @@ function renderReconSection(j) {
 function toggleRecon(jobId) {
   expandedRecon[jobId] = !expandedRecon[jobId];
   renderScraper();
+}
+
+function toggleJD(jobId) {
+  expandedJD[jobId] = !expandedJD[jobId];
+  var job = JOBS.find(function(j) { return j.job_id === jobId; });
+  renderScraper();
+  // Lazy fetch full JD if not yet stored
+  if (expandedJD[jobId] && job && !job.full_description && job.apply_url) {
+    fetchAndStoreJD(job);
+  }
+}
+
+function fetchAndStoreJD(job) {
+  fetch('/api/ats-scan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SESSION_TOKEN },
+    body: JSON.stringify({ action: 'fetch_jd', jd: '', url: job.apply_url })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (!data.ok || !data.text || data.text.length < 100) {
+      job.full_description = job.description || 'Could not fetch job description.';
+    } else {
+      job.full_description = data.text;
+    }
+    // Store to Supabase
+    fetch(window.SUPABASE_URL + '/rest/v1/jobs?job_id=eq.' + encodeURIComponent(job.job_id), {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': window.SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + window.SESSION_TOKEN,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ full_description: job.full_description })
+    });
+    renderScraper();
+  })
+  .catch(function() {
+    job.full_description = job.description || 'Could not fetch job description.';
+    renderScraper();
+  });
 }
 
 function fetchReconData(jobId, company) {
@@ -386,6 +434,61 @@ function renderFilterSummary() {
 
 
 
+// ── ATS Score helper (shared by scoreWithATS and cached path) ─────────────
+function doScoreWithJD(jdResult, job, resume, btn, forcedSource) {
+  var jdText, jdSource;
+  if (jdResult.ok && jdResult.text && jdResult.text.length > 100) {
+    jdText = jdResult.text;
+    jdSource = forcedSource || 'full';
+  } else {
+    jdText = job.description || '';
+    jdSource = 'snippet';
+  }
+
+  if (!jdText || jdText.length < 20) {
+    btn.textContent = 'No JD available';
+    btn.disabled = false;
+    return Promise.resolve();
+  }
+
+  btn.textContent = 'Scoring...';
+
+  return fetch('/api/ats-scan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SESSION_TOKEN },
+    body: JSON.stringify({ action: 'score', jd: jdText, resume: resume, company: job.company, role: job.title })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (!data.ok || !data.result) throw new Error(data.error || 'Score failed');
+    var score = data.result.overall_score || data.result.score;
+    var missing = data.result.missing_hard || data.result.missing_keywords || [];
+
+    return fetch(window.SUPABASE_URL + '/rest/v1/jobs?job_id=eq.' + encodeURIComponent(job.job_id), {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': window.SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + window.SESSION_TOKEN,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        ats_score: score,
+        ats_missing_keywords: missing,
+        ats_analyzed_at: new Date().toISOString(),
+        ats_jd_source: jdSource
+      })
+    })
+    .then(function() {
+      job.ats_score = score;
+      job.ats_missing_keywords = missing;
+      job.ats_jd_source = jdSource;
+      renderScraper();
+    });
+  });
+}
+
+
 // ── ATS Scoring from Lead Card ─────────────────────────────────────────────
 function scoreWithATS(e, jobId) {
   e.stopPropagation();
@@ -401,6 +504,17 @@ function scoreWithATS(e, jobId) {
 
   var applyUrl = job.apply_url || '';
 
+  // If we already have the full JD stored, use it directly
+  if (job.full_description && job.full_description.length > 100) {
+    btn.textContent = 'Scoring...';
+    // Skip fetch_jd, go straight to scoring
+    Promise.resolve({ ok: true, text: job.full_description })
+      .then(function(jdResult) {
+        return doScoreWithJD(jdResult, job, resume, btn, 'full');
+      });
+    return;
+  }
+
   // Step 1: try to fetch full JD from ATS URL
   fetch('/api/ats-scan', {
     method: 'POST',
@@ -409,60 +523,7 @@ function scoreWithATS(e, jobId) {
   })
   .then(function(r) { return r.json(); })
   .then(function(jdResult) {
-    var jdText, jdSource;
-    if (jdResult.ok && jdResult.text && jdResult.text.length > 100) {
-      jdText = jdResult.text;
-      jdSource = 'full';
-    } else {
-      // Fall back to stored snippet
-      jdText = job.description || '';
-      jdSource = 'snippet';
-    }
-
-    if (!jdText || jdText.length < 20) {
-      btn.textContent = 'No JD available';
-      btn.disabled = false;
-      return;
-    }
-
-    btn.textContent = 'Scoring...';
-
-    // Step 2: score against resume
-    return fetch('/api/ats-scan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SESSION_TOKEN },
-      body: JSON.stringify({ action: 'score', jd: jdText, resume: resume, company: job.company, role: job.title })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (!data.ok || !data.result) throw new Error(data.error || 'Score failed');
-      var score = data.result.overall_score || data.result.score;
-      var missing = data.result.missing_hard || data.result.missing_keywords || [];
-
-      // Step 3: write back to Supabase jobs row
-      return fetch(window.SUPABASE_URL + '/rest/v1/jobs?job_id=eq.' + encodeURIComponent(jobId), {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': window.SUPABASE_ANON_KEY,
-          'Authorization': 'Bearer ' + window.SESSION_TOKEN,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          ats_score: score,
-          ats_missing_keywords: missing,
-          ats_analyzed_at: new Date().toISOString(),
-          ats_jd_source: jdSource
-        })
-      })
-      .then(function() {
-        // Update local job object and re-render
-        job.ats_score = score;
-        job.ats_missing_keywords = missing;
-        job.ats_jd_source = jdSource;
-        renderScraper();
-      });
-    });
+    return doScoreWithJD(jdResult, job, resume, btn, null);
   })
   .catch(function(err) {
     console.error('[scoreWithATS]', err);
@@ -470,4 +531,5 @@ function scoreWithATS(e, jobId) {
     btn.disabled = false;
   });
 }
+
 
