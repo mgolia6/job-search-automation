@@ -63,7 +63,7 @@ async function runATSAnalysis() {
 
   var btn = document.getElementById('ats-run-btn');
   btn.disabled = true;
-  btn.textContent = 'Analyzing...';
+  btn.innerHTML = spinnerHTML(14) + ' Analyzing...';
 
   atsState.jd = jd;
   atsState.company = company;
@@ -80,14 +80,26 @@ async function runATSAnalysis() {
   document.getElementById('ats-rewrite-status').textContent = '';
 
   try {
-    // Load master resume (cached after first fetch)
+    // Load resume from profile (cached after first fetch)
     if (!atsState.masterResume) {
-      var resumeResp = await fetch('/api/resume');
-      if (!resumeResp.ok && resumeResp.status !== 304) throw new Error('Resume fetch failed: ' + resumeResp.status);
-      var resumeData = await resumeResp.json();
-      atsState.masterResume = (resumeData && resumeData[0]) ? resumeData[0].content : '';
+      // First check if already in USER_PROFILE
+      if (window.USER_PROFILE && window.USER_PROFILE.resume_text) {
+        atsState.masterResume = window.USER_PROFILE.resume_text;
+      } else {
+        var resumeResp = await fetch('/api/profile', { headers: getAuthHeaders() });
+        if (resumeResp.ok) {
+          var profileData = await resumeResp.json();
+          atsState.masterResume = profileData.profile ? profileData.profile.resume_text : '';
+          if (profileData.profile) window.USER_PROFILE = profileData.profile;
+        }
+      }
     }
-    if (!atsState.masterResume) throw new Error('Master resume is empty — check Supabase resume_master table');
+    if (!atsState.masterResume) {
+      document.getElementById('ats-scores').innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px">No resume found — upload your resume in your profile first.</div>';
+      btn.disabled = false;
+      btn.innerHTML = 'Analyze Fit';
+      return;
+    }
     document.getElementById('ats-master-pane').textContent = atsState.masterResume;
 
     // Sequential: score first, then RepVue (avoids rate limits)
