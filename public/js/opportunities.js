@@ -189,20 +189,19 @@ function renderReconSection(j) {
   var repvue    = j.recon_data.repvue || {};
   var glassdoor = j.recon_data.glassdoor || {};
 
+  var verdictColor = { green: '#22c55e', yellow: '#f59e0b', red: '#ef4444' }[repvue.verdict] || '#94a3b8';
+  var verdictDot = '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + verdictColor + ';margin-right:6px;"></span>';
+
   return '<div class="recon-section" id="' + reconId + '">'
-    + '<div class="recon-row"><strong>Gut Check:</strong> ' + (j.gut_check || 'No data yet') + '</div>'
-    + '<div class="recon-row"><strong>RepVue:</strong> '
-    + (repvue.available
-        ? (repvue.quotaAttainment ? repvue.quotaAttainment + '% quota attainment' : 'Rating: ' + repvue.rating + '/5')
-          + ' <a href="' + repvue.url + '" target="_blank" class="recon-link">→</a>'
-        : 'Not found')
+    + '<div class="recon-row">' + verdictDot + '<strong>' + (repvue.verdict || 'unknown').toUpperCase() + '</strong> — '
+    + (repvue.quotaAttainment ? repvue.quotaAttainment + '% quota attainment' : repvue.rating ? repvue.rating + '/5 rating' : 'limited data')
+    + ' <a href="' + repvue.url + '" target="_blank" class="recon-link">RepVue →</a>'
     + '</div>'
-    + '<div class="recon-row"><strong>Glassdoor:</strong> '
-    + (glassdoor.available
-        ? glassdoor.rating + '/5 <a href="' + glassdoor.url + '" target="_blank" class="recon-link">→</a>'
-        : '<button class="recon-btn" onclick="fetchGlassdoor(\'' + j.job_id + '\', \'' + j.company + '\')">Check Now</button>')
+    + (repvue.summary ? '<div class="recon-row" style="color:#94a3b8;font-size:0.85em;line-height:1.4;">' + repvue.summary + '</div>' : '')
+    + '<div class="recon-row">'
+    + '<a href="' + glassdoor.url + '" target="_blank" class="recon-link">Glassdoor →</a>'
+    + ' &nbsp; <a href="' + careersUrl + '" target="_blank" class="recon-link">Careers →</a>'
     + '</div>'
-    + '<div class="recon-row"><strong>Careers:</strong> <a href="' + careersUrl + '" target="_blank" class="job-link">' + careersUrl + '</a></div>'
     + '</div>';
 }
 
@@ -381,3 +380,4 @@ function renderFilterSummary() {
     ? parts.join(' &nbsp;·&nbsp; ')
     : 'No filters set — <a href="#" onclick="openProfile();return false;" style="color:var(--amber)">update your profile</a> to configure';
 }
+
