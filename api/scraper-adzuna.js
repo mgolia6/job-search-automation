@@ -50,7 +50,12 @@ module.exports = async function handler(req, res) {
     const deduped = dedupe(normalized);
     console.log(`[scraper-adzuna] after dedupe: ${deduped.length}`);
 
-    const newJobs = await filterSeen(deduped, userId);
+    console.log('[scraper-adzuna] enriching with Greenhouse/Lever/Ashby...');
+    const enriched = await enrichWithATS(deduped);
+    const ghHits = enriched.filter(j => j.jdSource !== 'adzuna').length;
+    console.log(`[scraper-adzuna] ATS enrichment: ${ghHits}/${enriched.length} hits`);
+
+    const newJobs = await filterSeen(enriched, userId);
     console.log(`[scraper-adzuna] after filterSeen: ${newJobs.length}`);
 
     if (newJobs.length > 0) {
@@ -135,7 +140,7 @@ function normalizeJob(j) {
     estimatedOTE: estimatedOTE,
     applyUrl: url,
     postedDate: j.created ? new Date(j.created).toISOString() : new Date().toISOString(),
-    description: (j.description || '').slice(0, 500)
+    description: (j.description || '').trim()
   };
 }
 
@@ -163,6 +168,93 @@ async function filterSeen(jobs, userId) {
   return jobs.filter(j => !seenIds.has(j.jobId));
 }
 
+// ── ATS Enrichment — fetch full JD from Greenhouse/Lever/Ashby ────────────
+async function enrichWithATS(jobs) {
+  return Promise.all(jobs.map(async (job) => {
+    try {
+      const slug = job.company
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+
+      // Try Greenhouse first
+      const ghUrl = `https://boards-api.greenhouse.io/v1/boards/${slug}/jobs?content=true`;
+      const ghRes = await fetch(ghUrl, { signal: AbortSignal.timeout(4000) });
+      if (ghRes.ok) {
+        const ghData = await ghRes.json();
+        const match = (ghData.jobs || []).find(j => {
+          const title = (j.title || '').toLowerCase();
+          const jobTitle = job.title.toLowerCase();
+          return title.includes(jobTitle.split(' ').slice(0,2).join(' ')) ||
+                 jobTitle.includes(title.split(' ').slice(0,2).join(' '));
+        });
+        if (match && match.content) {
+          // Strip HTML from Greenhouse content
+          const fullJD = match.content
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+          console.log(`[enrich] Greenhouse hit: ${job.company}`);
+          return { ...job, fullDescription: fullJD, jdSource: 'greenhouse' };
+        }
+      }
+
+      // Try Lever
+      const lvUrl = `https://api.lever.co/v0/postings/${slug}?mode=json`;
+      const lvRes = await fetch(lvUrl, { signal: AbortSignal.timeout(4000) });
+      if (lvRes.ok) {
+        const lvData = await lvRes.json();
+        const postings = Array.isArray(lvData) ? lvData : [];
+        const match = postings.find(p => {
+          const title = (p.text || '').toLowerCase();
+          const jobTitle = job.title.toLowerCase();
+          return title.includes(jobTitle.split(' ').slice(0,2).join(' ')) ||
+                 jobTitle.includes(title.split(' ').slice(0,2).join(' '));
+        });
+        if (match) {
+          const lists = (match.descriptionBody || match.description || '');
+          const fullJD = lists.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ').trim();
+          if (fullJD.length > 100) {
+            console.log(`[enrich] Lever hit: ${job.company}`);
+            return { ...job, fullDescription: fullJD, jdSource: 'lever' };
+          }
+        }
+      }
+
+      // Try Ashby
+      const ashbyUrl = `https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams`;
+      const ashbyRes = await fetch(ashbyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operationName: 'ApiJobBoardWithTeams', variables: { organizationHostedJobsPageName: slug }, query: '{ jobBoard { jobPostings { title descriptionHtml } } }' }),
+        signal: AbortSignal.timeout(4000)
+      });
+      if (ashbyRes.ok) {
+        const ashbyData = await ashbyRes.json();
+        const postings = ashbyData?.data?.jobBoard?.jobPostings || [];
+        const match = postings.find(p => {
+          const title = (p.title || '').toLowerCase();
+          const jobTitle = job.title.toLowerCase();
+          return title.includes(jobTitle.split(' ').slice(0,2).join(' '));
+        });
+        if (match && match.descriptionHtml) {
+          const fullJD = match.descriptionHtml.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ').trim();
+          if (fullJD.length > 100) {
+            console.log(`[enrich] Ashby hit: ${job.company}`);
+            return { ...job, fullDescription: fullJD, jdSource: 'ashby' };
+          }
+        }
+      }
+    } catch (err) {
+      // Enrichment is best-effort — don't fail the job
+      console.log(`[enrich] miss: ${job.company} — ${err.message}`);
+    }
+
+    return { ...job, fullDescription: null, jdSource: 'adzuna' };
+  }));
+}
+
+
 async function storeJobs(jobs, userId) {
   const { error } = await supabase.from('jobs').insert(jobs.map(j => ({
     job_id: j.jobId,
@@ -177,11 +269,14 @@ async function storeJobs(jobs, userId) {
     apply_url: j.applyUrl,
     status: 'new',
     gut_check: 'MAYBE — review needed',
+    full_description: j.fullDescription || null,
+    jd_source: j.jdSource || 'adzuna',
     scraped_at: new Date().toISOString(),
     user_id: userId
   })));
   if (error) throw new Error('[store] insert failed: ' + error.message);
 }
+
 
 
 
