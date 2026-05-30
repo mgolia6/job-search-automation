@@ -86,29 +86,26 @@
       <button class="btn btn-primary" onclick="triggerScraper(this)" id="scraper-run-btn" style="width:100%;margin-bottom:8px;">
         <i class="ti ti-sparkles" style="font-size:13px"></i> Generate Leads
       </button>
-      <!-- Collapsible filter bar — summary always visible, expand for detail -->
+      <!-- Filter bar: compact label row, chevron expands filter values, info explains how -->
       <div id="scraper-filter-bar" style="border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:12px;overflow:hidden;">
-        <!-- Always-visible row: filter icon + summary + chevron + info button -->
-        <div style="display:flex;align-items:center;gap:8px;padding:9px 14px;">
-          <i class="ti ti-filter" style="color:var(--amber);font-size:14px;flex-shrink:0;"></i>
-          <span id="scraper-filter-summary" style="flex:1;font-size:11.5px;color:var(--muted);">Loading filters...</span>
-          <span onclick="toggleLeadsFilter()" id="leads-filter-chevron" style="cursor:pointer;color:#64748b;font-size:10px;transition:transform 0.2s;padding:4px;">&#9660;</span>
-          <span onclick="toggleFilterInfo(event)" style="cursor:pointer;color:#64748b;font-size:0.85em;padding:4px;flex-shrink:0;" title="How filters work">&#9432;</span>
+        <!-- Always-visible compact row -->
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;">
+          <i class="ti ti-filter" style="color:var(--amber);font-size:13px;flex-shrink:0;"></i>
+          <span style="flex:1;font-size:11px;color:#64748b;font-weight:500;">Active filters</span>
+          <span onclick="toggleLeadsFilter()" id="leads-filter-chevron" style="cursor:pointer;color:#64748b;font-size:10px;transition:transform 0.2s;padding:4px 2px;">&#9660;</span>
+          <span onclick="toggleFilterInfo(event)" style="cursor:pointer;color:#64748b;font-size:13px;padding:4px 2px;flex-shrink:0;line-height:1;" title="How filters work">&#9432;</span>
         </div>
-        <!-- Collapsible filter detail — hidden by default -->
-        <div id="leads-filter-body" style="display:none;padding:0 14px 12px;border-top:1px solid var(--border);color:#cbd5e1;line-height:1.7;font-size:11.5px;">
-          <strong style="color:#e8b84b;display:block;margin:10px 0 6px;">Active filters</strong>
-          <span id="leads-filter-detail">See profile to update.</span>
+        <!-- Chevron expands: actual filter values -->
+        <div id="leads-filter-body" style="display:none;padding:8px 12px 10px;border-top:1px solid var(--border);">
+          <span id="scraper-filter-summary" style="font-size:11px;color:#94a3b8;line-height:1.7;">Loading...</span>
         </div>
-        <!-- Info tooltip — existing toggle -->
-        <div id="filter-info-tip" style="display:none;padding:12px 14px;border-top:1px solid var(--border);color:#cbd5e1;line-height:1.7;font-size:11.5px;">
-          <strong style="color:#e8b84b;display:block;margin-bottom:6px;">How lead filters work</strong>
-          Filters are pulled from your profile and applied at scrape time.<br><br>
-          <strong style="color:#94a3b8;">Titles</strong> — scraper searches for these exact job titles on Adzuna.<br>
-          <strong style="color:#94a3b8;">Base min</strong> — jobs below this base salary are excluded at scrape time.<br>
-          <strong style="color:#94a3b8;">OTE min</strong> — estimated OTE floor; jobs without salary data may still appear.<br>
-          <strong style="color:#94a3b8;">Work preference</strong> — Remote only filters to remote-tagged roles.<br><br>
-          Update in <span onclick="openProfile()" style="color:#e8b84b;cursor:pointer;text-decoration:underline;">Profile → Job Preferences</span>.
+        <!-- Info button expands: how filters work -->
+        <div id="filter-info-tip" style="display:none;padding:10px 12px;border-top:1px solid var(--border);color:#cbd5e1;line-height:1.6;font-size:11px;">
+          Filters apply at scrape time from your profile.<br>
+          <strong style="color:#94a3b8;">Titles</strong> — job titles searched on Adzuna.<br>
+          <strong style="color:#94a3b8;">Base/OTE min</strong> — salary floors; no-salary jobs may still appear.<br>
+          <strong style="color:#94a3b8;">Work</strong> — Remote only filters to remote-tagged roles.<br>
+          <span onclick="openProfile()" style="color:#e8b84b;cursor:pointer;text-decoration:underline;">Edit in Profile →</span>
         </div>
       </div>
     </div>
