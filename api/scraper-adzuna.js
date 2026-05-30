@@ -3,6 +3,7 @@ const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY);
 
 const BLOCKED_ORGS = ['staffing', 'recruiting', 'talent', 'search group', 'jobgether', 'foresight works'];
+const STRONG_MATCH_THRESHOLD = 75;
 
 module.exports = async function handler(req, res) {
   const auth = (req.headers.authorization || '').replace('Bearer ', '').trim();
@@ -20,7 +21,7 @@ module.exports = async function handler(req, res) {
 
     const { data: profile, error: profileErr } = await supabase
       .from('profiles')
-      .select('user_id, target_titles, salary_floor_base, remote_preference, email')
+      .select('user_id, target_titles, salary_floor_base, remote_preference, email, resume_text')
       .eq('user_id', userId)
       .eq('onboarding_complete', true)
       .single();
@@ -28,13 +29,13 @@ module.exports = async function handler(req, res) {
     if (profileErr || !profile) throw new Error('Failed to load profile: ' + (profileErr?.message || 'not found'));
 
     const minBase = profile.salary_floor_base || 125000;
-    const emailTo = profile.email || 'mgolia6@gmail.com';
+    const resumeText = profile.resume_text || null;
 
     const rawTitles = profile.target_titles?.length
       ? profile.target_titles
       : ['Enterprise Account Executive', 'Strategic Account Executive'];
 
-    console.log(`[scraper-adzuna] profile loaded — minBase: $${minBase}, titles: ${rawTitles.join(', ')}`);
+    console.log(`[scraper-adzuna] profile loaded — minBase: $${minBase}, titles: ${rawTitles.join(', ')}, hasResume: ${!!resumeText}`);
 
     // Fetch for each title separately (Adzuna does keyword match, not OR)
     const allRaw = [];
@@ -58,9 +59,19 @@ module.exports = async function handler(req, res) {
     const newJobs = await filterSeen(enriched, userId);
     console.log(`[scraper-adzuna] after filterSeen: ${newJobs.length}`);
 
-    if (newJobs.length > 0) {
-      await storeJobs(newJobs, userId);
-      console.log('[scraper-adzuna] stored', newJobs.length, 'jobs');
+    // Auto-score against resume if available — parallel, best-effort
+    let scored = newJobs;
+    let strongMatches = 0;
+    if (resumeText && newJobs.length > 0) {
+      console.log(`[scraper-adzuna] auto-scoring ${newJobs.length} jobs...`);
+      scored = await autoScore(newJobs, resumeText);
+      strongMatches = scored.filter(j => (j.atsScore || 0) >= STRONG_MATCH_THRESHOLD).length;
+      console.log(`[scraper-adzuna] scored — strong matches: ${strongMatches}/${scored.length}`);
+    }
+
+    if (scored.length > 0) {
+      await storeJobs(scored, userId);
+      console.log('[scraper-adzuna] stored', scored.length, 'jobs');
     }
 
     return res.status(200).json({
@@ -68,7 +79,9 @@ module.exports = async function handler(req, res) {
       raw: allRaw.length,
       normalized: normalized.length,
       deduped: deduped.length,
-      new: newJobs.length,
+      new: scored.length,
+      scored: resumeText ? scored.length : 0,
+      strongMatches,
       source: 'adzuna'
     });
 
@@ -87,12 +100,12 @@ async function fetchJobs(titleQuery, minBase) {
   const url = new URL('https://api.adzuna.com/v1/api/jobs/us/search/1');
   url.searchParams.append('app_id', APP_ID);
   url.searchParams.append('app_key', APP_KEY);
-  url.searchParams.append('what_phrase', titleQuery); // exact phrase match
+  url.searchParams.append('what_phrase', titleQuery);
   url.searchParams.append('results_per_page', '50');
   url.searchParams.append('salary_min', minBase);
   url.searchParams.append('full_time', '1');
   url.searchParams.append('sort_by', 'date');
-  url.searchParams.append('max_days_old', '1'); // last 24 hours
+  url.searchParams.append('max_days_old', '1');
   url.searchParams.append('content-type', 'application/json');
 
   const res = await fetch(url);
@@ -115,13 +128,11 @@ function normalizeJob(j) {
   const companyLower = company.toLowerCase();
   if (BLOCKED_ORGS.some(b => companyLower.includes(b))) return null;
 
-  // Title relevance check — must be an AE-type role
   const titleLower = title.toLowerCase();
   const aeMatch = ['account executive', 'strategic account', 'account manager'].some(k => titleLower.includes(k));
   if (!aeMatch) return null;
 
   const location = j.location?.display_name || 'United States';
-  // Adzuna posts OTE range for AE roles: salary_min=base, salary_max=OTE
   const estimatedOTE = j.salary_max ? Math.floor(j.salary_max) : null;
   const baseSalary   = j.salary_min ? Math.floor(j.salary_min) : (estimatedOTE ? Math.floor(estimatedOTE * 0.5) : null);
   const salaryDisplay = estimatedOTE
@@ -137,7 +148,7 @@ function normalizeJob(j) {
     remote: titleLower.includes('remote') || location.toLowerCase().includes('remote'),
     salary: salaryDisplay,
     baseSalary,
-    estimatedOTE: estimatedOTE,
+    estimatedOTE,
     applyUrl: url,
     postedDate: j.created ? new Date(j.created).toISOString() : new Date().toISOString(),
     description: (j.description || '').trim()
@@ -168,7 +179,62 @@ async function filterSeen(jobs, userId) {
   return jobs.filter(j => !seenIds.has(j.jobId));
 }
 
-// ── ATS Enrichment — fetch full JD from Greenhouse/Lever/Ashby ────────────
+// ── Auto-score — Claude semantic fit check against resume ─────────────────────
+async function autoScore(jobs, resumeText) {
+  const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+  if (!ANTHROPIC_KEY) {
+    console.warn('[auto-score] ANTHROPIC_API_KEY not set — skipping');
+    return jobs;
+  }
+
+  // Score in parallel, best-effort — failures don't block storage
+  const results = await Promise.allSettled(jobs.map(async (job) => {
+    const jd = job.fullDescription || job.description || '';
+    if (!jd || jd.length < 50) {
+      return { ...job, atsScore: null, atsMissingKeywords: [], atsJdSource: 'none' };
+    }
+
+    try {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 400,
+          system: 'You are an ATS scoring engine. Respond ONLY with a valid JSON object. No markdown, no backticks, no explanation.',
+          messages: [{
+            role: 'user',
+            content: `Score this resume against this job description. Return JSON with exactly: overall_score (integer 0-100), verdict (string: "strong match" or "moderate match" or "weak match"), missing_hard (array of up to 6 strings). JOB: ${jd.slice(0, 2500)} RESUME: ${resumeText.slice(0, 3000)}`
+          }]
+        }),
+        signal: AbortSignal.timeout(20000)
+      });
+
+      if (!r.ok) throw new Error(`Anthropic ${r.status}`);
+      const data = await r.json();
+      const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(text);
+
+      return {
+        ...job,
+        atsScore: typeof parsed.overall_score === 'number' ? Math.round(parsed.overall_score) : null,
+        atsMissingKeywords: Array.isArray(parsed.missing_hard) ? parsed.missing_hard : [],
+        atsJdSource: job.jdSource || 'adzuna'
+      };
+    } catch (err) {
+      console.log(`[auto-score] miss: ${job.company} — ${err.message}`);
+      return { ...job, atsScore: null, atsMissingKeywords: [], atsJdSource: job.jdSource || 'adzuna' };
+    }
+  }));
+
+  return results.map((r, i) => r.status === 'fulfilled' ? r.value : { ...jobs[i], atsScore: null, atsMissingKeywords: [] });
+}
+
+// ── ATS Enrichment — fetch full JD from Greenhouse/Lever/Ashby ────────────────
 async function enrichWithATS(jobs) {
   return Promise.all(jobs.map(async (job) => {
     try {
@@ -189,7 +255,6 @@ async function enrichWithATS(jobs) {
                  jobTitle.includes(title.split(' ').slice(0,2).join(' '));
         });
         if (match && match.content) {
-          // Strip HTML from Greenhouse content
           const fullJD = match.content
             .replace(/<[^>]+>/g, ' ')
             .replace(/\s{2,}/g, ' ')
@@ -212,13 +277,12 @@ async function enrichWithATS(jobs) {
                  jobTitle.includes(title.split(' ').slice(0,2).join(' '));
         });
         if (match) {
-          // Lever full content is in lists array — each item has a text body
           const listText = (match.lists || [])
             .map(l => (l.content || []).map(c => c.text || '').join(' '))
             .join(' ');
           const combined = [match.descriptionBody, listText, match.description]
             .filter(Boolean).join(' ');
-          const fullJD = stripHTML(combined);
+          const fullJD = combined.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ').trim();
           if (fullJD.length > 100) {
             console.log(`[enrich] Lever hit: ${job.company}`);
             return { ...job, fullDescription: fullJD, jdSource: 'lever' };
@@ -251,14 +315,12 @@ async function enrichWithATS(jobs) {
         }
       }
     } catch (err) {
-      // Enrichment is best-effort — don't fail the job
       console.log(`[enrich] miss: ${job.company} — ${err.message}`);
     }
 
     return { ...job, fullDescription: null, jdSource: 'adzuna' };
   }));
 }
-
 
 async function storeJobs(jobs, userId) {
   const { error } = await supabase.from('jobs').insert(jobs.map(j => ({
@@ -278,16 +340,13 @@ async function storeJobs(jobs, userId) {
     full_description: j.fullDescription || null,
     jd_source: j.jdSource || 'adzuna',
     scraped_at: new Date().toISOString(),
-    user_id: userId
+    user_id: userId,
+    ats_score: j.atsScore !== undefined ? j.atsScore : null,
+    ats_missing_keywords: j.atsMissingKeywords || [],
+    ats_analyzed_at: j.atsScore !== null && j.atsScore !== undefined ? new Date().toISOString() : null,
+    ats_jd_source: j.atsJdSource || null
   })));
   if (error) throw new Error('[store] insert failed: ' + error.message);
 }
 
-
-
-
-
-
-
-
-// deploy trigger 20260530100814
+module.exports.config = { maxDuration: 300 };
