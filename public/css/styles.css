@@ -985,6 +985,24 @@ textarea.form-control { resize: vertical; min-height: 80px; }
     font-size: 11px;
   }
 
+
+  /* ── Pipeline table: hide non-essential columns on mobile ── */
+  .hide-mobile { display: none !important; }
+  .co-sub-mobile { font-size: 11px; color: var(--sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+  .notes-mobile-role { font-weight: 600; font-size: 13px; margin-bottom: 8px; color: var(--text); }
+  .notes-label { color: var(--sub); font-size: 12px; }
+  .job-link-btn {
+    display: inline-block;
+    padding: 6px 14px;
+    background: var(--amber);
+    color: #0a0f1e;
+    font-weight: 700;
+    font-size: 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    margin-bottom: 6px;
+  }
+
   /* ── Sub-tabs: scrollable row ── */
   .sub-tabs {
     flex-wrap: nowrap;
