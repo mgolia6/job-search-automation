@@ -614,23 +614,14 @@ function toggleFitDetail(jobId) {
 
 // ── Leads sticky filter toggle ────────────────────────────────────────────────
 function toggleLeadsFilter() {
-  var body = document.getElementById('leads-filter-body');
+  var body    = document.getElementById('leads-filter-body');
   var chevron = document.getElementById('leads-filter-chevron');
-  var info = document.getElementById('filter-info-tip');
+  var info    = document.getElementById('filter-info-tip');
   if (!body) return;
   var isOpen = body.style.display !== 'none';
   body.style.display = isOpen ? 'none' : 'block';
-  // Close info tip when toggling filter
-  if (info) info.style.display = 'none';
+  if (info) info.style.display = 'none'; // close info if open
   if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
-  // Populate detail panel with current filter values
-  if (!isOpen) {
-    var detail = document.getElementById('leads-filter-detail');
-    if (detail) {
-      var summaryEl = document.getElementById('scraper-filter-summary');
-      detail.innerHTML = summaryEl ? summaryEl.innerHTML : 'No filters set.';
-    }
-  }
 }
 
 // ── Fit Check tooltip toggle ─────────────────────────────────────────────────
