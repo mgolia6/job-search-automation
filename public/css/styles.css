@@ -112,8 +112,8 @@ header {
 .profile-dropdown {
   display: none;
   position: absolute;
-  top: 56px;
-  right: 12px;
+  top: calc(100% + 8px);
+  right: 0;
   width: 240px;
   background: var(--surface);
   border: 1px solid var(--border);
