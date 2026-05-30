@@ -153,11 +153,12 @@ function setScraperSort(s) { SCRAPER_SORT = s; renderScraper(); }
 
 // ── Job Card ──────────────────────────────────────────────────────────────────
 function getTierBadge(ote) {
-  if (!ote) return '<span class="tier-badge tier-unknown">Unknown OTE</span>';
+  if (!ote) return '<span class="tier-badge tier-unknown">OTE unlisted</span>';
   if (ote >= 300000) return '<span class="tier-badge tier-high">$300K+ OTE</span>';
   if (ote >= 250000) return '<span class="tier-badge tier-med">$250K–$300K OTE</span>';
   if (ote >= 200000) return '<span class="tier-badge tier-low">$200K–$250K OTE</span>';
-  return '<span class="tier-badge tier-unknown">Unknown OTE</span>';
+  if (ote >= 150000) return '<span class="tier-badge tier-low">$150K–$200K OTE</span>';
+  return '<span class="tier-badge tier-unknown">Sub-$150K OTE</span>';
 }
 
 function renderJobCard(j) {
@@ -173,7 +174,6 @@ function renderJobCard(j) {
     ? '<span class="status-badge status-backlog">Backlogged</span>'
     : isDismissed ? '<span class="status-badge status-dismissed">Dismissed</span>' : '';
 
-  var jobJson = JSON.stringify(j).replace(/'/g, "\\'");
 
   var card = '<div class="job-card-new' + (isBacklog ? ' backlogged' : '') + (isDismissed ? ' dismissed' : '') + '">'
     + '<div class="job-card-header">'
@@ -217,7 +217,7 @@ function renderJobCard(j) {
 
   if (!isDismissed) {
     card += '<div class="job-card-actions" style="margin-top:12px;">'
-      + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + jobId + '\', \'add_to_pipeline\', ' + jobJson + ')">Add to Pipeline</button>'
+      + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + jobId + '\', \'add_to_pipeline\')">Add to Pipeline</button>'
       + (!isBacklog ? '<button class="action-btn action-backlog" onclick="promptJobAction(event, \'' + jobId + '\', \'backlog\')">Backlog</button>' : '')
       + '<button class="action-btn action-dismiss" onclick="promptJobAction(event, \'' + jobId + '\', \'dismiss\')">Not a Fit</button>'
       + '<span style="position:relative;display:inline-flex;align-items:center;gap:4px;">'
@@ -465,10 +465,13 @@ function jobAction(event, jobId, action, jobData, justification) {
   event.target.disabled = true;
   event.target.innerHTML = '' + spinnerHTML() + '';
 
+  // Always look up from JOBS array — never rely on inline jobData (breaks with special chars)
+  var resolvedJobData = jobData || JOBS.find(function(j) { return j.job_id === jobId; }) || {};
+
   fetch('/api/job-action', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SESSION_TOKEN },
-    body: JSON.stringify({ action: action, jobId: jobId, jobData: jobData, justification: justification })
+    body: JSON.stringify({ action: action, jobId: jobId, jobData: resolvedJobData, justification: justification })
   })
     .then(function (r) { return r.json(); })
     .then(function (data) {
@@ -852,3 +855,20 @@ function selectATSRun(id) {
 
 
 
+
+
+// ── Filter info tooltip ───────────────────────────────────────────────────────
+function toggleFilterInfo(e) {
+  e.stopPropagation();
+  var tip = document.getElementById('filter-info-tip');
+  if (!tip) return;
+  tip.style.display = tip.style.display === 'none' ? 'block' : 'none';
+  if (tip.style.display === 'block') {
+    setTimeout(function() {
+      document.addEventListener('click', function closeIt() {
+        tip.style.display = 'none';
+        document.removeEventListener('click', closeIt);
+      });
+    }, 10);
+  }
+}
