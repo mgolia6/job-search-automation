@@ -164,7 +164,7 @@ function renderJobCard(j) {
   card += '<div class="recon-toggle" onclick="toggleJD(\'' + jobId + '\')">'    + (jdExpanded ? '▼' : '▶') + ' Job Description'    + (j.full_description ? '' : ' <span style="color:#94a3b8;font-size:0.8em;">(fetching...)</span>')    + '</div>';  if (jdExpanded) {    if (j.full_description) {      card += '<div class="recon-section" id="' + jdId + '" style="white-space:pre-wrap;font-size:0.85em;color:#cbd5e1;max-height:400px;overflow-y:auto;">'        + j.full_description.slice(0, 5000)        + '</div>';    } else {      card += '<div class="recon-section" id="' + jdId + '"><div class="recon-loading">Loading job description...</div></div>';    }  }
 
   if (!isDismissed) {
-    card += '<div class="job-card-actions">'
+    card += '<div class="job-card-actions" style="margin-top:12px;">'
       + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + jobId + '\', \'add_to_pipeline\', ' + jobJson + ')">Add to Pipeline</button>'
       + (!isBacklog ? '<button class="action-btn action-backlog" onclick="promptJobAction(event, \'' + jobId + '\', \'backlog\')">Backlog</button>' : '')
       + '<button class="action-btn action-dismiss" onclick="promptJobAction(event, \'' + jobId + '\', \'dismiss\')">Not a Fit</button>'
@@ -174,7 +174,7 @@ function renderJobCard(j) {
       + (j.apply_url ? '<a href="' + j.apply_url + '" target="_blank" class="action-btn action-apply">Apply →</a>' : '')
       + '</div>';
   } else {
-    card += '<div class="job-card-actions">'
+    card += '<div class="job-card-actions" style="margin-top:12px;">'
       + '<a href="' + (j.apply_url || '#') + '" target="_blank" class="action-btn action-apply">View Posting →</a>'
       + '</div>';
   }
@@ -531,5 +531,6 @@ function scoreWithATS(e, jobId) {
     btn.disabled = false;
   });
 }
+
 
 
