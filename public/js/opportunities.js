@@ -36,45 +36,54 @@ function hideCompassSpinner() {
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
+
+// ── Freshness — based on posted_date ─────────────────────────────────────────
+// Fresh: < 3 days | Aging: 3–7 days | Stale: 7+ days
+function getFreshness(job) {
+  var posted = job.posted_date || job.scraped_at;
+  if (!posted) return { tier: 'unknown', label: 'Unknown', icon: '○', color: '#64748b', days: null };
+  var days = (Date.now() - new Date(posted).getTime()) / (1000 * 60 * 60 * 24);
+  if (days < 3)  return { tier: 'fresh',  label: 'Fresh',  icon: '◆', color: '#22c55e', days: Math.floor(days) };
+  if (days < 7)  return { tier: 'aging',  label: 'Aging',  icon: '▲', color: '#f59e0b', days: Math.floor(days) };
+                 return { tier: 'stale',  label: 'Stale',  icon: '▼', color: '#94a3b8', days: Math.floor(days) };
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
 function renderScraper() {
   renderFilterSummary();
   var el = document.getElementById('scraper-content');
   if (!el) return;
 
-  var activeJobs   = JOBS.filter(function (j) { return j.status !== 'dismissed'; });
-  var newJobs      = activeJobs.filter(function (j) { return j.status === 'new' || !j.status; });
-  var backlogJobs  = activeJobs.filter(function (j) { return j.status === 'backlog'; });
+  var unactioned    = JOBS.filter(function (j) { return j.status === 'new' || !j.status; });
   var dismissedJobs = JOBS.filter(function (j) { return j.status === 'dismissed'; });
+  var addedJobs     = JOBS.filter(function (j) { return j.status === 'added'; });
 
-  var weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  var newThisWeek = activeJobs.filter(function (j) {
-    return j.scraped_at && new Date(j.scraped_at) > weekAgo;
-  }).length;
+  // Freshness buckets (by posted_date)
+  var freshJobs  = unactioned.filter(function(j) { return getFreshness(j).tier === 'fresh'; });
+  var agingJobs  = unactioned.filter(function(j) { return getFreshness(j).tier === 'aging'; });
+  var staleJobs  = unactioned.filter(function(j) { return getFreshness(j).tier === 'stale' || getFreshness(j).tier === 'unknown'; });
 
-  var jobsWithOTE = activeJobs.filter(function (j) { return j.estimated_ote; });
-  var avgOTE = jobsWithOTE.length > 0
-    ? Math.round(jobsWithOTE.reduce(function (sum, j) { return sum + j.estimated_ote; }, 0) / jobsWithOTE.length)
-    : 0;
-  var highValueCount = activeJobs.filter(function (j) { return j.estimated_ote >= 300000; }).length;
+  // OTE tier buckets
+  var tier1       = unactioned.filter(function (j) { return j.estimated_ote >= 300000; });
+  var tier2       = unactioned.filter(function (j) { return j.estimated_ote >= 250000 && j.estimated_ote < 300000; });
+  var tier3       = unactioned.filter(function (j) { return j.estimated_ote >= 200000 && j.estimated_ote < 250000; });
+  var tierUnknown = unactioned.filter(function (j) { return !j.estimated_ote; });
 
   // KPIs
-  var iconInfo   = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
-  var iconWave   = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>';
-  var iconDollar = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
-  var iconHigh   = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
-  var iconX      = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>';
-
-  var addedJobs = JOBS.filter(function(j) { return j.status === 'added'; });
+  var iconFresh = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>';
+  var iconAging = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+  var iconStale = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
+  var iconPipe  = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+  var iconX     = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
   var kpiEl = document.getElementById('scraper-kpis');
   if (kpiEl) {
     kpiEl.innerHTML =
-      kpiCard(iconInfo,   activeJobs.length,   'New Leads',            '#3b82f6') +
-      kpiCard(iconWave,   newThisWeek,         'Added This Week',      '#10b981') +
-      kpiCard(iconDollar, avgOTE > 0 ? '$' + Math.round(avgOTE / 1000) + 'K' : '—', 'Avg Est OTE', '#f59e0b') +
-      kpiCard(iconHigh,   addedJobs.length,    'Added to Pipeline',    '#8b5cf6') +
-      kpiCard(iconX,      dismissedJobs.length,'Dismissed',            '#64748b');
+      kpiCard(iconFresh, freshJobs.length,    'Fresh',         '#22c55e') +
+      kpiCard(iconAging, agingJobs.length,    'Aging',         '#f59e0b') +
+      kpiCard(iconStale, staleJobs.length,    'Stale',         '#94a3b8') +
+      kpiCard(iconPipe,  addedJobs.length,    'In Pipeline',   '#8b5cf6') +
+      kpiCard(iconX,     dismissedJobs.length,'Dismissed',     '#64748b');
   }
 
   if (!JOBS.length) {
@@ -82,64 +91,73 @@ function renderScraper() {
     return;
   }
 
-  // Tier buckets
-  var tier1       = activeJobs.filter(function (j) { return j.estimated_ote >= 300000; });
-  var tier2       = activeJobs.filter(function (j) { return j.estimated_ote >= 250000 && j.estimated_ote < 300000; });
-  var tier3       = activeJobs.filter(function (j) { return j.estimated_ote >= 200000 && j.estimated_ote < 250000; });
-  var tierUnknown = activeJobs.filter(function (j) { return !j.estimated_ote; });
-
-  var filtered = activeJobs;
-  if (SCRAPER_FILTER === '300k')    filtered = tier1;
-  else if (SCRAPER_FILTER === '250k')  filtered = tier2;
-  else if (SCRAPER_FILTER === '200k')  filtered = tier3;
-  else if (SCRAPER_FILTER === 'unknown') filtered = tierUnknown;
-  else if (SCRAPER_FILTER === 'backlog') filtered = backlogJobs;
+  // Filter
+  var filtered;
+  if      (SCRAPER_FILTER === '300k')      filtered = tier1;
+  else if (SCRAPER_FILTER === '250k')      filtered = tier2;
+  else if (SCRAPER_FILTER === '200k')      filtered = tier3;
+  else if (SCRAPER_FILTER === 'unknown')   filtered = tierUnknown;
   else if (SCRAPER_FILTER === 'dismissed') filtered = dismissedJobs;
+  else                                     filtered = unactioned;
 
   // Sort
   filtered.sort(function (a, b) {
-    if (SCRAPER_SORT === 'ote') return (b.estimated_ote || 0) - (a.estimated_ote || 0);
-    return new Date(b.scraped_at || 0) - new Date(a.scraped_at || 0);
+    if (SCRAPER_SORT === 'ote')     return (b.estimated_ote || 0) - (a.estimated_ote || 0);
+    if (SCRAPER_SORT === 'date')    return new Date(b.posted_date || b.scraped_at || 0) - new Date(a.posted_date || a.scraped_at || 0);
+    if (SCRAPER_SORT === 'company') return (a.company || '').localeCompare(b.company || '');
+    return (b.estimated_ote || 0) - (a.estimated_ote || 0);
   });
 
   // Sub-tabs
   var html = '<div class="sub-tabs" id="opp-sub-tabs">'
-    + oppTab('all',       'Active (' + activeJobs.length + ')',     SCRAPER_FILTER === 'all')
-    + oppTab('300k',      '$300K+ (' + tier1.length + ')',         SCRAPER_FILTER === '300k')
-    + oppTab('250k',      '$250K–$300K (' + tier2.length + ')',    SCRAPER_FILTER === '250k')
-    + oppTab('200k',      '$200K–$250K (' + tier3.length + ')',    SCRAPER_FILTER === '200k')
-    + oppTab('unknown',   'Unknown (' + tierUnknown.length + ')',  SCRAPER_FILTER === 'unknown')
+    + oppTab('all',       'All (' + unactioned.length + ')',          SCRAPER_FILTER === 'all')
+    + oppTab('300k',      '$300K+ (' + tier1.length + ')',           SCRAPER_FILTER === '300k')
+    + oppTab('250k',      '$250K–$300K (' + tier2.length + ')', SCRAPER_FILTER === '250k')
+    + oppTab('200k',      '$200K–$250K (' + tier3.length + ')', SCRAPER_FILTER === '200k')
+    + oppTab('unknown',   'Unlisted (' + tierUnknown.length + ')',   SCRAPER_FILTER === 'unknown')
     + '<div class="tab-divider"></div>'
-    + oppTab('backlog',   'Backlog (' + backlogJobs.length + ')',  SCRAPER_FILTER === 'backlog')
     + oppTab('dismissed', 'Dismissed (' + dismissedJobs.length + ')', SCRAPER_FILTER === 'dismissed')
-    + '</div>';
-
-  // ATS History panel trigger
-  html += '<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">'
-    + '<button style="display:none" style="'
-    + 'background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);'
-    + 'color:#f59e0b;padding:6px 14px;border-radius:6px;font-size:0.82em;cursor:pointer;">'
-    + '📋 ATS History</button>'
     + '</div>';
 
   // Sort controls
   html += '<div class="scraper-controls">'
-    + '<button class="filter-btn' + (SCRAPER_SORT === 'ote'  ? ' active' : '') + '" onclick="setScraperSort(\'ote\')">Sort: OTE</button>'
-    + '<button class="filter-btn' + (SCRAPER_SORT === 'date' ? ' active' : '') + '" onclick="setScraperSort(\'date\')">Sort: Date</button>'
+    + '<button class="filter-btn' + (SCRAPER_SORT === 'ote'     ? ' active' : '') + '" onclick="setScraperSort(&quot;ote&quot;)">OTE</button>'
+    + '<button class="filter-btn' + (SCRAPER_SORT === 'date'    ? ' active' : '') + '" onclick="setScraperSort(&quot;date&quot;)">Date Posted</button>'
+    + '<button class="filter-btn' + (SCRAPER_SORT === 'company' ? ' active' : '') + '" onclick="setScraperSort(&quot;company&quot;)">Company</button>'
     + '</div>';
 
-  // Cards
-  if (!filtered.length) {
-    html += '<div style="text-align:center;padding:48px;color:var(--muted)">No jobs in this tier.</div>';
+  // Split filtered into actionable (fresh+aging) and stale
+  var actionable    = filtered.filter(function(j) { var f = getFreshness(j); return f.tier === 'fresh' || f.tier === 'aging'; });
+  var staleFiltered = filtered.filter(function(j) { var f = getFreshness(j); return f.tier === 'stale' || f.tier === 'unknown'; });
+
+  // Don't split dismissed view by freshness — show all flat
+  if (SCRAPER_FILTER === 'dismissed') {
+    html += filtered.length
+      ? '<div class="job-cards">' + filtered.map(renderJobCard).join('') + '</div>'
+      : '<div style="text-align:center;padding:48px;color:var(--muted)">No dismissed leads.</div>';
+  } else if (!filtered.length) {
+    html += '<div style="text-align:center;padding:48px;color:var(--muted)">No leads in this category.</div>';
   } else {
-    html += '<div class="job-cards">' + filtered.map(renderJobCard).join('') + '</div>';
+    if (actionable.length) {
+      html += '<div class="job-cards">' + actionable.map(renderJobCard).join('') + '</div>';
+    } else {
+      html += '<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.9em;">No fresh or aging leads — check Stale below.</div>';
+    }
+    if (staleFiltered.length) {
+      html += '<details style="margin-top:16px;">'
+        + '<summary style="cursor:pointer;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;color:#94a3b8;font-size:0.85em;list-style:none;display:flex;align-items:center;gap:8px;">'
+        + '<span style="color:#64748b;font-size:0.8em;">&#9660;</span> Stale (' + staleFiltered.length + ') &mdash; posted 7+ days ago'
+        + '</summary>'
+        + '<div class="job-cards" style="margin-top:8px;opacity:0.75;">' + staleFiltered.map(renderJobCard).join('') + '</div>'
+        + '</details>';
+    }
   }
 
   el.innerHTML = html;
 }
 
 function oppTab(key, label, isActive) {
-  return '<button class="sub-tab' + (isActive ? ' active' : '') + '" onclick="setScraperFilter(\'' + key + '\')">' + label + '</button>';
+  return '<button class="sub-tab' + (isActive ? ' active' : '') + '" onclick="setScraperFilter(&quot;' + key + '&quot;)">' + label + '</button>';
 }
 
 function setScraperFilter(f) {
@@ -149,9 +167,8 @@ function setScraperFilter(f) {
   renderScraper();
 }
 
-function setScraperSort(s) { SCRAPER_SORT = s; renderScraper(); }
-
 // ── Job Card ──────────────────────────────────────────────────────────────────
+
 function getTierBadge(ote) {
   if (!ote) return '<span class="tier-badge tier-unknown">OTE unlisted</span>';
   var k = Math.round(ote / 1000);
@@ -161,20 +178,23 @@ function getTierBadge(ote) {
 function renderJobCard(j) {
   var jobId      = j.job_id;
   var isExpanded = expandedRecon[jobId];
-  var isBacklog  = j.status === 'backlog';
   var isDismissed = j.status === 'dismissed';
-  var date       = j.scraped_at ? new Date(j.scraped_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+  var fresh      = getFreshness(j);
+  var postedDate = j.posted_date
+    ? new Date(j.posted_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : (j.scraped_at ? new Date(j.scraped_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—');
   var baseSalary = j.base_salary ? '$' + Math.round(j.base_salary / 1000) + 'K' : 'Not listed';
   var ote        = j.estimated_ote ? '$' + Math.round(j.estimated_ote / 1000) + 'K' : 'Unknown';
   var tierBadge  = getTierBadge(j.estimated_ote);
-  var statusBadge = isBacklog
-    ? '<span class="status-badge status-backlog">Backlogged</span>'
-    : isDismissed ? '<span class="status-badge status-dismissed">Dismissed</span>' : '';
+  var freshBadge = '<span style="font-size:0.75em;font-weight:600;color:' + fresh.color + ';margin-left:6px;">'
+    + fresh.icon + ' ' + fresh.label
+    + (fresh.days !== null ? ' (' + fresh.days + 'd)' : '')
+    + '</span>';
+  var statusBadge = isDismissed ? '<span class="status-badge status-dismissed">Dismissed</span>' : '';
 
-
-  var card = '<div class="job-card-new' + (isBacklog ? ' backlogged' : '') + (isDismissed ? ' dismissed' : '') + '">'
+  var card = '<div class="job-card-new' + (isDismissed ? ' dismissed' : '') + '">'
     + '<div class="job-card-header">'
-    + '<div class="job-card-co">' + (j.company || '') + ' ' + tierBadge + ' ' + statusBadge + '</div>'
+    + '<div class="job-card-co">' + (j.company || '') + ' ' + tierBadge + ' ' + freshBadge + ' ' + statusBadge + '</div>'
     + '<div class="job-card-title">' + (j.title || '') + '</div>'
     + '<div class="job-card-source">Source: ' + (j.source || 'Unknown') + '</div>'
     + '</div>';
@@ -187,7 +207,7 @@ function renderJobCard(j) {
     + '<div class="meta-row"><span class="meta-label">Base:</span> <span class="meta-value">' + baseSalary + '</span></div>'
     + '<div class="meta-row"><span class="meta-label">Est OTE:</span> <span class="meta-value ote">' + ote + '</span></div>'
     + '<div class="meta-row"><span class="meta-label">Location:</span> <span class="meta-value">' + (j.location || 'Remote') + '</span></div>'
-    + '<div class="meta-row"><span class="meta-label">Posted:</span> <span class="meta-value">' + date + '</span></div>'
+    + '<div class="meta-row"><span class="meta-label">Posted:</span> <span class="meta-value">' + postedDate + '</span></div>'
     + '</div>'
     + '<div class="recon-toggle" onclick="toggleRecon(\'' + jobId + '\')">'
     + (isExpanded ? '▼' : '▶') + ' Company Recon'
@@ -215,7 +235,6 @@ function renderJobCard(j) {
   if (!isDismissed) {
     card += '<div class="job-card-actions" style="margin-top:12px;">'
       + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + jobId + '\', \'add_to_pipeline\')">Add to Pipeline</button>'
-      + (!isBacklog ? '<button class="action-btn action-backlog" onclick="promptJobAction(event, \'' + jobId + '\', \'backlog\')">Backlog</button>' : '')
       + '<button class="action-btn action-dismiss" onclick="promptJobAction(event, \'' + jobId + '\', \'dismiss\')">Not a Fit</button>'
       + '<span style="position:relative;display:inline-flex;align-items:center;gap:4px;">'
       + '<button class="action-btn action-ats" onclick="runFitCheck(event, \'' + jobId + '\')">'
@@ -406,11 +425,6 @@ function fetchGlassdoor(jobId, company) {
 function promptJobAction(event, jobId, action) {
   if (action === 'dismiss') {
     showDismissModal(event, jobId);
-  } else if (action === 'backlog') {
-    var justification = prompt('Why backlog this role?');
-    if (justification === null) return;
-    if (!justification.trim()) { alert('Please provide a justification.'); return; }
-    jobAction(event, jobId, action, null, justification);
   }
 }
 
@@ -887,3 +901,4 @@ function toggleFilterInfo(e) {
     }, 10);
   }
 }
+
