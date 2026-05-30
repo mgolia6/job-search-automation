@@ -1609,3 +1609,25 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .src-manual   { background: rgba(245,158,11,0.15); color: #e8b84b; }
 .src-referral { background: rgba(34,197,94,0.15);  color: #4ade80; }
 .src-linkedin { background: rgba(59,130,246,0.15); color: #93c5fd; }
+
+/* ── Modal two-column rows ── */
+.modal-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 480px) {
+  .modal-row-2 { grid-template-columns: 1fr; gap: 0; }
+}
+
+/* ── Expanded row meta strip ── */
+.exp-meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--sub);
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
