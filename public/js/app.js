@@ -140,6 +140,20 @@ function triggerScraper(btn) {
 // initAuth in auth.js bootstraps session → onboarding → loadData
 initAuth();
 
+
+// ── Open profile ──────────────────────────────────────────────────────────────
+function openProfile() {
+  var dd = document.getElementById('profile-dropdown');
+  if (dd) dd.classList.remove('open');
+  ['pipeline','scraper','gmail','ats','profile'].forEach(function(t) {
+    var el = document.getElementById('pane-' + t);
+    if (el) el.style.display = t === 'profile' ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(function(b) { b.classList.remove('active'); });
+  try { localStorage.setItem('activeTab', 'profile'); } catch(e) {}
+  if (typeof renderProfilePane === 'function') renderProfilePane();
+}
+
 // ── Profile dropdown ──────────────────────────────────────────────────────────
 function toggleProfileDropdown(e) {
   if (e) e.stopPropagation();
