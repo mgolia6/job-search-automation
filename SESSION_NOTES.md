@@ -431,3 +431,42 @@ after:2026/05/30
 - Model string for Claude API calls: claude-sonnet-4-6
 - RapidAPI quota: 25 req/month, be conservative with test calls
 - GitHub token expires ~Aug 26, 2026 - remind Matthew to regenerate around Aug 16
+
+
+---
+## SESSION UPDATE — 2026/05/30 (session 5 — planning)
+
+### Gmail scan window for next session
+after:2026/05/30
+
+### What happened this session
+- No code written — deliberate planning session
+- Assessed true state of the build (honest, not optimistic)
+- Locked beta launch target: June 13, 2026
+- Identified beta users: Erin Lewber + her job seeker clients
+- Created and committed ROADMAP.md to GitHub root
+
+### Key decisions locked
+- NULL user_id backfill → assign all 46 legacy rows to Matthew's user_id, remove RLS OR exception
+- Onboarding redesign → resume upload only required step; Claude infers everything else; branch for existing applications
+- Manual Add Application → simple modal (5 fields), replaces template upload idea
+- Multi-user hardening is highest-stakes work — Erin tests solo before clients get the link
+- All deferred items explicitly off the table until post-beta
+
+### Next session: START HERE (Day 1–2 of roadmap)
+1. Find Matthew's user_id in Supabase auth.users
+2. UPDATE applications SET user_id = '[matthew_uid]' WHERE user_id IS NULL
+3. Fix RLS policy — remove OR user_id IS NULL clause
+4. Find and delete orphan ghost profile
+5. Verify: login → only Matthew's data visible
+
+### ROADMAP.md
+- Live at: https://github.com/mgolia6/job-search-automation/blob/main/ROADMAP.md
+- Update checkboxes inline as items complete — single source of truth for beta progress
+- Do NOT reconstruct from session notes — read ROADMAP.md directly
+
+### Standing rules (do not forget)
+- ALWAYS syntax check before pushing: node --check /tmp/file.js
+- ALWAYS get fresh SHA before PUT to GitHub
+- Model string for Claude API calls: claude-sonnet-4-6
+- GitHub token expires ~Aug 26, 2026 — remind Matthew around Aug 16
