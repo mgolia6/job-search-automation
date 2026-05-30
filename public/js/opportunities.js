@@ -182,86 +182,14 @@ function getTierBadge(ote) {
 }
 
 function renderJobCard(j) {
-  var jobId      = j.job_id;
-  var isExpanded = expandedRecon[jobId];
+  var jobId       = j.job_id;
+  var isExpanded  = expandedRecon[jobId];
   var isDismissed = j.status === 'dismissed';
-  var fresh      = getFreshness(j);
-  var postedDate = j.posted_date
-    ? new Date(j.posted_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    : (j.scraped_at ? new Date(j.scraped_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—');
-  var baseSalary = j.base_salary ? '$' + Math.round(j.base_salary / 1000) + 'K' : 'Not listed';
-  var ote        = j.estimated_ote ? '$' + Math.round(j.estimated_ote / 1000) + 'K' : 'Unknown';
-  var tierBadge  = getTierBadge(j.estimated_ote);
-  var freshBadge = '<span style="font-size:0.75em;font-weight:600;color:' + fresh.color + ';margin-left:6px;">'
-    + fresh.icon + ' ' + fresh.label
-    + (fresh.days !== null ? ' (' + fresh.days + 'd)' : '')
-    + '</span>';
-  var statusBadge = isDismissed ? '<span class="status-badge status-dismissed">Dismissed</span>' : '';
+  var fresh       = getFreshness(j);
+  var ote         = j.estimated_ote ? '$' + Math.round(j.estimated_ote / 1000) + 'K OTE' : null;
 
-  var card = '<div class="job-card-new' + (isDismissed ? ' dismissed' : '') + '">'
-    + '<div class="job-card-header">'
-    + '<div class="job-card-co">' + (j.company || '') + ' ' + tierBadge + ' ' + freshBadge + ' ' + statusBadge + '</div>'
-    + '<div class="job-card-title">' + (j.title || '') + '</div>'
-    + '<div class="job-card-source">Source: ' + (j.source || 'Unknown') + '</div>'
-    + '</div>';
-
-  if (j.justification) {
-    card += '<div class="job-justification"><strong>Reason:</strong> ' + j.justification + '</div>';
-  }
-
-  card += '<div class="job-card-meta">'
-    + '<div class="meta-row"><span class="meta-label">Base:</span> <span class="meta-value">' + baseSalary + '</span></div>'
-    + '<div class="meta-row"><span class="meta-label">Est OTE:</span> <span class="meta-value ote">' + ote + '</span></div>'
-    + '<div class="meta-row"><span class="meta-label">Location:</span> <span class="meta-value">' + (j.location || 'Remote') + '</span></div>'
-    + '<div class="meta-row"><span class="meta-label">Posted:</span> <span class="meta-value">' + postedDate + '</span></div>'
-    + '</div>'
-    + '<div class="recon-toggle" onclick="toggleRecon(\'' + jobId + '\')">'
-    + (isExpanded ? '▼' : '▶') + ' Company Recon'
-    + '</div>'
-    + (isExpanded ? renderReconSection(j) : '');
-
-  // JD section — lazy fetch full description, collapsed by default
-  var jdId = 'jd-' + jobId;
-  var jdExpanded = expandedJD[jobId] || false;
-  var jdBadge = j.jd_source === 'greenhouse' || j.jd_source === 'lever' || j.jd_source === 'ashby'
-    ? ' <span style="color:#22c55e;font-size:0.75em;">● ' + j.jd_source + '</span>'
-    : j.full_description ? ' <span style="color:#94a3b8;font-size:0.75em;">● adzuna snippet</span>'
-    : ' <span style="color:#64748b;font-size:0.75em;">● no JD</span>';
-  card += '<div class="recon-toggle" onclick="toggleJD(\'' + jobId + '\')">'
-    + (jdExpanded ? '▼' : '▶') + ' Job Description' + jdBadge
-    + '</div>';  if (jdExpanded) {    if (j.full_description) {      card += '<div class="recon-section" id="' + jdId + '" style="white-space:pre-wrap;font-size:0.85em;color:#cbd5e1;max-height:400px;overflow-y:auto;">'        + j.full_description.slice(0, 5000)        + '</div>';    } else if (j.description) {
-      card += '<div class="recon-section" id="' + jdId + '" style="white-space:pre-wrap;font-size:0.85em;color:#cbd5e1;max-height:400px;overflow-y:auto;">'
-        + '<div style="color:#f59e0b;font-size:0.78em;margin-bottom:8px;">⚠ Adzuna snippet only — full JD not available</div>'
-        + j.description
-        + '</div>';
-    } else {
-      card += '<div class="recon-section" id="' + jdId + '"><div style="color:#94a3b8;padding:16px;">No job description available.</div></div>';
-    }  }
-
-  if (!isDismissed) {
-    card += '<div class="job-card-actions" style="margin-top:12px;">'
-      + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + jobId + '\', \'add_to_pipeline\')">Add to Pipeline</button>'
-      + '<button class="action-btn action-dismiss" onclick="promptJobAction(event, \'' + jobId + '\', \'dismiss\')">Not a Fit</button>'
-      + '<span style="position:relative;display:inline-flex;align-items:center;gap:4px;">'
-      + '<button class="action-btn action-ats" onclick="runFitCheck(event, \'' + jobId + '\')">'
-        + (FIT_RESULTS[j.job_id] ? '✓ ' + FIT_RESULTS[j.job_id].score + '% — Re-run'
-            : j.ats_score !== null && j.ats_score !== undefined ? '◆ ' + j.ats_score + '% — Re-run'
-            : 'AI Fit Check')
-        + '</button>'
-      + '<span class="fit-info-icon" title="" onclick="toggleFitTooltip(event, \'' + jobId + '\')" style="cursor:pointer;color:#64748b;font-size:0.82em;user-select:none;" aria-label="What is AI Fit Check?">ⓘ</span>'
-      + '<span id="fit-tip-' + jobId + '" style="display:none;position:absolute;bottom:calc(100% + 6px);left:0;width:240px;background:#1e293b;border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:10px 12px;font-size:0.78em;color:#cbd5e1;line-height:1.5;z-index:500;box-shadow:0 4px 16px rgba(0,0,0,0.4);">AI Fit Check gives a quick signal on role alignment based on your profile. It is not a keyword ATS scan — use <strong style=\"color:#f59e0b;\">Analyze &amp; Tailor</strong> for full keyword analysis and resume tailoring.</span>'
-      + '</span>'
-      + (j.apply_url ? '<a href="' + j.apply_url + '" target="_blank" class="action-btn action-apply">Apply →</a>' : '')
-      + '</div>';
-  } else {
-    card += '<div class="job-card-actions" style="margin-top:12px;">'
-      + '<a href="' + (j.apply_url || '#') + '" target="_blank" class="action-btn action-apply">View Posting →</a>'
-      + '</div>';
-  }
-
-  // Inline fit result — prefer live session result, fall back to stored auto-score
+  // Fit score — prefer live session result, fall back to stored auto-score
   var fitRes = FIT_RESULTS[j.job_id];
-  // If no live result but job has auto-score, synthesize a display object
   if (!fitRes && j.ats_score !== null && j.ats_score !== undefined) {
     fitRes = {
       score: j.ats_score,
@@ -273,46 +201,156 @@ function renderJobCard(j) {
       isAutoScore: true
     };
   }
-  if (fitRes) {
-    var fitColor = fitRes.score >= 75 ? '#22c55e' : fitRes.score >= 50 ? '#f59e0b' : '#ef4444';
-    var verdictLabel = fitRes.verdict ? (' — ' + fitRes.verdict) : '';
-    var fitDetailId = 'fit-detail-' + j.job_id;
-    var sourceLabel = fitRes.isAutoScore ? 'auto-scored'
-      : fitRes.jdSource === 'snippet' ? '&#9888; snippet'
-      : '&#10003; full JD';
+  var fitColor  = fitRes ? (fitRes.score >= 75 ? '#22c55e' : fitRes.score >= 50 ? '#f59e0b' : '#ef4444') : null;
 
-    card += '<div style="margin-top:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">'
-      + '<div onclick="toggleFitDetail(\'' + j.job_id + '\')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.03);cursor:pointer;">'
-      + '<span style="font-size:1.15em;font-weight:700;color:' + fitColor + ';">' + fitRes.score + '%</span>'
-      + '<span style="font-size:0.78em;font-weight:600;color:' + fitColor + ';">AI Fit</span>'
-      + '<span style="font-size:0.78em;color:#94a3b8;">' + verdictLabel + '</span>'
-      + '<span style="font-size:0.72em;color:#64748b;margin-left:auto;">' + sourceLabel + '</span>'
-      + '<span id="fit-chevron-' + j.job_id + '" style="color:#64748b;font-size:10px;margin-left:6px;transition:transform 0.2s;">&#9660;</span>'
-      + '</div>'
-      + '<div id="' + fitDetailId + '" style="display:none;padding:12px 14px;border-top:1px solid rgba(255,255,255,0.06);">'
-      + (fitRes.experienceGap ? '<div style="font-size:0.82em;color:#94a3b8;margin-bottom:8px;line-height:1.4;">' + fitRes.experienceGap + '</div>' : '')
-      + (fitRes.gaps && fitRes.gaps.length ? '<div style="margin-bottom:8px;">'
-          + '<div style="font-size:0.72em;font-weight:600;color:#f59e0b;margin-bottom:4px;letter-spacing:0.04em;">GAPS</div>'
-          + fitRes.gaps.slice(0, 6).map(function(g) {
-              return '<span style="display:inline-block;background:rgba(239,68,68,0.12);color:#fca5a5;padding:2px 8px;border-radius:4px;font-size:0.76em;margin:2px;">' + g + '</span>';
-            }).join('')
-          + '</div>' : '')
-      + (fitRes.matched && fitRes.matched.length ? '<div style="margin-bottom:10px;">'
-          + '<div style="font-size:0.72em;font-weight:600;color:#22c55e;margin-bottom:4px;letter-spacing:0.04em;">MATCHED</div>'
-          + fitRes.matched.slice(0, 6).map(function(m) {
-              return '<span style="display:inline-block;background:rgba(34,197,94,0.1);color:#86efac;padding:2px 8px;border-radius:4px;font-size:0.76em;margin:2px;">' + m + '</span>';
-            }).join('')
-          + '</div>' : '')
-      + '<button onclick="sendToATSEngine(\'' + j.job_id + '\')" style="'
-          + 'background:linear-gradient(135deg,#f59e0b,#d97706);color:#0a0f1e;border:none;border-radius:6px;'
-          + 'padding:8px 16px;font-size:0.82em;font-weight:700;cursor:pointer;letter-spacing:0.02em;width:100%;">'
-          + '✶ Analyze &amp; Tailor Resume →'
-          + '</button>'
-      + '</div>'
+  // ── Collapsed row — always visible, tap to expand ─────────────────────────
+  var card = '<div class="job-card-new' + (isDismissed ? ' dismissed' : '') + '" style="padding:0;overflow:hidden;">';
+
+  // Collapsed header — single tap target
+  card += '<div onclick="toggleCardExpand(\'' + jobId + '\')" style="'
+    + 'display:flex;align-items:center;gap:8px;padding:12px 14px;cursor:pointer;'
+    + (isExpanded ? 'border-bottom:1px solid rgba(255,255,255,0.07);' : '')
+    + '">'
+    // Company + role
+    + '<div style="flex:1;min-width:0;">'
+    + '<div style="font-weight:700;font-size:0.95em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (j.company || '') + '</div>'
+    + '<div style="font-size:0.78em;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">' + (j.title || '') + '</div>'
+    + '</div>'
+    // Right side: OTE + freshness + score + chevron
+    + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;">'
+    + (ote ? '<span style="font-size:0.8em;font-weight:700;color:#f59e0b;">' + ote + '</span>' : '<span style="font-size:0.78em;color:#64748b;">OTE unlisted</span>')
+    + '<div style="display:flex;align-items:center;gap:6px;">'
+    + '<span style="font-size:0.72em;font-weight:600;color:' + fresh.color + ';">' + fresh.icon + ' ' + fresh.label + (fresh.days !== null ? ' (' + fresh.days + 'd)' : '') + '</span>'
+    + (fitRes ? '<span style="font-size:0.78em;font-weight:700;color:' + fitColor + ';">' + fitRes.score + '%</span>' : '')
+    + '</div>'
+    + '</div>'
+    + '<span style="color:#64748b;font-size:10px;margin-left:4px;transition:transform 0.2s;' + (isExpanded ? 'transform:rotate(180deg);' : '') + '">▼</span>'
+    + '</div>';
+
+  // ── Expanded body — only rendered when open ───────────────────────────────
+  if (isExpanded) {
+    var postedDate = j.posted_date
+      ? new Date(j.posted_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      : (j.scraped_at ? new Date(j.scraped_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—');
+    var baseSalary = j.base_salary ? '$' + Math.round(j.base_salary / 1000) + 'K' : 'Not listed';
+    var oteDisplay = j.estimated_ote ? '$' + Math.round(j.estimated_ote / 1000) + 'K' : 'Unknown';
+
+    card += '<div style="padding:12px 14px;">';
+
+    // Justification if dismissed
+    if (j.justification) {
+      card += '<div style="font-size:0.82em;color:#94a3b8;margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:6px;"><strong>Reason:</strong> ' + j.justification + '</div>';
+    }
+
+    // Meta rows
+    card += '<div class="job-card-meta" style="margin-bottom:12px;">'
+      + '<div class="meta-row"><span class="meta-label">Base:</span> <span class="meta-value">' + baseSalary + '</span></div>'
+      + '<div class="meta-row"><span class="meta-label">Est OTE:</span> <span class="meta-value ote">' + oteDisplay + '</span></div>'
+      + '<div class="meta-row"><span class="meta-label">Location:</span> <span class="meta-value">' + (j.location || 'Remote') + '</span></div>'
+      + '<div class="meta-row"><span class="meta-label">Posted:</span> <span class="meta-value">' + postedDate + '</span></div>'
       + '</div>';
+
+    // Fit detail (expanded)
+    if (fitRes) {
+      var sourceLabel = fitRes.isAutoScore ? 'auto-scored'
+        : fitRes.jdSource === 'snippet' ? '&#9888; snippet' : '&#10003; full JD';
+      card += '<div style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.07);">'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+        + '<span style="font-size:1.1em;font-weight:700;color:' + fitColor + ';">' + fitRes.score + '%</span>'
+        + '<span style="font-size:0.78em;font-weight:600;color:' + fitColor + ';">AI Fit</span>'
+        + (fitRes.verdict ? '<span style="font-size:0.76em;color:#94a3b8;">— ' + fitRes.verdict + '</span>' : '')
+        + '<span style="font-size:0.7em;color:#64748b;margin-left:auto;">' + sourceLabel + '</span>'
+        + '</div>'
+        + (fitRes.experienceGap ? '<div style="font-size:0.8em;color:#94a3b8;margin-bottom:8px;line-height:1.4;">' + fitRes.experienceGap + '</div>' : '')
+        + (fitRes.gaps && fitRes.gaps.length ? '<div style="margin-bottom:6px;"><div style="font-size:0.7em;font-weight:600;color:#f59e0b;margin-bottom:3px;letter-spacing:0.04em;">GAPS</div>'
+            + fitRes.gaps.slice(0, 6).map(function(g) {
+                return '<span style="display:inline-block;background:rgba(239,68,68,0.12);color:#fca5a5;padding:2px 7px;border-radius:4px;font-size:0.75em;margin:2px;">' + g + '</span>';
+              }).join('') + '</div>' : '')
+        + (fitRes.matched && fitRes.matched.length ? '<div><div style="font-size:0.7em;font-weight:600;color:#22c55e;margin-bottom:3px;letter-spacing:0.04em;">MATCHED</div>'
+            + fitRes.matched.slice(0, 6).map(function(m) {
+                return '<span style="display:inline-block;background:rgba(34,197,94,0.1);color:#86efac;padding:2px 7px;border-radius:4px;font-size:0.75em;margin:2px;">' + m + '</span>';
+              }).join('') + '</div>' : '')
+        + '</div>';
+    }
+
+    // Recon section — auto-fires on expand
+    var reconId = 'recon-' + jobId;
+    card += '<div style="margin-bottom:8px;">';
+    if (j.recon_data) {
+      card += renderReconSection(j);
+    } else {
+      card += '<div id="' + reconId + '" style="font-size:0.82em;color:#94a3b8;padding:8px 0;">'
+        + '<span style="color:#64748b;">Loading company data…</span></div>';
+      // Auto-fire recon after render
+      setTimeout(function() { fetchReconData(jobId, j.company); }, 50);
+    }
+    card += '</div>';
+
+    // JD section
+    var jdExpanded = expandedJD[jobId] || false;
+    var jdBadge = (j.jd_source === 'greenhouse' || j.jd_source === 'lever' || j.jd_source === 'ashby')
+      ? ' <span style="color:#22c55e;font-size:0.75em;">● ' + j.jd_source + '</span>'
+      : j.full_description ? ' <span style="color:#94a3b8;font-size:0.75em;">● adzuna snippet</span>'
+      : ' <span style="color:#64748b;font-size:0.75em;">● no JD</span>';
+    card += '<div class="recon-toggle" onclick="toggleJD(\'' + jobId + '\')" style="margin-bottom:' + (jdExpanded ? '0' : '8px') + ';">'
+      + (jdExpanded ? '▼' : '▶') + ' Job Description' + jdBadge + '</div>';
+    if (jdExpanded) {
+      var jdId = 'jd-' + jobId;
+      if (j.full_description) {
+        card += '<div class="recon-section" id="' + jdId + '" style="white-space:pre-wrap;font-size:0.82em;color:#cbd5e1;max-height:300px;overflow-y:auto;margin-bottom:8px;">'
+          + j.full_description.slice(0, 5000) + '</div>';
+      } else if (j.description) {
+        card += '<div class="recon-section" id="' + jdId + '" style="white-space:pre-wrap;font-size:0.82em;color:#cbd5e1;max-height:300px;overflow-y:auto;margin-bottom:8px;">'
+          + '<div style="color:#f59e0b;font-size:0.78em;margin-bottom:6px;">⚠ Adzuna snippet only</div>'
+          + j.description + '</div>';
+      } else {
+        card += '<div class="recon-section" id="' + jdId + '" style="margin-bottom:8px;"><div style="color:#94a3b8;padding:12px;">No job description available.</div></div>';
+      }
+      if (!j.full_description && !j.description && j.apply_url) fetchAndStoreJD(j);
+    }
+
+    // Action buttons
+    if (!isDismissed) {
+      card += '<div class="job-card-actions" style="margin-top:4px;">'
+        + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + jobId + '\', \'add_to_pipeline\')">Add to Pipeline</button>'
+        + '<button class="action-btn action-dismiss" onclick="promptJobAction(event, \'' + jobId + '\', \'dismiss\')">Not a Fit</button>'
+        + '<span style="position:relative;display:inline-flex;align-items:center;gap:4px;">'
+        + '<button class="action-btn action-ats" onclick="runFitCheck(event, \'' + jobId + '\')">'
+        + (fitRes && !fitRes.isAutoScore ? '✓ ' + fitRes.score + '% — Re-run' : fitRes ? '◆ ' + fitRes.score + '% — Re-run' : 'AI Fit Check')
+        + '</button>'
+        + '<span class="fit-info-icon" onclick="toggleFitTooltip(event, \'' + jobId + '\')" style="cursor:pointer;color:#64748b;font-size:0.82em;user-select:none;">ⓘ</span>'
+        + '<span id="fit-tip-' + jobId + '" style="display:none;position:absolute;bottom:calc(100% + 6px);left:0;width:230px;background:#1e293b;border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:10px 12px;font-size:0.77em;color:#cbd5e1;line-height:1.5;z-index:500;box-shadow:0 4px 16px rgba(0,0,0,0.4);">AI Fit Check scores alignment with your profile. For full keyword analysis use <strong style=\"color:#f59e0b;\">Analyze &amp; Tailor</strong>.</span>'
+        + '</span>'
+        + (j.apply_url ? '<a href="' + j.apply_url + '" target="_blank" class="action-btn action-apply">Apply →</a>' : '')
+        + '</div>';
+      // Analyze & Tailor if scored
+      if (fitRes) {
+        card += '<button onclick="sendToATSEngine(\'' + j.job_id + '\')" style="'
+          + 'background:linear-gradient(135deg,#f59e0b,#d97706);color:#0a0f1e;border:none;border-radius:6px;'
+          + 'padding:8px 16px;font-size:0.82em;font-weight:700;cursor:pointer;width:100%;margin-top:8px;">'
+          + '✶ Analyze &amp; Tailor Resume →</button>';
+      }
+    } else {
+      card += '<div class="job-card-actions" style="margin-top:4px;">'
+        + '<a href="' + (j.apply_url || '#') + '" target="_blank" class="action-btn action-apply">View Posting →</a>'
+        + '</div>';
+    }
+
+    card += '</div>'; // end expanded body
   }
+
   return card + '</div>';
 }
+
+
+// ── Card expand/collapse (replaces per-section toggles) ──────────────────────
+function toggleCardExpand(jobId) {
+  expandedRecon[jobId] = !expandedRecon[jobId];
+  // Clear JD expanded state when collapsing
+  if (!expandedRecon[jobId]) delete expandedJD[jobId];
+  renderScraper();
+}
+
 
 // ── Recon ─────────────────────────────────────────────────────────────────────
 function renderReconSection(j) {
@@ -346,10 +384,7 @@ function renderReconSection(j) {
     + (j.ats_score ? '<div class="recon-row" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);">'      + '<strong>ATS Score:</strong> <span style="color:' + (j.ats_score >= 70 ? '#22c55e' : j.ats_score >= 50 ? '#f59e0b' : '#ef4444') + ';font-weight:700;">' + j.ats_score + '%</span>'      + (j.ats_jd_source === 'snippet' ? ' <span style="color:#94a3b8;font-size:0.8em;">(scored on snippet — open JD for full accuracy)</span>' : ' <span style="color:#94a3b8;font-size:0.8em;">(full JD)</span>')      + (j.ats_missing_keywords && j.ats_missing_keywords.length ? '<div style="color:#94a3b8;font-size:0.82em;margin-top:4px;">Missing: ' + j.ats_missing_keywords.slice(0,6).join(', ') + '</div>' : '')      + '</div>' : '')    + '</div>';
 }
 
-function toggleRecon(jobId) {
-  expandedRecon[jobId] = !expandedRecon[jobId];
-  renderScraper();
-}
+function toggleRecon(jobId) { toggleCardExpand(jobId); }
 
 function toggleJD(jobId) {
   expandedJD[jobId] = !expandedJD[jobId];
@@ -948,6 +983,7 @@ function toggleFilterInfo(e) {
     }, 10);
   }
 }
+
 
 
 
