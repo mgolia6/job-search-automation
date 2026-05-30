@@ -91,9 +91,19 @@
         <i class="ti ti-sparkles" style="font-size:13px"></i> Generate Leads
       </button>
     </div>
-    <div id="scraper-filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--muted)">
+    <div id="scraper-filter-bar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--muted);position:relative">
       <i class="ti ti-filter" style="color:var(--amber);font-size:14px"></i>
       <span id="scraper-filter-summary">Loading filters...</span>
+      <span onclick="toggleFilterInfo(event)" style="margin-left:auto;cursor:pointer;color:#64748b;font-size:0.9em;flex-shrink:0;" title="How filters work">ⓘ</span>
+      <div id="filter-info-tip" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:#1e293b;border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:14px 16px;font-size:11.5px;color:#cbd5e1;line-height:1.7;z-index:200;box-shadow:0 6px 24px rgba(0,0,0,0.4);">
+        <strong style="color:#e8b84b;display:block;margin-bottom:6px;">How lead filters work</strong>
+        Filters are pulled from your profile and applied at scrape time — not in real-time on this page.<br><br>
+        <strong style="color:#94a3b8;">Titles</strong> — scraper searches for these exact job titles on Adzuna.<br>
+        <strong style="color:#94a3b8;">Base min</strong> — jobs below this base salary are excluded at scrape time.<br>
+        <strong style="color:#94a3b8;">OTE min</strong> — estimated OTE floor; jobs without salary data may still appear.<br>
+        <strong style="color:#94a3b8;">Work preference</strong> — Remote only filters to remote-tagged roles; Hybrid/On-site shows all.<br><br>
+        Update filters in <span onclick="openProfile();toggleFilterInfo(event)" style="color:#e8b84b;cursor:pointer;text-decoration:underline;">Profile → Job Preferences</span>.
+      </div>
     </div>
     <div class="kpi-grid" id="scraper-kpis"></div>
     <div id="scraper-content">
