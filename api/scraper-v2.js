@@ -4,23 +4,29 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 
 const BLOCKED_ORGS    = ['staffing', 'recruiting', 'talent', 'search group', 'jobgether', 'foresight works'];
 const BLOCKED_SOURCES = ['jobgether'];
-const PROFILE_ID      = '00000000-0000-0000-0000-000000000001';
 
 module.exports = async function handler(req, res) {
-  const auth = req.headers.authorization;
-  if (!auth || auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Auth: accept CRON_SECRET (scheduled) or x-user-id header set by cron.js after JWT verification
+  const auth = (req.headers.authorization || '').replace('Bearer ', '').trim();
+  const userId = req.headers['x-user-id'];
+  const isCronSecret = auth === process.env.CRON_SECRET;
+
+  if (!isCronSecret && !userId) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {
     console.log('[scraper-v2] START', new Date().toISOString());
 
-    // Pull user profile — all filter params come from here
-    const { data: profile, error: profileErr } = await supabase
+    // Pull user profile — use x-user-id if set, otherwise fall back to first onboarded user
+    const profileQuery = supabase
       .from('profiles')
-      .select('target_titles, salary_floor_base, salary_floor_ote, remote_preference, target_locations, email')
-      .eq('user_id', PROFILE_ID)
-      .single();
+      .select('user_id, target_titles, salary_floor_base, salary_floor_ote, remote_preference, target_locations, email')
+      .eq('onboarding_complete', true);
+
+    if (userId) profileQuery.eq('user_id', userId);
+
+    const { data: profile, error: profileErr } = await profileQuery.single();
 
     if (profileErr || !profile) throw new Error('Failed to load profile: ' + (profileErr?.message || 'not found'));
 
