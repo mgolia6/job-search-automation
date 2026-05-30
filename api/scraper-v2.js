@@ -18,15 +18,15 @@ module.exports = async function handler(req, res) {
   try {
     console.log('[scraper-v2] START', new Date().toISOString());
 
-    // Pull user profile — use x-user-id if set, otherwise fall back to first onboarded user
-    const profileQuery = supabase
+    // Pull user profile — must have user_id (passed from cron after JWT verification)
+    if (!userId) throw new Error('No user_id provided — cannot load profile');
+
+    const { data: profile, error: profileErr } = await supabase
       .from('profiles')
       .select('user_id, target_titles, salary_floor_base, salary_floor_ote, remote_preference, target_locations, email')
-      .eq('onboarding_complete', true);
-
-    if (userId) profileQuery.eq('user_id', userId);
-
-    const { data: profile, error: profileErr } = await profileQuery.single();
+      .eq('user_id', userId)
+      .eq('onboarding_complete', true)
+      .single();
 
     if (profileErr || !profile) throw new Error('Failed to load profile: ' + (profileErr?.message || 'not found'));
 
