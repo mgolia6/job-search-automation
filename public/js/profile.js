@@ -5,10 +5,28 @@ var PROFILE_DIRTY = false;
 function renderProfilePane() {
   var pane = document.getElementById('pane-profile');
   if (!pane) return;
-  var p = window.USER_PROFILE || {};
-  PROFILE_EDIT_DRAFT = JSON.parse(JSON.stringify(p)); // deep copy
-  PROFILE_DIRTY = false;
 
+  // If profile not loaded yet, fetch it first
+  if (!window.USER_PROFILE || !window.USER_PROFILE.email) {
+    pane.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:40px;color:var(--muted)">' + spinnerHTML(16) + ' Loading profile...</div>';
+    fetch('/api/profile', { headers: getAuthHeaders() })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.profile) {
+          window.USER_PROFILE = d.profile;
+          updateProfileDropdown(d.profile);
+        }
+        renderProfilePane();
+      })
+      .catch(function() {
+        pane.innerHTML = '<div style="padding:40px;color:var(--muted)">Could not load profile.</div>';
+      });
+    return;
+  }
+
+  var p = window.USER_PROFILE;
+  PROFILE_EDIT_DRAFT = JSON.parse(JSON.stringify(p));
+  PROFILE_DIRTY = false;
   pane.innerHTML = buildProfileHTML(p);
   updateProfileDropdown(p);
 }
