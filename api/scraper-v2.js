@@ -212,11 +212,11 @@ async function storeJobs(jobs) {
     base_salary:   j.baseSalary,
     estimated_ote: j.estimatedOTE,
     location:      j.location,
-    posted_date:   j.postedDate,
+    posted_date:   j.postedDate instanceof Date ? j.postedDate.toISOString() : j.postedDate,
     apply_url:     j.applyUrl,
     status:        'new',
     gut_check:     'MAYBE — review needed',
-    scraped_at:    new Date()
+    scraped_at:    new Date().toISOString()
   })));
   if (error) console.error('[store] error:', error.message);
 }
@@ -247,3 +247,4 @@ async function sendSummaryEmail(jobs, emailTo) {
   if (!res.ok) console.error('[email] error:', JSON.stringify(data));
   else console.log(`[email] sent — ${jobs.length} leads`);
 }
+
