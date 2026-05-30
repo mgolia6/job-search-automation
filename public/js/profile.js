@@ -31,6 +31,57 @@ function renderProfilePane() {
   updateProfileDropdown(p);
 }
 
+
+// ── Field helpers — must be defined before buildProfileHTML ───────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatPhone(val) {
+  var d = String(val || '').replace(/[^0-9]/g, '');
+  if (d.length === 11 && d[0] === '1') d = d.slice(1);
+  if (d.length === 10) return '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
+  return val;
+}
+
+function profField(label, key, val, type, placeholder) {
+  return '<div class="prof-field">'
+    + '<label class="prof-label">' + label + '</label>'
+    + '<input class="prof-input" type="' + type + '" value="' + esc(val) + '" placeholder="' + placeholder + '"'
+    + ' oninput="markDirty(\'' + key + '\', this.value)">'
+    + '</div>';
+}
+
+function profFieldPhone(label, key, val) {
+  return '<div class="prof-field">'
+    + '<label class="prof-label">' + label + '</label>'
+    + '<input class="prof-input" type="tel" value="' + esc(formatPhone(val)) + '" placeholder="(555) 000-0000"'
+    + ' oninput="PROFILE_EDIT_DRAFT.phone=this.value.replace(/[^0-9]/g,\'\');PROFILE_DIRTY=true;">'
+    + '</div>';
+}
+
+function profFieldZip(label, key, val) {
+  return '<div class="prof-field">'
+    + '<label class="prof-label">' + label + ' <span class="ob-optional">— for local job filtering</span></label>'
+    + '<input class="prof-input" type="text" inputmode="numeric" maxlength="5"'
+    + ' value="' + esc(val) + '" placeholder="06000"'
+    + ' oninput="markDirty(\'zip_code\', this.value)">'
+    + '</div>';
+}
+
+function profTextarea(label, key, val, placeholder) {
+  return '<div class="prof-field">'
+    + '<label class="prof-label">' + label + '</label>'
+    + '<textarea class="prof-input prof-textarea" placeholder="' + placeholder + '" rows="3"'
+    + ' oninput="markDirty(\'' + key + '\', this.value)">' + esc(val) + '</textarea>'
+    + '</div>';
+}
+
+function markDirty(key, val) {
+  PROFILE_EDIT_DRAFT[key] = val;
+  PROFILE_DIRTY = true;
+}
+
 function buildProfileHTML(p) {
   var intentLabels    = { exploring: 'Just exploring', active: 'Actively looking', urgent: 'Need a job now' };
   var seniorityLabels = { ic: 'Individual Contributor', manager: 'Manager', director: 'Director', vp: 'VP+' };
@@ -128,48 +179,6 @@ function buildProfileHTML(p) {
     + '</div>';
 }
 
-// ── Field builders ─────────────────────────────────────────────────────────────
-function esc(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function formatPhone(val) {
-  // Format raw digits to (xxx) xxx-xxxx
-  var d = String(val || '').replace(/\D/g, '');
-  if (d.length === 11 && d[0] === '1') d = d.slice(1);
-  if (d.length === 10) return '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
-  return val; // return as-is if not 10 digits
-}
-
-function profField(label, key, val, type, placeholder) {
-  return '<div class="prof-field">'
-    + '<label class="prof-label">' + label + '</label>'
-    + '<input class="prof-input" type="' + type + '" value="' + esc(val) + '" placeholder="' + placeholder + '"'
-    + ' oninput="markDirty(\'' + key + '\', this.value)">'
-    + '</div>';
-}
-
-function profFieldZip(label, key, val) {
-  return '<div class="prof-field">'
-    + '<label class="prof-label">' + label + ' <span class="ob-optional">— for local job filtering</span></label>'
-    + '<input class="prof-input" type="text" inputmode="numeric" pattern="[0-9]{5}" maxlength="5"'
-    + ' value="' + esc(val) + '" placeholder="06000"'
-    + ' oninput="markDirty(\'zip_code\', this.value)">'
-    + '</div>';
-}
-
-function profTextarea(label, key, val, placeholder) {
-  return '<div class="prof-field">'
-    + '<label class="prof-label">' + label + '</label>'
-    + '<textarea class="prof-input prof-textarea" placeholder="' + placeholder + '" rows="3"'
-    + ' oninput="markDirty(\'' + key + '\', this.value)">' + esc(val) + '</textarea>'
-    + '</div>';
-}
-
-function markDirty(key, val) {
-  PROFILE_EDIT_DRAFT[key] = val;
-  PROFILE_DIRTY = true;
-}
 
 // ── Photo upload ───────────────────────────────────────────────────────────────
 function handleProfilePhoto(input) {
