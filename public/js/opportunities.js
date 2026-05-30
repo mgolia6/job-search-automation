@@ -83,6 +83,14 @@ function renderScraper() {
     + oppTab('dismissed', 'Dismissed',                             SCRAPER_FILTER === 'dismissed')
     + '</div>';
 
+  // ATS History panel trigger
+  html += '<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">'
+    + '<button onclick="openATSPanel()" style="'
+    + 'background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);'
+    + 'color:#f59e0b;padding:6px 14px;border-radius:6px;font-size:0.82em;cursor:pointer;">'
+    + '📋 ATS History</button>'
+    + '</div>';
+
   // Sort controls
   html += '<div class="scraper-controls">'
     + '<button class="filter-btn' + (SCRAPER_SORT === 'ote'  ? ' active' : '') + '" onclick="setScraperSort(\'ote\')">Sort: OTE</button>'
@@ -483,6 +491,26 @@ function doScoreWithJD(jdResult, job, resume, btn, forcedSource) {
       job.ats_score = score;
       job.ats_missing_keywords = missing;
       job.ats_jd_source = jdSource;
+      // Store run to ats_runs history
+      fetch(window.SUPABASE_URL + '/rest/v1/ats_runs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': window.SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + window.SESSION_TOKEN,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          user_id: window.SESSION_USER && window.SESSION_USER.id,
+          job_id: job.job_id,
+          company: job.company,
+          role: job.title,
+          score: score,
+          jd_source: jdSource,
+          missing_keywords: missing,
+          result: data.result
+        })
+      }).catch(function() {});
       renderScraper();
     });
   });
@@ -534,3 +562,148 @@ function scoreWithATS(e, jobId) {
 
 
 
+
+
+// ── ATS History Side Panel ─────────────────────────────────────────────────
+var ATS_PANEL_OPEN = false;
+var ATS_RUNS = [];
+var ATS_SELECTED_RUN = null;
+
+function openATSPanel() {
+  ATS_PANEL_OPEN = true;
+  renderATSPanel();
+  loadATSRuns();
+}
+
+function closeATSPanel() {
+  ATS_PANEL_OPEN = false;
+  var panel = document.getElementById('ats-history-panel');
+  if (panel) panel.remove();
+  var overlay = document.getElementById('ats-panel-overlay');
+  if (overlay) overlay.remove();
+}
+
+function loadATSRuns() {
+  fetch(window.SUPABASE_URL + '/rest/v1/ats_runs?order=created_at.desc&limit=30', {
+    headers: {
+      'apikey': window.SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + window.SESSION_TOKEN
+    }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    ATS_RUNS = Array.isArray(data) ? data : [];
+    renderATSPanel();
+  })
+  .catch(function() {
+    ATS_RUNS = [];
+    renderATSPanel();
+  });
+}
+
+function renderATSPanel() {
+  var existing = document.getElementById('ats-history-panel');
+  if (!ATS_PANEL_OPEN) { if (existing) existing.remove(); return; }
+
+  var scoreColor = function(s) {
+    return s >= 70 ? '#22c55e' : s >= 50 ? '#f59e0b' : '#ef4444';
+  };
+
+  var listHTML = ATS_RUNS.length === 0
+    ? '<div style="color:#94a3b8;padding:24px;text-align:center;">No ATS runs yet.<br>Click Score → ATS on any lead.</div>'
+    : ATS_RUNS.map(function(run) {
+        var isSelected = ATS_SELECTED_RUN && ATS_SELECTED_RUN.id === run.id;
+        return '<div onclick="selectATSRun(\'' + run.id + '\')" style="'
+          + 'padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;'
+          + 'background:' + (isSelected ? 'rgba(245,158,11,0.08)' : 'transparent') + ';'
+          + 'transition:background 0.15s;">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;">'
+          + '<span style="font-weight:600;font-size:0.9em;">' + (run.company || 'Unknown') + '</span>'
+          + '<span style="font-weight:700;color:' + scoreColor(run.score) + ';">' + (run.score || '?') + '%</span>'
+          + '</div>'
+          + '<div style="color:#94a3b8;font-size:0.8em;margin-top:2px;">' + (run.role || '') + '</div>'
+          + '<div style="color:#64748b;font-size:0.75em;margin-top:2px;">'
+          + (run.jd_source === 'snippet' ? '⚠ snippet' : '✓ full JD') + ' · '
+          + new Date(run.created_at).toLocaleDateString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})
+          + '</div>'
+          + '</div>';
+      }).join('');
+
+  var detailHTML = '';
+  if (ATS_SELECTED_RUN) {
+    var r = ATS_SELECTED_RUN;
+    var res = r.result || {};
+    detailHTML = '<div style="border-top:2px solid rgba(245,158,11,0.3);padding:16px;">'
+      + '<div style="font-weight:700;font-size:1em;margin-bottom:12px;">' + r.company + ' — ' + r.role + '</div>'
+
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'
+      + scoreBox('Overall', r.score)
+      + scoreBox('Hard Skills', res.hard_skill_score)
+      + scoreBox('Soft Skills', res.soft_skill_score)
+      + scoreBox('Experience', res.experience_match)
+      + '</div>'
+
+      + (res.verdict ? '<div style="margin-bottom:10px;padding:8px 12px;border-radius:6px;background:rgba(255,255,255,0.04);font-size:0.85em;">'
+          + '<strong>Verdict:</strong> ' + res.verdict + '</div>' : '')
+
+      + (res.experience_gap ? '<div style="margin-bottom:10px;color:#94a3b8;font-size:0.82em;line-height:1.5;">'
+          + res.experience_gap + '</div>' : '')
+
+      + (r.missing_keywords && r.missing_keywords.length ? '<div style="margin-bottom:10px;">'
+          + '<div style="font-size:0.8em;font-weight:600;color:#f59e0b;margin-bottom:6px;">MISSING KEYWORDS</div>'
+          + r.missing_keywords.map(function(k) {
+              return '<span style="display:inline-block;background:rgba(239,68,68,0.15);color:#fca5a5;padding:2px 8px;border-radius:4px;font-size:0.78em;margin:2px;">' + k + '</span>';
+            }).join('')
+          + '</div>' : '')
+
+      + (res.matched_keywords && res.matched_keywords.length ? '<div style="margin-bottom:10px;">'
+          + '<div style="font-size:0.8em;font-weight:600;color:#22c55e;margin-bottom:6px;">MATCHED</div>'
+          + res.matched_keywords.map(function(k) {
+              return '<span style="display:inline-block;background:rgba(34,197,94,0.12);color:#86efac;padding:2px 8px;border-radius:4px;font-size:0.78em;margin:2px;">' + k + '</span>';
+            }).join('')
+          + '</div>' : '')
+
+      + '<div style="font-size:0.75em;color:#64748b;margin-top:8px;">'
+      + (r.jd_source === 'snippet' ? '⚠ Scored on snippet — open the JD for full accuracy' : '✓ Scored on full job description')
+      + '</div>'
+      + '</div>';
+  }
+
+  var panelHTML = '<div id="ats-history-panel" style="'
+    + 'position:fixed;top:0;right:0;width:380px;height:100vh;'
+    + 'background:#0f172a;border-left:1px solid rgba(255,255,255,0.08);'
+    + 'z-index:1000;display:flex;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,0.4);'
+    + 'overflow:hidden;">'
+
+    // Header
+    + '<div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">'
+    + '<div style="font-weight:700;font-size:1em;">ATS Run History</div>'
+    + '<button onclick="closeATSPanel()" style="background:none;border:none;color:#94a3b8;font-size:1.2em;cursor:pointer;padding:4px;">✕</button>'
+    + '</div>'
+
+    // List
+    + '<div style="flex:1;overflow-y:auto;">' + listHTML + '</div>'
+
+    // Detail
+    + detailHTML
+    + '</div>';
+
+  if (existing) {
+    existing.outerHTML = panelHTML;
+  } else {
+    document.body.insertAdjacentHTML('beforeend', panelHTML);
+  }
+}
+
+function scoreBox(label, val) {
+  var color = val >= 70 ? '#22c55e' : val >= 50 ? '#f59e0b' : val ? '#ef4444' : '#64748b';
+  return '<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:8px;text-align:center;">'
+    + '<div style="font-size:0.75em;color:#94a3b8;">' + label + '</div>'
+    + '<div style="font-size:1.3em;font-weight:700;color:' + color + ';">' + (val || '—') + (val ? '%' : '') + '</div>'
+    + '</div>';
+}
+
+function selectATSRun(id) {
+  ATS_SELECTED_RUN = ATS_RUNS.find(function(r) { return r.id === id; }) || null;
+  renderATSPanel();
+}
