@@ -169,7 +169,20 @@ function renderJobCard(j) {
   // JD section — lazy fetch full description, collapsed by default
   var jdId = 'jd-' + jobId;
   var jdExpanded = expandedJD[jobId] || false;
-  card += '<div class="recon-toggle" onclick="toggleJD(\'' + jobId + '\')">'    + (jdExpanded ? '▼' : '▶') + ' Job Description'    + (j.full_description ? '' : ' <span style="color:#94a3b8;font-size:0.8em;">(fetching...)</span>')    + '</div>';  if (jdExpanded) {    if (j.full_description) {      card += '<div class="recon-section" id="' + jdId + '" style="white-space:pre-wrap;font-size:0.85em;color:#cbd5e1;max-height:400px;overflow-y:auto;">'        + j.full_description.slice(0, 5000)        + '</div>';    } else {      card += '<div class="recon-section" id="' + jdId + '"><div class="recon-loading">Loading job description...</div></div>';    }  }
+  var jdBadge = j.jd_source === 'greenhouse' || j.jd_source === 'lever' || j.jd_source === 'ashby'
+    ? ' <span style="color:#22c55e;font-size:0.75em;">● ' + j.jd_source + '</span>'
+    : j.full_description ? ' <span style="color:#94a3b8;font-size:0.75em;">● adzuna snippet</span>'
+    : ' <span style="color:#64748b;font-size:0.75em;">● no JD</span>';
+  card += '<div class="recon-toggle" onclick="toggleJD(\'' + jobId + '\')">'
+    + (jdExpanded ? '▼' : '▶') + ' Job Description' + jdBadge
+    + '</div>';  if (jdExpanded) {    if (j.full_description) {      card += '<div class="recon-section" id="' + jdId + '" style="white-space:pre-wrap;font-size:0.85em;color:#cbd5e1;max-height:400px;overflow-y:auto;">'        + j.full_description.slice(0, 5000)        + '</div>';    } else if (j.description) {
+      card += '<div class="recon-section" id="' + jdId + '" style="white-space:pre-wrap;font-size:0.85em;color:#cbd5e1;max-height:400px;overflow-y:auto;">'
+        + '<div style="color:#f59e0b;font-size:0.78em;margin-bottom:8px;">⚠ Adzuna snippet only — full JD not available</div>'
+        + j.description
+        + '</div>';
+    } else {
+      card += '<div class="recon-section" id="' + jdId + '"><div style="color:#94a3b8;padding:16px;">No job description available.</div></div>';
+    }  }
 
   if (!isDismissed) {
     card += '<div class="job-card-actions" style="margin-top:12px;">'
@@ -232,7 +245,8 @@ function toggleJD(jobId) {
   var job = JOBS.find(function(j) { return j.job_id === jobId; });
   renderScraper();
   // Lazy fetch full JD if not yet stored
-  if (expandedJD[jobId] && job && !job.full_description && job.apply_url) {
+  // Only fetch if no full_description AND no fallback description — don't bother otherwise
+  if (expandedJD[jobId] && job && !job.full_description && !job.description && job.apply_url) {
     fetchAndStoreJD(job);
   }
 }
@@ -709,4 +723,5 @@ function selectATSRun(id) {
   ATS_SELECTED_RUN = ATS_RUNS.find(function(r) { return r.id === id; }) || null;
   renderATSPanel();
 }
+
 
