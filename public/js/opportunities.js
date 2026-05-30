@@ -616,10 +616,21 @@ function toggleFitDetail(jobId) {
 function toggleLeadsFilter() {
   var body = document.getElementById('leads-filter-body');
   var chevron = document.getElementById('leads-filter-chevron');
+  var info = document.getElementById('filter-info-tip');
   if (!body) return;
   var isOpen = body.style.display !== 'none';
   body.style.display = isOpen ? 'none' : 'block';
+  // Close info tip when toggling filter
+  if (info) info.style.display = 'none';
   if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+  // Populate detail panel with current filter values
+  if (!isOpen) {
+    var detail = document.getElementById('leads-filter-detail');
+    if (detail) {
+      var summaryEl = document.getElementById('scraper-filter-summary');
+      detail.innerHTML = summaryEl ? summaryEl.innerHTML : 'No filters set.';
+    }
+  }
 }
 
 // ── Fit Check tooltip toggle ─────────────────────────────────────────────────
@@ -972,8 +983,15 @@ function selectATSRun(id) {
 function toggleFilterInfo(e) {
   e.stopPropagation();
   var tip = document.getElementById('filter-info-tip');
+  var body = document.getElementById('leads-filter-body');
   if (!tip) return;
-  tip.style.display = tip.style.display === 'none' ? 'block' : 'none';
+  var isOpen = tip.style.display !== 'none';
+  tip.style.display = isOpen ? 'none' : 'block';
+  // Close filter detail when opening info
+  if (!isOpen && body) body.style.display = 'none';
+  // Reset chevron
+  var chevron = document.getElementById('leads-filter-chevron');
+  if (chevron && body && body.style.display === 'none') chevron.style.transform = '';
   if (tip.style.display === 'block') {
     setTimeout(function() {
       document.addEventListener('click', function closeIt() {
@@ -983,6 +1001,7 @@ function toggleFilterInfo(e) {
     }, 10);
   }
 }
+
 
 
 
