@@ -29,7 +29,11 @@
     </svg>
   </div>
 
-  <div class="tabs">
+  <div class="header-actions" style="position:relative;margin-left:12px;">
+    <button class="profile-avatar-btn" id="profile-avatar-btn" onclick="toggleProfileDropdown(event)" aria-label="Profile">
+      <i class="ti ti-user" style="font-size:15px"></i>
+    </button>
+    <div class="profile-dropdown" id="profile-dropdown">
     <button class="tab active" onclick="switchTab('pipeline', this)">
       <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
       <span class="tab-label">Pipeline</span>
@@ -44,29 +48,7 @@
     </button>
   </div>
 
-  <div class="header-actions" style="position:relative">
-    <button class="profile-avatar-btn" id="profile-avatar-btn" onclick="toggleProfileDropdown(event)" aria-label="Profile">
-      <i class="ti ti-user" style="font-size:15px"></i>
-    </button>
-    <div class="profile-dropdown" id="profile-dropdown">
-      <div class="pd-head">
-        <div class="pd-avatar" id="pd-avatar">
-          <i class="ti ti-user"></i>
-        </div>
-        <div class="pd-name" id="pd-name">—</div>
-        <div class="pd-sub" id="pd-sub">Job Odyssey</div>
-      </div>
-      <div class="pd-body">
-        <div class="pd-item" onclick="switchTab('profile', null); toggleProfileDropdown(event)">
-          <i class="ti ti-user-circle"></i> Profile &amp; settings
-        </div>
-        <hr class="pd-divider">
-        <div class="pd-item signout" onclick="signOut()">
-          <i class="ti ti-logout"></i> Sign out
-        </div>
-      </div>
-    </div>
-  </div>
+
 </header>
 
 
