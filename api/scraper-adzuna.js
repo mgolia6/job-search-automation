@@ -92,7 +92,7 @@ async function fetchJobs(titleQuery, minBase) {
   url.searchParams.append('salary_min', minBase);
   url.searchParams.append('full_time', '1');
   url.searchParams.append('sort_by', 'date');
-  url.searchParams.append('max_days_old', '3'); // last 3 days
+  url.searchParams.append('max_days_old', '1'); // last 24 hours
   url.searchParams.append('content-type', 'application/json');
 
   const res = await fetch(url);
@@ -282,6 +282,7 @@ async function storeJobs(jobs, userId) {
   })));
   if (error) throw new Error('[store] insert failed: ' + error.message);
 }
+
 
 
 
