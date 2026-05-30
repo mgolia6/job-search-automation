@@ -52,7 +52,7 @@ function renderPipeline() {
 
   // Table
   html += '<div class="table-wrap"><table>'
-    + '<thead><tr><th>#</th><th>Company</th><th>Role</th><th>Status</th><th>Applied</th><th>Salary</th><th>Contact</th><th></th></tr></thead>'
+    + '<thead><tr><th class="col-num">#</th><th class="col-co">Company</th><th class="col-role hide-mobile">Role</th><th class="col-status">Status</th><th class="col-date hide-mobile">Applied</th><th class="col-sal hide-mobile">Salary</th><th class="col-warm hide-mobile">Contact</th><th class="col-edit"></th></tr></thead>'
     + '<tbody id="app-tbody"></tbody></table></div>';
 
   document.getElementById('pane-pipeline').innerHTML = html;
@@ -108,23 +108,30 @@ function renderRows() {
     var escaped = JSON.stringify(a).replace(/'/g, "\\'");
 
     html += '<tr class="app-row' + (isExpanded ? ' expanded' : '') + '" onclick="toggleRow(\'' + rowId + '\')" style="cursor:pointer">'
-      + '<td class="num-cell">' + (a.app_number || '?') + '</td>'
-      + '<td><div class="co-name">' + (a.company || '') + '</div><div class="co-sub">' + (a.role_type || '') + '</div></td>'
-      + '<td class="role-cell">' + (a.role || '') + '</td>'
+      + '<td class="num-cell">' + (a.app_number || '—') + '</td>'
+      + '<td class="col-co"><div class="co-name">' + (a.company || '') + '</div><div class="co-sub-mobile">' + (a.role || '') + (a.salary_range ? ' · ' + a.salary_range : '') + '</div></td>'
+      + '<td class="role-cell hide-mobile">' + (a.role || '') + '</td>'
       + '<td>' + badge(a.status) + '</td>'
-      + '<td class="date-cell">' + date + '</td>'
-      + '<td class="salary-cell">' + (a.salary_range || '—') + '</td>'
-      + '<td>' + warm + '</td>'
+      + '<td class="date-cell hide-mobile">' + date + '</td>'
+      + '<td class="salary-cell hide-mobile">' + (a.salary_range || '—') + '</td>'
+      + '<td class="hide-mobile">' + warm + '</td>'
       + '<td onclick="event.stopPropagation()"><button class="edit-btn" onclick=\'openModal(' + escaped + ')\'>Edit</button></td>'
       + '</tr>';
 
-    if (isExpanded && (a.notes || a.apply_url)) {
+    if (isExpanded) {
       html += '<tr class="notes-row"><td colspan="8"><div class="notes-content">';
+      html += '<div class="notes-mobile-role">' + (a.role || '') + '</div>';
       if (a.apply_url) {
-        html += '<div class="notes-section"><strong>Job Posting:</strong> <a href="' + a.apply_url + '" target="_blank" class="job-link">' + a.apply_url + '</a></div>';
+        html += '<div class="notes-section"><a href="' + a.apply_url + '" target="_blank" class="job-link-btn">View Posting →</a></div>';
       }
       if (a.notes) {
-        html += '<div class="notes-section"><strong>Notes:</strong> ' + (a.notes || '—') + '</div>';
+        html += '<div class="notes-section"><span class="notes-label">' + (a.source === 'Scraper' ? 'Source info' : 'Notes') + ':</span> ' + a.notes + '</div>';
+      }
+      if (a.warm_contact && a.warm_contact !== 'None') {
+        html += '<div class="notes-section"><span class="notes-label">Warm contact:</span> ⚡ ' + a.warm_contact + '</div>';
+      }
+      if (a.recruiter) {
+        html += '<div class="notes-section"><span class="notes-label">Recruiter:</span> ' + a.recruiter + '</div>';
       }
       html += '</div></td></tr>';
     }
@@ -166,3 +173,4 @@ function saveModal() {
     })
     .catch(function (e) { showToast('⚠ Save failed: ' + e.message); });
 }
+
