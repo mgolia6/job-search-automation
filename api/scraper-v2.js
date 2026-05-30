@@ -1,6 +1,7 @@
 // api/scraper-v2.js — Active Jobs DB (RapidAPI), profile-driven
 const { createClient } = require('@supabase/supabase-js');
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+// Use service role key to bypass RLS for server-side operations
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY);
 
 const BLOCKED_ORGS    = ['staffing', 'recruiting', 'talent', 'search group', 'jobgether', 'foresight works'];
 const BLOCKED_SOURCES = ['jobgether'];
@@ -247,4 +248,5 @@ async function sendSummaryEmail(jobs, emailTo) {
   if (!res.ok) console.error('[email] error:', JSON.stringify(data));
   else console.log(`[email] sent — ${jobs.length} leads`);
 }
+
 
