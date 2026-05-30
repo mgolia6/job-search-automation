@@ -57,9 +57,6 @@ function showToast(msg) {
   setTimeout(function () { t.classList.remove('show'); }, 3000);
 }
 
-function spinnerHTML() {
-  return spinnerHTML();
-}
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 function loadData() {
