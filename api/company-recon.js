@@ -97,7 +97,7 @@ async function fetchRepVueViaAI(company) {
 
   try {
     const msg = await claude.messages.create({
-      model: 'claude-opus-4-5',
+      model: 'claude-sonnet-4-6',
       max_tokens: 400,
       messages: [{
         role: 'user',
@@ -142,3 +142,4 @@ If you have very limited data on this company, set confidence: "low" and verdict
     };
   }
 }
+
