@@ -12,10 +12,10 @@ Every feature that isn't in the critical path to a stranger getting value on day
 *Nothing new gets built until the core loop is airtight.*
 
 ### Day 1–2: Data Integrity & Auth
-- [ ] Backfill all 46 NULL user_id rows to Matthew's user_id
-- [ ] Remove "OR user_id IS NULL" RLS exception from applications policy
-- [ ] Delete orphan ghost profile (2 profiles exist, 1 user)
-- [ ] Verify end-to-end: login → correct data only → no bleed between accounts
+- [x] Backfill all 46 NULL user_id rows to Matthew's user_id
+- [x] Remove "OR user_id IS NULL" RLS exception from applications policy
+- [x] Delete orphan ghost profile (2 profiles exist, 1 user)
+- [x] Verify end-to-end: login → correct data only → no bleed between accounts
 
 ### Day 3–4: Core Loop Verification
 - [ ] Scraper — confirm Adzuna insert works, jobs land with correct user_id
