@@ -113,7 +113,7 @@ function restoreTab() {
 function triggerScraper(btn) {
   btn.disabled = true;
   var orig = btn.innerHTML;
-  btn.innerHTML = spinnerHTML() + ' Running...';
+  showCompassSpinner('Generating leads…');
 
   fetch('/api/cron', {
     method: 'POST',
@@ -125,13 +125,17 @@ function triggerScraper(btn) {
       });
     })
     .then(function (res) {
+      hideCompassSpinner();
       btn.disabled = false;
       btn.innerHTML = orig;
       if (!res.ok) {
         showToast('Scraper failed: ' + (res.data.error || 'status ' + res.status));
         return;
       }
-      showToast('Leads generated — refreshing...');
+      var d = res.data;
+      var msg = 'Done — ' + (d.new || 0) + ' new leads';
+      if (d.strongMatches) msg += ', ' + d.strongMatches + ' strong match' + (d.strongMatches !== 1 ? 'es' : '');
+      showToast(msg);
       fetch('/api/data', { headers: getAuthHeaders() })
         .then(function (r) { return r.json(); })
         .then(function (d) {
@@ -140,6 +144,7 @@ function triggerScraper(btn) {
         });
     })
     .catch(function (err) {
+      hideCompassSpinner();
       btn.disabled = false;
       btn.innerHTML = orig;
       showToast('Scraper error: ' + err.message);
@@ -201,4 +206,5 @@ function updateProfileDropdown(profile) {
     if (pdAvatar) pdAvatar.innerHTML = '<img src="' + profile.photo_url + '" alt="profile">';
   }
 }
+
 
