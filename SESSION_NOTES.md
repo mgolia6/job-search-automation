@@ -357,3 +357,77 @@ Vercel webhook stopped auto-deploying mid-session. Many commits pushed to GitHub
 - Current usage: ~3 calls per scrape (one per title)
 - Multi-tenant risk: 20 testers × 3 calls = 60 calls per manual scrape round
 - Plan: shared scrape pool before beta launch
+
+---
+## SESSION UPDATE — 2026/05/30 (session 4)
+
+### Gmail scan window for next session
+after:2026/05/30
+
+### What was built this session
+
+**UX / Leads tab:**
+- AI Fit Check rename (was Score → ATS) + info tooltip explaining it is not a keyword scan
+- Compass overlay spinner replaces jostling inline spinner
+- Inline fit result on card: score badge, gap chips, matched chips, Analyze and Tailor button
+- sendToATSEngine() passes scoreData so ATS tab skips redundant re-score on handoff
+- ATS history moved from Leads tab to ATS tab (History button next to Analyze)
+- 15/day label removed from ATS Check button
+- Filter info tooltip on Leads filter bar explains each filter, links to Profile
+
+**Bug fixes:**
+- runKeywordScore missing Authorization header caused every score call to 400 (root cause of Analysis error)
+- Add to Pipeline: jobJson passed raw via onclick attribute blew up on special chars in JD. Fixed to resolve from JOBS array by jobId only
+- OTE labels now show actual dollar amount (36K OTE) not misleading tier categories
+- ats_runs insert: silent catch removed, errors now logged to console; history fetch scoped by user_id
+
+**Mobile layout:**
+- Header: 2-row on mobile (logo + avatar top row, tabs full-width second row)
+- Tabs: icon-only below 400px
+- KPI cards: tighter padding, no label wrapping
+- Generate Leads button stacks full-width below title on mobile
+- Sub-tabs: horizontal scroll, no wrap
+
+**Crossword logo:**
+- JOB vertical / ODYSSEY horizontal / O = compass rose pivot
+- Variant A shipped: amber J+B, white DYSSEY, solid amber ring on O
+- Avatar moved next to logo (left of header, not far right)
+
+**Pipeline table:**
+- # column replaced with Source badge (purple=Scraper, amber=Manual, green=Referral, blue=LinkedIn)
+- Source badge hidden on mobile, shown in expanded row
+- app_number DB sequence created: applications_app_number_seq
+- Expanded row: View Posting button (not raw URL), role at top on mobile, contact + recruiter + source surfaced
+- Mobile: Role, Applied, Salary, Contact columns hidden; shown as sub-line in company cell
+
+**Edit modal rebuilt — all fields now editable:**
+- Status + Date Applied (side by side)
+- Resume Version + CL Version (side by side, naming convention placeholders)
+- Recruiter + Warm Contact (side by side)
+- Salary Range (full width)
+- Notes (full width)
+- Meta strip (read-only): Date Added + AI Fit score
+- saveModal patches all 8 fields; local APPS array updated via Object.assign
+- Expanded row shows meta strip (Added / Applied / Fit) + resume and CL version if filled
+
+### Next priorities (in order)
+1. Check browser console after running AI Fit Check - is ats_runs insert logging an error? Fix it.
+2. Verify Analyze and Tailor handoff: JD pre-populates in ATS tab, score not re-run
+3. Sort controls on Leads (OTE desc, Base desc, Date posted, Company A-Z) - confirm options then build
+4. Mark Applied action - one-tap to set date_applied + status from pipeline row without opening modal
+5. ATS history panel - once insert works, verify panel populates correctly
+6. Pipeline source badge - confirm Scraper-added rows have source field set by job-action.js
+
+### Architecture reminders
+- FIT_RESULTS[jobId] = in-memory fit check cache (session only, not persisted)
+- ats_runs = persistent log; insert requires SESSION_USER.id set on window
+- atsState.scoredJD === jd check gates redundant re-score in ATS tab
+- Modal saves: date_applied, resume_version, cl_version, recruiter, warm_contact, salary_range, notes, status
+- applications_app_number_seq sequence created in Supabase this session
+
+### Standing rules
+- ALWAYS syntax check before pushing: node --check /tmp/file.js
+- ALWAYS get fresh SHA before PUT to GitHub
+- Model string for Claude API calls: claude-sonnet-4-6
+- RapidAPI quota: 25 req/month, be conservative with test calls
+- GitHub token expires ~Aug 26, 2026 - remind Matthew to regenerate around Aug 16
