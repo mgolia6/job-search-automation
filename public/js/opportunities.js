@@ -327,7 +327,7 @@ function jobAction(event, jobId, action, jobData, justification) {
 
   fetch('/api/job-action', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SESSION_TOKEN },
     body: JSON.stringify({ action: action, jobId: jobId, jobData: jobData, justification: justification })
   })
     .then(function (r) { return r.json(); })
@@ -410,7 +410,7 @@ function scoreWithATS(e, jobId) {
   .then(function(r) { return r.json(); })
   .then(function(jdResult) {
     var jdText, jdSource;
-    if (jdResult.ok && jdResult.text && jdResult.text.length > 300) {
+    if (jdResult.ok && jdResult.text && jdResult.text.length > 100) {
       jdText = jdResult.text;
       jdSource = 'full';
     } else {
@@ -419,7 +419,7 @@ function scoreWithATS(e, jobId) {
       jdSource = 'snippet';
     }
 
-    if (!jdText || jdText.length < 50) {
+    if (!jdText || jdText.length < 20) {
       btn.textContent = 'No JD available';
       btn.disabled = false;
       return;
@@ -470,3 +470,4 @@ function scoreWithATS(e, jobId) {
     btn.disabled = false;
   });
 }
+
