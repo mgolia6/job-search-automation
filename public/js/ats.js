@@ -103,8 +103,15 @@ async function runATSAnalysis() {
     document.getElementById('ats-master-pane').textContent = atsState.masterResume;
 
     // Sequential: score first, then RepVue (avoids rate limits)
-    await runKeywordScore(jd, atsState.masterResume);
-    renderAIVerdict();
+    // Skip score if this JD was already scored (e.g. handed off from Leads fit check)
+    if (atsState.scoreData && atsState.scoredJD === jd) {
+      document.getElementById('ats-scores').innerHTML = renderCachedScores(atsState.scoreData);
+      renderAIVerdict();
+    } else {
+      await runKeywordScore(jd, atsState.masterResume);
+      atsState.scoredJD = jd;
+      renderAIVerdict();
+    }
     await runRepVue(company);
   } catch (e) {
     document.getElementById('ats-scores').innerHTML =
@@ -116,10 +123,18 @@ async function runATSAnalysis() {
 }
 
 // ── Keyword Score ─────────────────────────────────────────────────────────────
+// ── Render cached scores without re-fetching ──────────────────────────────────
+function renderCachedScores(score) {
+  return atsKpiCard(score.overall_score + '%',    'Overall Match',   scoreColor(score.overall_score)) +
+         atsKpiCard(score.hard_skill_score + '%', 'Hard Skills',     scoreColor(score.hard_skill_score)) +
+         atsKpiCard(score.soft_skill_score + '%', 'Soft Skills',     scoreColor(score.soft_skill_score)) +
+         atsKpiCard(score.verbatim_score + '%',   'Verbatim Match',  null);
+}
+
 async function runKeywordScore(jd, resume) {
   var resp = await fetch('/api/ats-scan', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SESSION_TOKEN },
     body: JSON.stringify({ action: 'score', jd: jd, resume: resume })
   });
   var data = await resp.json();
@@ -386,7 +401,7 @@ async function runRapidAPICheck(btn) {
   }
 
   btn.disabled = false;
-  btn.innerHTML = '↺ Re-run ATS Check <span style="font-size:10px;opacity:.6">(15/day)</span>';
+  btn.innerHTML = '↺ Re-run ATS Check';
 }
 
 // ── Score Tab Switcher ────────────────────────────────────────────────────────
@@ -396,4 +411,5 @@ function switchScoreTab(tab, btn) {
   document.querySelectorAll('.ats-score-tab').forEach(function (b) { b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
 }
+
 
