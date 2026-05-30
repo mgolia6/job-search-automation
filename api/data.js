@@ -39,7 +39,6 @@ module.exports = async function handler(req, res) {
       .from('jobs')
       .select('*')
       .eq('user_id', user.id)
-      .neq('status', 'dismissed')
       .order('estimated_ote', { ascending: false, nullsFirst: false })
       .limit(100)
   ]);
@@ -51,3 +50,4 @@ module.exports = async function handler(req, res) {
 };
 
 module.exports.config = { maxDuration: 30 };
+
