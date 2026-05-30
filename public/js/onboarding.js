@@ -287,15 +287,35 @@ function nextStep2() {
 function stepConfirm() {
   if (PARSED_RESUME) {
     if (PARSED_RESUME.target_titles && PARSED_RESUME.target_titles.length) PROFILE_DRAFT.target_titles = PARSED_RESUME.target_titles;
-    if (PARSED_RESUME.hard_skills)     PROFILE_DRAFT.hard_skills     = PARSED_RESUME.hard_skills;
-    if (PARSED_RESUME.soft_skills)     PROFILE_DRAFT.soft_skills     = PARSED_RESUME.soft_skills;
-    if (PARSED_RESUME.resume_keywords) PROFILE_DRAFT.resume_keywords = PARSED_RESUME.resume_keywords;
+    if (PARSED_RESUME.hard_skills)      PROFILE_DRAFT.hard_skills      = PARSED_RESUME.hard_skills;
+    if (PARSED_RESUME.soft_skills)      PROFILE_DRAFT.soft_skills      = PARSED_RESUME.soft_skills;
+    if (PARSED_RESUME.resume_keywords)  PROFILE_DRAFT.resume_keywords  = PARSED_RESUME.resume_keywords;
     if (PARSED_RESUME.inferred_seniority) PROFILE_DRAFT.seniority_level = PARSED_RESUME.inferred_seniority;
+    if (PARSED_RESUME.career_summary)   PROFILE_DRAFT.career_summary   = PARSED_RESUME.career_summary;
+    if (PARSED_RESUME.looking_for)      PROFILE_DRAFT.looking_for      = PARSED_RESUME.looking_for;
   }
 
-  var summaryBox = PARSED_RESUME && PARSED_RESUME.summary
-    ? '<div class="ob-inferred-summary">' + PARSED_RESUME.summary + '</div>'
-    : '';
+  var summaryBox = '';
+  if (PARSED_RESUME) {
+    if (PARSED_RESUME.career_summary || PARSED_RESUME.summary) {
+      summaryBox = '<div class="ob-field" style="margin-bottom:4px">'
+        + '<label class="ob-label">Career summary <span class="ob-optional">— AI-drafted, edit freely</span></label>'
+        + '<textarea class="ob-input" rows="4" id="ob-career-summary" style="font-size:13px;line-height:1.6" onchange="PROFILE_DRAFT.career_summary=this.value">'
+        + (PARSED_RESUME.career_summary || PARSED_RESUME.summary || '')
+        + '</textarea>'
+        + '</div>';
+      PROFILE_DRAFT.career_summary = PARSED_RESUME.career_summary || PARSED_RESUME.summary || '';
+    }
+    if (PARSED_RESUME.looking_for) {
+      summaryBox += '<div class="ob-field" style="margin-bottom:4px">'
+        + '<label class="ob-label">What I'm looking for <span class="ob-optional">— AI-drafted, edit freely</span></label>'
+        + '<textarea class="ob-input" rows="3" id="ob-looking-for" style="font-size:13px;line-height:1.6" onchange="PROFILE_DRAFT.looking_for=this.value">'
+        + PARSED_RESUME.looking_for
+        + '</textarea>'
+        + '</div>';
+      PROFILE_DRAFT.looking_for = PARSED_RESUME.looking_for;
+    }
+  }
 
   var titleChips = PROFILE_DRAFT.target_titles.map(function(t) {
     return '<span class="ob-chip">' + t + ' <button class="ob-chip-remove" onclick="removeConfirmTitle(\'' + t.replace(/'/g, "\\'") + '\')">×</button></span>';
@@ -454,6 +474,8 @@ function finishOnboarding() {
     hard_skills:         PROFILE_DRAFT.hard_skills,
     soft_skills:         PROFILE_DRAFT.soft_skills,
     resume_keywords:     PROFILE_DRAFT.resume_keywords,
+    career_summary:      PROFILE_DRAFT.career_summary || null,
+    looking_for:         PROFILE_DRAFT.looking_for || null,
     onboarding_complete: true
   };
 
