@@ -922,6 +922,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   .header-actions {
     padding: 10px 0;
     flex-shrink: 0;
+    margin-right: 16px;
   }
   .tabs {
     order: 3;
@@ -1631,3 +1632,4 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
+
