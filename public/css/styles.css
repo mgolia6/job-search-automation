@@ -848,36 +848,28 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 
 /* ── Spinner — compass rose ── */
 .spinner {
-  width: 18px;
-  height: 18px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   vertical-align: middle;
-  animation: compass-seek 1.6s ease-in-out infinite;
-  background: none;
-  border: none;
-}
-.spinner::before {
-  content: '';
-  display: none;
 }
 
 /* Inject SVG spinner via JS — .spinner gets replaced with inline SVG */
 @keyframes compass-seek {
   0%   { transform: rotate(0deg); }
-  30%  { transform: rotate(20deg); }
-  60%  { transform: rotate(-20deg); }
-  80%  { transform: rotate(8deg); }
+  25%  { transform: rotate(22deg); }
+  55%  { transform: rotate(-18deg); }
+  75%  { transform: rotate(10deg); }
+  90%  { transform: rotate(-5deg); }
   100% { transform: rotate(0deg); }
-}
-@keyframes compass-spin {
-  to { transform: rotate(360deg); }
 }
 .spinner-svg {
   display: inline-block;
   vertical-align: middle;
   flex-shrink: 0;
-  animation: compass-seek 1.8s ease-in-out infinite;
+  animation: compass-seek 1.6s cubic-bezier(.45,.05,.55,.95) infinite;
+  transform-origin: center center;
 }
 
 /* ── Toast ── */
