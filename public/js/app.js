@@ -14,7 +14,6 @@ function spinnerHTML(size) {
     + '</svg>';
 }
 
-var CRON_SECRET = 'cron_secret_matthew';
 var APPS = [];
 var JOBS = [];
 
@@ -88,11 +87,13 @@ function dbPatch(table, id, body) {
 
 // ── Tab Switching ─────────────────────────────────────────────────────────────
 function switchTab(tab, btn) {
-  ['pipeline', 'scraper', 'gmail', 'ats'].forEach(function (t) {
-    document.getElementById('pane-' + t).style.display = t === tab ? '' : 'none';
+  ['pipeline', 'scraper', 'gmail', 'ats', 'profile'].forEach(function (t) {
+    var el = document.getElementById('pane-' + t);
+    if (el) el.style.display = t === tab ? '' : 'none';
   });
   document.querySelectorAll('.tab').forEach(function (b) { b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
+  if (tab === 'profile' && typeof renderProfilePane === 'function') renderProfilePane();
   try { localStorage.setItem('activeTab', tab); } catch (e) {}
 }
 
@@ -115,24 +116,22 @@ function triggerScraper(btn) {
 
   fetch('/api/cron', {
     method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + CRON_SECRET }
+    headers: getAuthHeaders()
   })
     .then(function (r) { return r.json(); })
     .then(function (data) {
       btn.disabled = false;
       btn.innerHTML = orig;
-      showToast('⚡ Scraper running — check Opportunities in ~1 min');
-      if (data.success) {
-        fetch('/api/data', { headers: getAuthHeaders() }).then(function (r) { return r.json(); }).then(function (d) {
-          JOBS = Array.isArray(d.jobs) ? d.jobs : [];
-          renderScraper();
-        });
-      }
+      showToast('Scraper running — check Leads in ~1 min');
+      fetch('/api/data', { headers: getAuthHeaders() }).then(function (r) { return r.json(); }).then(function (d) {
+        JOBS = Array.isArray(d.jobs) ? d.jobs : [];
+        renderScraper();
+      });
     })
     .catch(function (err) {
       btn.disabled = false;
       btn.innerHTML = orig;
-      showToast('⚠ ' + err.message);
+      showToast('Scraper error: ' + err.message);
     });
 }
 
