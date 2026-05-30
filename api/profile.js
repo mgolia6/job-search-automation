@@ -32,31 +32,35 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'POST') {
     const body = req.body || {};
+
+    // Always-present fields
     const payload = {
-      user_id:            user.id,
-      full_name:          body.full_name || null,
-      email:              body.email || user.email,
-      target_titles:      body.target_titles || [],
-      target_industries:  body.target_industries || [],
-      target_locations:   body.target_locations || [],
-      remote_preference:  body.remote_preference || 'any',
-      salary_floor_base:  body.salary_floor_base || null,
-      salary_floor_ote:   body.salary_floor_ote || null,
-      seniority_level:    body.seniority_level || 'ic',
-      resume_text:        body.resume_text || null,
-      hard_skills:        body.hard_skills || [],
-      soft_skills:        body.soft_skills || [],
-      resume_keywords:    body.resume_keywords || [],
-      job_search_intent:  body.job_search_intent || null,
-      phone:              body.phone || null,
-      career_summary:     body.career_summary || null,
-      looking_for:        body.looking_for || null,
-      working_style:      body.working_style || null,
-      photo_url:          body.photo_url || null,
-      zip_code:           body.zip_code || null,
-      onboarding_complete: body.onboarding_complete || false,
-      updated_at:         new Date()
+      user_id:    user.id,
+      email:      body.email || user.email,
+      updated_at: new Date(),
+      onboarding_complete: body.onboarding_complete !== undefined ? body.onboarding_complete : true,
     };
+
+    // Only include optional fields if explicitly provided (not undefined)
+    const optionalText = ['full_name','phone','zip_code','remote_preference','seniority_level',
+      'job_search_intent','resume_text','career_summary','looking_for','working_style','photo_url'];
+    optionalText.forEach(function(k) {
+      if (body[k] !== undefined) payload[k] = body[k] || null;
+    });
+
+    const optionalNum = ['salary_floor_base','salary_floor_ote'];
+    optionalNum.forEach(function(k) {
+      if (body[k] !== undefined) payload[k] = body[k] || null;
+    });
+
+    const optionalArrays = ['target_titles','target_industries','target_locations',
+      'hard_skills','soft_skills','resume_keywords'];
+    optionalArrays.forEach(function(k) {
+      // Only overwrite if sent AND non-empty, or if explicitly sent as empty
+      if (body[k] !== undefined) {
+        payload[k] = Array.isArray(body[k]) && body[k].length > 0 ? body[k] : (body[k] || null);
+      }
+    });
 
     const { data, error } = await supabase
       .from('profiles')
