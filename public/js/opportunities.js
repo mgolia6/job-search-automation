@@ -162,6 +162,9 @@ function renderJobCard(j) {
       + '<button class="action-btn action-pipeline" onclick="jobAction(event, \'' + jobId + '\', \'add_to_pipeline\', ' + jobJson + ')">Add to Pipeline</button>'
       + (!isBacklog ? '<button class="action-btn action-backlog" onclick="promptJobAction(event, \'' + jobId + '\', \'backlog\')">Backlog</button>' : '')
       + '<button class="action-btn action-dismiss" onclick="promptJobAction(event, \'' + jobId + '\', \'dismiss\')">Not a Fit</button>'
+      + '<button class="action-btn action-ats" onclick="scoreWithATS(event, \'' + jobId + '\')">'
+        + (j.ats_score ? '✓ ' + j.ats_score + '%' : 'Score → ATS')
+        + '</button>'
       + (j.apply_url ? '<a href="' + j.apply_url + '" target="_blank" class="action-btn action-apply">Apply →</a>' : '')
       + '</div>';
   } else {
@@ -202,7 +205,7 @@ function renderReconSection(j) {
     + '<a href="' + glassdoor.url + '" target="_blank" class="recon-link">Glassdoor →</a>'
     + ' &nbsp; <a href="' + careersUrl + '" target="_blank" class="recon-link">Careers →</a>'
     + '</div>'
-    + '</div>';
+    + (j.ats_score ? '<div class="recon-row" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);">'      + '<strong>ATS Score:</strong> <span style="color:' + (j.ats_score >= 70 ? '#22c55e' : j.ats_score >= 50 ? '#f59e0b' : '#ef4444') + ';font-weight:700;">' + j.ats_score + '%</span>'      + (j.ats_jd_source === 'snippet' ? ' <span style="color:#94a3b8;font-size:0.8em;">(scored on snippet — open JD for full accuracy)</span>' : ' <span style="color:#94a3b8;font-size:0.8em;">(full JD)</span>')      + (j.ats_missing_keywords && j.ats_missing_keywords.length ? '<div style="color:#94a3b8;font-size:0.82em;margin-top:4px;">Missing: ' + j.ats_missing_keywords.slice(0,6).join(', ') + '</div>' : '')      + '</div>' : '')    + '</div>';
 }
 
 function toggleRecon(jobId) {
@@ -381,3 +384,89 @@ function renderFilterSummary() {
     : 'No filters set — <a href="#" onclick="openProfile();return false;" style="color:var(--amber)">update your profile</a> to configure';
 }
 
+
+
+// ── ATS Scoring from Lead Card ─────────────────────────────────────────────
+function scoreWithATS(e, jobId) {
+  e.stopPropagation();
+  var job = JOBS.find(function(j) { return j.job_id === jobId; });
+  if (!job) return;
+
+  var resume = window.USER_PROFILE && window.USER_PROFILE.resume_text;
+  if (!resume) { alert('Upload your resume in Profile first.'); return; }
+
+  var btn = e.target;
+  btn.textContent = 'Fetching JD...';
+  btn.disabled = true;
+
+  var applyUrl = job.apply_url || '';
+
+  // Step 1: try to fetch full JD from ATS URL
+  fetch('/api/ats-scan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SESSION_TOKEN },
+    body: JSON.stringify({ action: 'fetch_jd', jd: '', url: applyUrl })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(jdResult) {
+    var jdText, jdSource;
+    if (jdResult.ok && jdResult.text && jdResult.text.length > 300) {
+      jdText = jdResult.text;
+      jdSource = 'full';
+    } else {
+      // Fall back to stored snippet
+      jdText = job.description || '';
+      jdSource = 'snippet';
+    }
+
+    if (!jdText || jdText.length < 50) {
+      btn.textContent = 'No JD available';
+      btn.disabled = false;
+      return;
+    }
+
+    btn.textContent = 'Scoring...';
+
+    // Step 2: score against resume
+    return fetch('/api/ats-scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SESSION_TOKEN },
+      body: JSON.stringify({ action: 'score', jd: jdText, resume: resume, company: job.company, role: job.title })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.ok || !data.result) throw new Error(data.error || 'Score failed');
+      var score = data.result.overall_score || data.result.score;
+      var missing = data.result.missing_hard || data.result.missing_keywords || [];
+
+      // Step 3: write back to Supabase jobs row
+      return fetch(window.SUPABASE_URL + '/rest/v1/jobs?job_id=eq.' + encodeURIComponent(jobId), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': window.SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + window.SESSION_TOKEN,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          ats_score: score,
+          ats_missing_keywords: missing,
+          ats_analyzed_at: new Date().toISOString(),
+          ats_jd_source: jdSource
+        })
+      })
+      .then(function() {
+        // Update local job object and re-render
+        job.ats_score = score;
+        job.ats_missing_keywords = missing;
+        job.ats_jd_source = jdSource;
+        renderScraper();
+      });
+    });
+  })
+  .catch(function(err) {
+    console.error('[scoreWithATS]', err);
+    btn.textContent = 'Score failed';
+    btn.disabled = false;
+  });
+}
