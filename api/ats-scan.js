@@ -43,6 +43,51 @@ module.exports = async function handler(req, res) {
   };
 
   try {
+
+    // ── Fetch full JD from ATS URL ─────────────────────────────────────────────
+    if (action === 'fetch_jd') {
+      const { url } = req.body;
+      if (!url) return res.status(400).json({ error: 'url required' });
+
+      try {
+        const r = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; JobOdyssey/1.0)',
+            'Accept': 'text/html,application/xhtml+xml'
+          },
+          signal: AbortSignal.timeout(8000)
+        });
+
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+        const html = await r.text();
+
+        // Strip HTML tags, collapse whitespace
+        const text = html
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/\s{2,}/g, ' ')
+          .trim();
+
+        // Return up to 6000 chars — enough for a full JD
+        return res.status(200).json({
+          ok: true,
+          text: text.slice(0, 6000),
+          length: text.length,
+          full: text.length <= 6000
+        });
+
+      } catch (err) {
+        return res.status(200).json({ ok: false, error: err.message });
+      }
+    }
+
     // ── RapidAPI literal ATS score (ats-match-scoring) ────────────────────────
     if (action === 'rapidapi') {
       if (!resume) return res.status(400).json({ error: 'resume required' });
@@ -172,5 +217,6 @@ module.exports = async function handler(req, res) {
 };
 
 module.exports.config = { maxDuration: 60 };
+
 
 
