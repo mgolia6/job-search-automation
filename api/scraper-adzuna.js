@@ -212,8 +212,13 @@ async function enrichWithATS(jobs) {
                  jobTitle.includes(title.split(' ').slice(0,2).join(' '));
         });
         if (match) {
-          const lists = (match.descriptionBody || match.description || '');
-          const fullJD = lists.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ').trim();
+          // Lever full content is in lists array — each item has a text body
+          const listText = (match.lists || [])
+            .map(l => (l.content || []).map(c => c.text || '').join(' '))
+            .join(' ');
+          const combined = [match.descriptionBody, listText, match.description]
+            .filter(Boolean).join(' ');
+          const fullJD = stripHTML(combined);
           if (fullJD.length > 100) {
             console.log(`[enrich] Lever hit: ${job.company}`);
             return { ...job, fullDescription: fullJD, jdSource: 'lever' };
@@ -269,6 +274,7 @@ async function storeJobs(jobs, userId) {
     apply_url: j.applyUrl,
     status: 'new',
     gut_check: 'MAYBE — review needed',
+    description: j.description || null,
     full_description: j.fullDescription || null,
     jd_source: j.jdSource || 'adzuna',
     scraped_at: new Date().toISOString(),
@@ -276,6 +282,7 @@ async function storeJobs(jobs, userId) {
   })));
   if (error) throw new Error('[store] insert failed: ' + error.message);
 }
+
 
 
 
