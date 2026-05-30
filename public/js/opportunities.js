@@ -76,14 +76,20 @@ function renderScraper() {
   var iconPipe  = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
   var iconX     = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
+  // Strong match = auto-scored >= 75%
+  var strongMatches = unactioned.filter(function(j) { return j.ats_score !== null && j.ats_score >= 75; });
+
+  var iconStrong = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+
   var kpiEl = document.getElementById('scraper-kpis');
   if (kpiEl) {
     kpiEl.innerHTML =
-      kpiCard(iconFresh, freshJobs.length,    'Fresh',         '#22c55e') +
-      kpiCard(iconAging, agingJobs.length,    'Aging',         '#f59e0b') +
-      kpiCard(iconStale, staleJobs.length,    'Stale',         '#94a3b8') +
-      kpiCard(iconPipe,  addedJobs.length,    'In Pipeline',   '#8b5cf6') +
-      kpiCard(iconX,     dismissedJobs.length,'Dismissed',     '#64748b');
+      kpiCard(iconFresh,  freshJobs.length,    'Fresh',          '#22c55e') +
+      kpiCard(iconAging,  agingJobs.length,    'Aging',          '#f59e0b') +
+      kpiCard(iconStale,  staleJobs.length,    'Stale',          '#94a3b8') +
+      kpiCard(iconStrong, strongMatches.length,'Strong Match',   '#f59e0b') +
+      kpiCard(iconPipe,   addedJobs.length,    'In Pipeline',    '#8b5cf6') +
+      kpiCard(iconX,      dismissedJobs.length,'Dismissed',      '#64748b');
   }
 
   if (!JOBS.length) {
@@ -238,7 +244,9 @@ function renderJobCard(j) {
       + '<button class="action-btn action-dismiss" onclick="promptJobAction(event, \'' + jobId + '\', \'dismiss\')">Not a Fit</button>'
       + '<span style="position:relative;display:inline-flex;align-items:center;gap:4px;">'
       + '<button class="action-btn action-ats" onclick="runFitCheck(event, \'' + jobId + '\')">'
-        + (j.fit_result ? '✓ ' + j.fit_result.score + '% Fit' : 'AI Fit Check')
+        + (FIT_RESULTS[j.job_id] ? '✓ ' + FIT_RESULTS[j.job_id].score + '% — Re-run'
+            : j.ats_score !== null && j.ats_score !== undefined ? '◆ ' + j.ats_score + '% — Re-run'
+            : 'AI Fit Check')
         + '</button>'
       + '<span class="fit-info-icon" title="" onclick="toggleFitTooltip(event, \'' + jobId + '\')" style="cursor:pointer;color:#64748b;font-size:0.82em;user-select:none;" aria-label="What is AI Fit Check?">ⓘ</span>'
       + '<span id="fit-tip-' + jobId + '" style="display:none;position:absolute;bottom:calc(100% + 6px);left:0;width:240px;background:#1e293b;border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:10px 12px;font-size:0.78em;color:#cbd5e1;line-height:1.5;z-index:500;box-shadow:0 4px 16px rgba(0,0,0,0.4);">AI Fit Check gives a quick signal on role alignment based on your profile. It is not a keyword ATS scan — use <strong style=\"color:#f59e0b;\">Analyze &amp; Tailor</strong> for full keyword analysis and resume tailoring.</span>'
@@ -251,8 +259,20 @@ function renderJobCard(j) {
       + '</div>';
   }
 
-  // Inline fit result (expands below action buttons)
+  // Inline fit result — prefer live session result, fall back to stored auto-score
   var fitRes = FIT_RESULTS[j.job_id];
+  // If no live result but job has auto-score, synthesize a display object
+  if (!fitRes && j.ats_score !== null && j.ats_score !== undefined) {
+    fitRes = {
+      score: j.ats_score,
+      gaps: j.ats_missing_keywords || [],
+      matched: [],
+      verdict: j.ats_score >= 75 ? 'strong match' : j.ats_score >= 50 ? 'moderate match' : 'weak match',
+      jdSource: j.ats_jd_source || 'auto',
+      experienceGap: '',
+      isAutoScore: true
+    };
+  }
   if (fitRes) {
     var fitColor = fitRes.score >= 70 ? '#22c55e' : fitRes.score >= 50 ? '#f59e0b' : '#ef4444';
     var verdictLabel = fitRes.verdict ? (' <span style="color:#94a3b8;font-size:0.82em;">— ' + fitRes.verdict + '</span>') : '';
@@ -261,7 +281,9 @@ function renderJobCard(j) {
       + '<span style="font-size:1.4em;font-weight:700;color:' + fitColor + ';">' + fitRes.score + '%</span>'
       + '<span style="font-size:0.82em;font-weight:600;color:' + fitColor + ';">AI Fit Score</span>'
       + verdictLabel
-      + (fitRes.jdSource === 'snippet' ? '<span style="font-size:0.75em;color:#f59e0b;margin-left:auto;">⚠ snippet JD</span>' : '<span style="font-size:0.75em;color:#64748b;margin-left:auto;">✓ full JD</span>')
+      + (fitRes.isAutoScore ? '<span style="font-size:0.75em;color:#94a3b8;margin-left:auto;">auto-scored</span>'
+        : fitRes.jdSource === 'snippet' ? '<span style="font-size:0.75em;color:#f59e0b;margin-left:auto;">&#9888; snippet JD</span>'
+        : '<span style="font-size:0.75em;color:#64748b;margin-left:auto;">&#10003; full JD</span>')
       + '</div>'
       + (fitRes.experienceGap ? '<div style="font-size:0.82em;color:#94a3b8;margin-bottom:8px;line-height:1.4;">' + fitRes.experienceGap + '</div>' : '')
       + (fitRes.gaps && fitRes.gaps.length ? '<div style="margin-bottom:8px;">'
@@ -901,4 +923,5 @@ function toggleFilterInfo(e) {
     }, 10);
   }
 }
+
 
