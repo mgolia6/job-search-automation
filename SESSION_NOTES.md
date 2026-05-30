@@ -204,3 +204,13 @@ Use the `Gmail scan from` date above: `after:2026/05/29 (recruiter OR interview 
 - **ALWAYS check browser console error FIRST before guessing**
 - **ALWAYS get fresh SHA before PUT to GitHub**
 - **Model string for Claude API calls**: `claude-sonnet-4-6`
+
+### Leads tab KPI fix (next session)
+Current KPIs are hardcoded ("300K+ roles available" etc) — meaningless.
+Replace with live counts from the jobs table:
+- **Scraped** — total jobs in table for this user
+- **New** — status = 'new', not yet actioned
+- **Added to pipeline** — status = 'added'
+- **Dismissed** — status = 'dismissed'
+- **Backlogged** — status = 'backlog'
+KPIs should query Supabase jobs table live, scoped to user_id.
