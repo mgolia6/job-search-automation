@@ -52,7 +52,9 @@ async function parseWithClaude(resumeText) {
   "hard_skills": ["tools, platforms, software, methodologies — max 20"],
   "soft_skills": ["leadership traits, communication styles, strategic abilities — max 10"],
   "resume_keywords": ["high-frequency and high-signal keywords from the resume — max 30"],
-  "summary": "2 sentence plain-english summary of this person's background"
+  "summary": "2 sentence plain-english summary of this person's background and key strengths",
+  "career_summary": "3-4 sentence professional summary written in first person, suitable for a profile or cover letter opener. Focus on experience level, core expertise, and what makes them effective.",
+  "looking_for": "2-3 sentences in first person describing what this person is likely seeking next — role type, company stage, deal complexity, team environment — inferred from their background and trajectory."
 }
 
 Resume text:
