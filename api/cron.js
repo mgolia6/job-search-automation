@@ -1,4 +1,4 @@
-const scraperV2 = require('./scraper-v2.js');
+const scraperAdzuna = require('./scraper-adzuna.js');
 
 module.exports = async function handler(req, res) {
   console.log('[cron] Triggered', new Date().toISOString());
@@ -9,15 +9,14 @@ module.exports = async function handler(req, res) {
   let userId = null;
   if (!isCronSecret) {
     const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY);
     const { data, error } = await supabase.auth.getUser(auth);
     if (error || !data?.user) return res.status(401).json({ error: 'Unauthorized' });
     userId = data.user.id;
   }
 
-  // Pass verified user_id to scraper via header
   if (userId) req.headers['x-user-id'] = userId;
-  return scraperV2(req, res);
+  return scraperAdzuna(req, res);
 };
 
 module.exports.config = { maxDuration: 300 };
