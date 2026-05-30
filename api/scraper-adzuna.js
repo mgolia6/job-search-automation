@@ -55,6 +55,7 @@ module.exports = async function handler(req, res) {
 
     if (newJobs.length > 0) {
       await storeJobs(newJobs, userId);
+      console.log('[scraper-adzuna] stored', newJobs.length, 'jobs');
     }
 
     return res.status(200).json({
@@ -177,5 +178,6 @@ async function storeJobs(jobs, userId) {
     scraped_at: new Date().toISOString(),
     user_id: userId
   })));
-  if (error) console.error('[store] error:', error.message);
+  if (error) throw new Error('[store] insert failed: ' + error.message);
 }
+
