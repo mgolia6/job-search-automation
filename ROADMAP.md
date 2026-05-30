@@ -18,10 +18,10 @@ Every feature that isn't in the critical path to a stranger getting value on day
 - [x] Verify end-to-end: login → correct data only → no bleed between accounts
 
 ### Day 3–4: Core Loop Verification
-- [ ] Scraper — confirm Adzuna insert works, jobs land with correct user_id
-- [ ] Add to Pipeline — verify job-action sets status=added, source=Scraper, correct user_id
-- [ ] AI Fit Check — fix ats_runs insert (SESSION_USER.id issue), confirm rows log
-- [ ] Analyze & Tailor handoff — confirm JD pre-populates in ATS tab, no redundant re-score
+- [x] Scraper — confirm Adzuna insert works, jobs land with correct user_id
+- [x] Add to Pipeline — verify job-action sets status=added, source=Scraper, correct user_id
+- [~] AI Fit Check — ats_runs policy fixed, end-to-end logging unverified
+- [~] Analyze & Tailor handoff — not explicitly verified
 
 ### Day 5–7: Onboarding Overhaul
 - [ ] Single required step: resume upload
@@ -85,3 +85,4 @@ Erin's clients' job search data is sensitive. If two users ever see each other's
 
 ---
 *Roadmap locked: May 30, 2026. Adjust as we go — update status inline.*
+
