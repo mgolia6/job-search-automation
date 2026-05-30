@@ -308,7 +308,7 @@ function stepConfirm() {
     }
     if (PARSED_RESUME.looking_for) {
       summaryBox += '<div class="ob-field" style="margin-bottom:4px">'
-        + '<label class="ob-label">What I'm looking for <span class="ob-optional">— AI-drafted, edit freely</span></label>'
+        + '<label class="ob-label">What I\'m looking for <span class="ob-optional">— AI-drafted, edit freely</span></label>'
         + '<textarea class="ob-input" rows="3" id="ob-looking-for" style="font-size:13px;line-height:1.6" onchange="PROFILE_DRAFT.looking_for=this.value">'
         + PARSED_RESUME.looking_for
         + '</textarea>'
