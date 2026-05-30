@@ -67,6 +67,7 @@ function loadData() {
       JOBS = Array.isArray(d.jobs) ? d.jobs : [];
       renderPipeline();
       renderScraper();
+      restoreTab();
     })
     .catch(function (e) {
       document.getElementById('pane-pipeline').innerHTML =
@@ -98,11 +99,9 @@ function restoreTab() {
   var saved = '';
   try { saved = localStorage.getItem('activeTab') || ''; } catch (e) {}
   if (!saved) saved = 'pipeline';
-  // Profile is opened via dropdown, not a .tab button
-  if (saved === 'profile') {
-    switchTab('profile', null);
-    return;
-  }
+  // Profile needs USER_PROFILE loaded — redirect to pipeline on hard refresh
+  // User can re-open profile via avatar after data loads
+  if (saved === 'profile') saved = 'pipeline';
   var btn = Array.from(document.querySelectorAll('.tab')).find(function (b) {
     return b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + saved + "'");
   });
@@ -140,10 +139,10 @@ function triggerScraper(btn) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 // initAuth in auth.js bootstraps session → onboarding → loadData
 initAuth();
-restoreTab();
 
 // ── Profile dropdown ──────────────────────────────────────────────────────────
-function toggleProfileDropdown() {
+function toggleProfileDropdown(e) {
+  if (e) e.stopPropagation();
   var dd = document.getElementById('profile-dropdown');
   if (!dd) return;
   dd.classList.toggle('open');
@@ -152,9 +151,10 @@ function toggleProfileDropdown() {
 // Close dropdown on outside click
 document.addEventListener('click', function(e) {
   var dd = document.getElementById('profile-dropdown');
+  if (!dd || !dd.classList.contains('open')) return;
   var btn = document.getElementById('profile-avatar-btn');
-  if (!dd || !btn) return;
-  if (!dd.contains(e.target) && !btn.contains(e.target)) {
+  if (btn && btn.contains(e.target)) return; // handled by toggle
+  if (!dd.contains(e.target)) {
     dd.classList.remove('open');
   }
 });
