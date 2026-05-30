@@ -38,7 +38,7 @@ async function parseWithClaude(resumeText) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1500,
       messages: [{
         role: 'user',
@@ -128,11 +128,11 @@ module.exports = async function handler(req, res) {
     try {
       parsed = await parseWithClaude(rawText);
     } catch (e) {
-      // Return raw text even if Claude parse fails — user can still proceed
+      console.error('[resume] Claude parse failed:', e.message);
       return res.status(200).json({
         text: rawText,
         parsed: null,
-        parse_error: 'AI parsing failed — you can confirm details manually'
+        parse_error: e.message
       });
     }
 
