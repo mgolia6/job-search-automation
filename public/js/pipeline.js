@@ -121,6 +121,21 @@ function renderRows() {
     if (isExpanded) {
       html += '<tr class="notes-row"><td colspan="8"><div class="notes-content">';
       html += '<div class="notes-mobile-role">' + (a.role || '') + '</div>';
+      // Dates + docs strip
+      var metaStrip = '';
+      if (a.created_at) {
+        metaStrip += '<span><span class="notes-label">Added:</span> ' + new Date(a.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + '</span>';
+      }
+      if (a.date_applied) {
+        metaStrip += '<span><span class="notes-label">Applied:</span> ' + new Date(a.date_applied).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + '</span>';
+      }
+      if (a.ats_score) {
+        metaStrip += '<span><span class="notes-label">Fit:</span> <strong style="color:var(--amber)">' + a.ats_score + '%</strong></span>';
+      }
+      if (metaStrip) html += '<div class="exp-meta-strip">' + metaStrip + '</div>';
+      // Docs
+      if (a.resume_version) html += '<div class="notes-section"><span class="notes-label">Resume:</span> ' + a.resume_version + '</div>';
+      if (a.cl_version)     html += '<div class="notes-section"><span class="notes-label">Cover letter:</span> ' + a.cl_version + '</div>';
       if (a.apply_url) {
         html += '<div class="notes-section"><a href="' + a.apply_url + '" target="_blank" class="job-link-btn">View Posting →</a></div>';
       }
@@ -153,7 +168,25 @@ function openModal(a) {
   currentApp = a;
   document.getElementById('modal-title').textContent = a.company + ' — ' + a.role;
   document.getElementById('modal-status').value = a.status || 'Applied';
+  document.getElementById('modal-date-applied').value = a.date_applied || '';
+  document.getElementById('modal-resume').value = a.resume_version || '';
+  document.getElementById('modal-cl').value = a.cl_version || '';
+  document.getElementById('modal-recruiter').value = a.recruiter || '';
+  document.getElementById('modal-warm').value = a.warm_contact || '';
+  document.getElementById('modal-salary').value = a.salary_range || '';
   document.getElementById('modal-notes').value = a.notes || '';
+
+  // Meta row: date added + ATS score
+  var meta = '';
+  if (a.created_at) {
+    var added = new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    meta += '<span>Added: <strong style="color:var(--text)">' + added + '</strong></span>';
+  }
+  if (a.ats_score) {
+    meta += '<span>AI Fit: <strong style="color:var(--amber)">' + a.ats_score + '%</strong></span>';
+  }
+  document.getElementById('modal-meta').innerHTML = meta;
+
   document.getElementById('modal').classList.add('open');
 }
 
@@ -164,12 +197,21 @@ function closeModal() {
 
 function saveModal() {
   if (!currentApp) return;
-  var status = document.getElementById('modal-status').value;
-  var notes  = document.getElementById('modal-notes').value;
-  dbPatch('applications', currentApp.id, { status: status, notes: notes, updated_at: new Date() })
+  var patch = {
+    status:         document.getElementById('modal-status').value,
+    date_applied:   document.getElementById('modal-date-applied').value || null,
+    resume_version: document.getElementById('modal-resume').value || null,
+    cl_version:     document.getElementById('modal-cl').value || null,
+    recruiter:      document.getElementById('modal-recruiter').value || null,
+    warm_contact:   document.getElementById('modal-warm').value || null,
+    salary_range:   document.getElementById('modal-salary').value || null,
+    notes:          document.getElementById('modal-notes').value || null,
+    updated_at:     new Date()
+  };
+  dbPatch('applications', currentApp.id, patch)
     .then(function () {
       var idx = APPS.findIndex(function (a) { return a.id === currentApp.id; });
-      if (idx > -1) { APPS[idx].status = status; APPS[idx].notes = notes; }
+      if (idx > -1) { Object.assign(APPS[idx], patch); }
       closeModal();
       renderPipeline();
       showToast('✓ Saved');
