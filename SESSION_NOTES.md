@@ -214,3 +214,27 @@ Replace with live counts from the jobs table:
 - **Dismissed** — status = 'dismissed'
 - **Backlogged** — status = 'backlog'
 KPIs should query Supabase jobs table live, scoped to user_id.
+
+### Final session fixes (end of May 30 session)
+- Leads KPIs: now live counts — New Leads / Added This Week / Avg OTE / Added to Pipeline / Dismissed
+- Filter bar: shows active profile filters (titles, base min, OTE min, remote, locations) above KPIs
+- "Run Now" renamed to "Generate Leads" with sparkle icon
+- triggerScraper: now surfaces actual error message from 500 response in toast
+- scraper-v2: title casing fixed (was lowercase, now properly cased for RapidAPI)
+- scraper-v2: dropped hardcoded PROFILE_ID, uses x-user-id from cron.js
+
+### SCRAPER STATUS — still not confirmed working
+Cron returns 500 but error message now surfaces in toast.
+FIRST THING next session: hit Generate Leads, read the toast error, fix from there.
+**VERIFY: RAPIDAPI_KEY is set in Vercel env vars** (Settings → Environment Variables)
+If missing, that's the whole problem.
+
+### Next session priorities (in order)
+1. Confirm scraper works or fix based on toast error
+2. Resume dissection view — keyword highlights, strengths/gaps (separate from profile)
+3. Leads → ATS flow: one-click send scraped job to ATS engine
+4. Profile skills refresh trigger for existing users
+5. Photo upload — consider Supabase storage vs base64 dataURL
+
+### Gmail scan from next session
+after:2026/05/30 (recruiter OR interview OR application OR rejection OR screening)
