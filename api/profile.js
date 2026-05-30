@@ -53,6 +53,7 @@ module.exports = async function handler(req, res) {
       looking_for:        body.looking_for || null,
       working_style:      body.working_style || null,
       photo_url:          body.photo_url || null,
+      zip_code:           body.zip_code || null,
       onboarding_complete: body.onboarding_complete || false,
       updated_at:         new Date()
     };
