@@ -5,6 +5,7 @@ var expandedRecon = {};
 
 // ── Render ────────────────────────────────────────────────────────────────────
 function renderScraper() {
+  renderFilterSummary();
   var el = document.getElementById('scraper-content');
   if (!el) return;
 
@@ -32,18 +33,20 @@ function renderScraper() {
   var iconHigh   = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
   var iconX      = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>';
 
+  var addedJobs = JOBS.filter(function(j) { return j.status === 'added'; });
+
   var kpiEl = document.getElementById('scraper-kpis');
   if (kpiEl) {
     kpiEl.innerHTML =
-      kpiCard(iconInfo,   activeJobs.length,   'Active Opportunities', '#3b82f6') +
-      kpiCard(iconWave,   newThisWeek,         'New This Week',        '#10b981') +
+      kpiCard(iconInfo,   activeJobs.length,   'New Leads',            '#3b82f6') +
+      kpiCard(iconWave,   newThisWeek,         'Added This Week',      '#10b981') +
       kpiCard(iconDollar, avgOTE > 0 ? '$' + Math.round(avgOTE / 1000) + 'K' : '—', 'Avg Est OTE', '#f59e0b') +
-      kpiCard(iconHigh,   highValueCount,      '$300K+ Roles',         '#8b5cf6') +
-      kpiCard(iconX,      backlogJobs.length,  'Backlogged',           '#64748b');
+      kpiCard(iconHigh,   addedJobs.length,    'Added to Pipeline',    '#8b5cf6') +
+      kpiCard(iconX,      dismissedJobs.length,'Dismissed',            '#64748b');
   }
 
   if (!JOBS.length) {
-    el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--muted)">No jobs scraped yet. Hit Run Now to find new roles.</div>';
+    el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--muted)">No leads yet — hit Generate Leads to find matching roles.</div>';
     return;
   }
 
@@ -340,4 +343,41 @@ function jobAction(event, jobId, action, jobData, justification) {
       showToast('Failed: ' + err.message);
       event.target.disabled = false;
     });
+}
+
+// ── Filter summary ────────────────────────────────────────────────────────────
+function renderFilterSummary() {
+  var el = document.getElementById('scraper-filter-summary');
+  if (!el) return;
+  var p = window.USER_PROFILE;
+  if (!p) { el.textContent = 'No profile set — complete onboarding to configure filters'; return; }
+
+  var parts = [];
+
+  // Titles
+  var titles = p.target_titles && p.target_titles.length
+    ? p.target_titles.join(', ')
+    : null;
+  if (titles) parts.push('<strong>Titles:</strong> ' + titles);
+
+  // Salary
+  if (p.salary_floor_base) {
+    parts.push('<strong>Base min:</strong> $' + Number(p.salary_floor_base).toLocaleString());
+  }
+  if (p.salary_floor_ote) {
+    parts.push('<strong>OTE min:</strong> $' + Number(p.salary_floor_ote).toLocaleString());
+  }
+
+  // Remote
+  var remoteLabels = { remote: 'Remote only', hybrid: 'Hybrid', onsite: 'On-site', any: 'Any location' };
+  if (p.remote_preference) parts.push('<strong>Work:</strong> ' + (remoteLabels[p.remote_preference] || p.remote_preference));
+
+  // Locations
+  if (p.target_locations && p.target_locations.length) {
+    parts.push('<strong>Locations:</strong> ' + p.target_locations.join(', '));
+  }
+
+  el.innerHTML = parts.length
+    ? parts.join(' &nbsp;·&nbsp; ')
+    : 'No filters set — <a href="#" onclick="openProfile();return false;" style="color:var(--amber)">update your profile</a> to configure';
 }
