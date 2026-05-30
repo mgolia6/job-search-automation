@@ -274,3 +274,86 @@ after:2026/05/30 (recruiter OR interview OR application OR rejection OR screenin
 - ALWAYS get fresh SHA before PUT to GitHub
 - Model string for Claude API calls: `claude-sonnet-4-6`
 - RapidAPI quota: 25 req/month, resets monthly — be conservative with test calls
+
+
+---
+## SESSION UPDATE — 2026/05/30 (session 3)
+
+### Gmail scan window for next session
+after:2026/05/30
+
+### CRITICAL DEPLOY ISSUE — READ FIRST
+Vercel webhook stopped auto-deploying mid-session. Many commits pushed to GitHub never deployed. Last confirmed deployed commit: `6e747ec27d` (margin-top fix). Everything after that is in GitHub but NOT live on Vercel. Force deploy by pushing any commit — Vercel will pick up HEAD which includes all pending changes.
+
+**Commits NOT yet confirmed deployed (in order):**
+1. `e94566a3fa` — JD collapsed view, lazy fetch, score reuse cached JD
+2. `583e4938fd` — Date objects to ISO strings in job-action
+3. `ca7845773a` — include dismissed jobs in data fetch
+4. `d54c1720a1` — auth header in jobAction fetch
+5. `abf3c747fb` — Score → ATS button on lead cards
+6. `1ac67c4f36` — fetch_jd action in ats-scan.js
+7. `a988f3d676` — recon card verdict dot, summary, links
+8. `a975aa5b9a` — @anthropic-ai/sdk in package.json
+9. `adf1342fba` — dismissed tab count, JD debug logging
+10. `e7a3edb58a` — job-action: service role key, status=added, RLS with_check
+11. `c2fd90b683` — Adzuna OTE fix (salary_max=OTE not base)
+12. `8128abc133` — ATS history side panel
+13. `0cdd513c45` — Job Odyssey wordmark in header
+14. `4d99b51093` — enrich-backfill.js endpoint
+15. `a80da43508` — Greenhouse/Lever/Ashby enrichment + remove truncation
+16. `ed1b734a5c` — JD toggle source badge, description fallback
+17. `9b44adbfc8` — description in insert, Lever lists parsing
+18. `81c3520b3b` — max_days_old 1 (24 hours)
+19. `0e97d6f023` — force deploy trigger
+
+### What was built this session
+- **Adzuna scraper** — fully working, returns 38-58 jobs per run, 24h window
+- **Service role key** — added SUPABASE_SERVICE_KEY to Vercel, all server-side ops use it
+- **OTE fix** — Adzuna salary_max is OTE not base, stopped doubling
+- **Greenhouse/Lever/Ashby enrichment** — runs at scrape time, ~15-20% hit rate
+- **JD toggle** — collapsed view on cards with source badge (greenhouse/lever/adzuna)
+- **ATS History panel** — side panel with run log, score breakdown, missing keywords
+- **Score → ATS button** — on lead cards, fetches JD, scores, stores to ats_runs
+- **enrich-backfill endpoint** — POST /api/enrich-backfill to retroactively enrich existing jobs
+- **ats_runs table** — created in Supabase with RLS
+- **jd_source + full_description columns** — added to jobs table
+- **Job Odyssey wordmark** — in header next to compass logo
+- **Dismissed tab count** — shows number
+- **Auth header** — added to jobAction fetch (was causing Unauthorized on dismiss/pipeline)
+- **status=added** — pipeline action now sets added not dismissed
+- **RLS with_check** — fixed on applications table
+
+### Known issues going into next session
+1. **Deploy not confirmed** — most fixes above may not be live. Verify by checking KPI bar shows wordmark and dismissed count
+2. **Add to Pipeline broken** — auth fix pushed but may not be deployed
+3. **ATS history not logging** — SESSION_USER not set on window; ats_runs insert has no user_id
+4. **Greenhouse JD has raw HTML** — stripHTML not running correctly on stored rows; SQL cleanup needed
+5. **Lever JD short** — lists array parsing added but not confirmed working
+6. **No Adzuna snippets** — description field not in insert (fixed in commit 9b44adbfc8 but may not be deployed)
+7. **ATS History button buried** — needs better placement
+8. **window.SESSION_USER** — not confirmed set anywhere; ats_runs insert will fail without it
+
+### Next session priorities (in order)
+1. Confirm deploy is live — check for Job Odyssey wordmark in header
+2. If not live — debug Vercel webhook or manually redeploy from dashboard
+3. Fix SESSION_USER — find where user object is set, expose on window
+4. Test Add to Pipeline end to end
+5. Test ATS scoring → confirm ats_runs row created
+6. Greenhouse HTML cleanup — SQL update on existing rows
+7. Clear jobs table and rescrape to get clean data with all fixes
+8. Plan multi-tenant architecture for beta testers (shared scrape pool)
+
+### Architecture notes
+- Scraper: Adzuna (active) → cron.js → scraper-adzuna.js
+- Dormant: scraper-v2.js (Active Jobs DB / RapidAPI) — still in repo, not wired
+- ATS enrichment: Greenhouse > Lever > Ashby > fallback to Adzuna snippet
+- All server-side DB ops use SUPABASE_SERVICE_KEY
+- Frontend DB writes use SUPABASE_ANON_KEY + SESSION_TOKEN via REST API
+- window.SESSION_TOKEN — set somewhere in app.js/auth.js (verify)
+- window.SUPABASE_URL + window.SUPABASE_ANON_KEY — needed for frontend REST calls
+
+### Adzuna quota
+- Free tier: 250 req/day
+- Current usage: ~3 calls per scrape (one per title)
+- Multi-tenant risk: 20 testers × 3 calls = 60 calls per manual scrape round
+- Plan: shared scrape pool before beta launch
