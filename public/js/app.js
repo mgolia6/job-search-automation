@@ -119,15 +119,25 @@ function triggerScraper(btn) {
     method: 'POST',
     headers: getAuthHeaders()
   })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
+    .then(function (r) {
+      return r.json().then(function(data) {
+        return { ok: r.ok, status: r.status, data: data };
+      });
+    })
+    .then(function (res) {
       btn.disabled = false;
       btn.innerHTML = orig;
-      showToast('Scraper running — check Leads in ~1 min');
-      fetch('/api/data', { headers: getAuthHeaders() }).then(function (r) { return r.json(); }).then(function (d) {
-        JOBS = Array.isArray(d.jobs) ? d.jobs : [];
-        renderScraper();
-      });
+      if (!res.ok) {
+        showToast('Scraper failed: ' + (res.data.error || 'status ' + res.status));
+        return;
+      }
+      showToast('Leads generated — refreshing...');
+      fetch('/api/data', { headers: getAuthHeaders() })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          JOBS = Array.isArray(d.jobs) ? d.jobs : [];
+          renderScraper();
+        });
     })
     .catch(function (err) {
       btn.disabled = false;
