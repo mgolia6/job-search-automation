@@ -98,6 +98,11 @@ function restoreTab() {
   var saved = '';
   try { saved = localStorage.getItem('activeTab') || ''; } catch (e) {}
   if (!saved) saved = 'pipeline';
+  // Profile is opened via dropdown, not a .tab button
+  if (saved === 'profile') {
+    switchTab('profile', null);
+    return;
+  }
   var btn = Array.from(document.querySelectorAll('.tab')).find(function (b) {
     return b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + saved + "'");
   });
